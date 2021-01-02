@@ -6,7 +6,7 @@
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- parallel::detectCores() - 5
+no_cores <- 2#parallel::detectCores() - 5
 
 
 ## directory ####
@@ -17,7 +17,7 @@ setwd(root)
 ## packages ####
 source("helpers.R")
 libr(c(
-  "furrr",
+  "furrr", #"rslurm",
   "flowDensity",
   "stringr", 
   "pracma", "quantmod",
@@ -58,31 +58,30 @@ y2_dir <- paste0(out_dir,"/2D/y/sangerP2"); dir.create(y2_dir, recursive=TRUE, s
 
 ## gating names ###
 
-cellPops <- c(
-  "all_events", "singlets", "live", "lymphocytes", "granulocytes", "not_granulocytes", "monocytes", "not_monocytes", "eosinophils", "not_eosinophiles",
-  "cd161+", "nk_cells", "nk_immature_ly6C+", "nk_mature_ly6c+", "nk_immature_ly6C-", "nk_mature_ly6c-", "nkt_cells", "nkt_cd11b-ly6c+", "nkt_cd11b+ly6c+", "nkt_cd11b-ly6c-", "nkt_cd11b+ly6c-",
-  "not_cd161+", "t_cells", "t_cells_ly6c+", "not_t_cells", "cDC", "cDC_cd8", "cDC_cd11b+", "b_cell", "b_cell_b1", "b_cell_b2", "mzb", "transitional_pre_b_cell", "follicular_b_cell"
-)
-gtnames <- c(
-  "fsc.a.gate", "fsc.a.gate.high", #1
-  "ssc.a.gate", #4
-  "ssc.h.gate", "ssc.h.gate.high", #5
-  "singlets.gate", "singlets.gate.l", #6
-  "mhcii.gate", "mhcii.gate.slant", "mhcii.gate.low", #7
-  "CD5.gate", "CD5.gate2", "CD5.gate.slant", "CD5.gate.slant2", "CD5.gate.high", #8
-  "Ly6C.gate", "Ly6C.gate1", "Ly6C.gate2", "Ly6C.gate3", "Ly6C.gate4", "Ly6C.gate.high", #9
-  "live.gate", #10
-  "CD23.gate", "CD23.gate.lowlow", "CD23.gate.low", "CD23.gate.slant", "CD23.gate.high", #11
-  "CD11b.gate", "CD11b.gate2", "CD11b.gate3", "CD11b.gate.lowlow", "CD11b.gate.high", #12
-  "CD161.gate", "CD161.gate.high", #13
-  "CD11c.gate", "CD11c.gate.slant.low", "CD11c.gate.slant.high", "CD11c.gate.high", #14
-  "CD21.gate", "CD21.gate.high", "CD21.gate.slant.low", "CD21.gate.slant.high", "CD21.gate.low", #15
-  "CD19.gate", "CD19.gate2" #16
+markers <- c(
+  "FSCa","FSCh","FSCw",
+  "SSCa","SSCh","SSCw",
+  "mhcii","CD5","Ly6C",
+  "Live","CD23","CD11b",
+  "CD161","CD11c","CD21",
+  "CD19")
+fluor <- c(
+  "FSC-A", "FSC-H", "FSC-W",
+  "SSC-A", "SSC-H", "SSC-W",
+  "FITC-A", "APC-A", "Alexa Fluor 700-A",
+  "APC-Cy7-A", "BV421-A", "BV510-A",
+  "BV650-A", "BV786-A", "PE-A", 
+  "PE-Cy7-A"
 )
 
-markers <- c("FSCa","FSCh","FSCw","SSCa","SSCh","SSCw","mhcii","CD5","Ly6C","Live","CD23","CD11b","CD161","CD11c","CD21","CD19")
-
-leaf_cpops <- c("monocyte","granulocyte","eosinophil", "NKimmatureLy6c", "NKmatureLy6c", "NKimmatureNotLy6c", "NKmatureNotLy6c", "NKTnotCD11bLy6C", "NKTCD11bLy6C", "NKTnotCD11bNotLy6C", "NKTCD11bNotLy6C", "TcellLy6C", "TcellNOTLy6C","notTcell", "cDCCD8", "cDCCD11b", "BcellB1", "BcellB2preB", "BcellB2MZB", "BcellB2folB")
+leaf_cpops <- c(
+  "monocyte","granulocyte","eosinophil", 
+  "NK immature Ly6c+", "NK mature Ly6c+", "NK immature Ly6c-", "NK mature Ly6c-", 
+  "NKT CD11b-Ly6C+", "NKT CD11b+Ly6C+", "NKT CD11b-Ly6C-", "NKT CD11b+Ly6C-", 
+  "Tcell",#"Tcell Ly6C+", "Tcell Ly6C-",
+  "not Tcell", 
+  "cDC CD8+", "cDC CD11b+", 
+  "Bcell B1", "Bcell B2 preB", "Bcell B2 MZB", "Bcell B2 folB")
 
 CD161slant <- TRUE # I will use slanted gates here because it is moer natural, not used in original
 
@@ -105,17 +104,22 @@ fcs_files <- fcs_files[unlist(sapply(store.allFCS[,"Barcodes"], grep, fcs_files)
 
 
 ## gating ####
+saveandrm <- TRUE # set to FALSE to check, TRUE to run through everything
 start <- Sys.time()
 
 loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
+res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, function(i) {
+  # res <- rslurm::slurm_apply(
+  #   params=seq_len(nrow(store.allFCS)),
+  #   jobname=""
+  #   f=function(ii) { purrr::map(ii, function(i) {
   if (store.allFCS[i,"Barcodes"]%in%error_bc) return(NULL)
   
   fid <- paste0(stringr::str_pad(i, 4, pad="0"), "_", 
                 store.allFCS[i,"Genotype"], "_",
                 store.allFCS[i,"Barcodes"])
   
-  print(fid)
+  cat("\n",fid)
   
   # load gates
   # idi <- get(load(file=paste0(id_dir, "/", fid, ".Rdata")))
@@ -124,7 +128,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   # load fcs
   cat("loading... ")
   f <- flowCore::read.FCS(fcs_files[i])
-
+  
   cat("Preprocessing... ")
   if (length(ind.marg.neg.clean.all[[i]]$ind.marg.neg)>0) 
     f@exprs <- f@exprs[-ind.marg.neg.clean.all[[i]]$ind.marg.neg,]
@@ -133,13 +137,14 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   if (det(f@description$SPILL)!=1) 
     f <- flowCore::compensate(f, f@description$SPILL) 
   f <- flowCore::transform(f, lgl)
-  f@exprs <- f@exprs[,-c(8,14,19)]
-
+  f@exprs <- f@exprs[,fluor]
+  
   cat("gating... ")
   start1 <- Sys.time() # time to gate one file
   
-  errored <- FALSE
+  # errored <- FALSE
   try({
+    graphics.off()
     png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
     par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
     
@@ -173,10 +178,11 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
         xlab="10. live", ylab="04. SSC-A", 
         xlim=c(0, 4.5), ylim=c(0, 275000), devn=FALSE); 
       abline(v=gti["live.gate"], lwd=2); 
-    lines(live.flowD@filter, lwd=1)
+      lines(live.flowD@filter, lwd=1)
     })
     
-    rm(singlets.flowD.l)
+    if (saveandrm)
+      rm(singlets.flowD.l)
     
     
     ## Gating Live. Plotting FSC-A_SSC-A for Lymphocytes ####
@@ -197,17 +203,18 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       abline(h=gti["ssc.a.gate"], lwd=2)
       lines(lymph.flowD@filter, lwd=1)
     })
-
+    
     id_lymph <- lymph.flowD@index
     csv_f <- lymph.flowD@flow.frame@exprs
     colnames(csv_f) <- markers
     csv_lymph <- csv_f[id_lymph,,drop=FALSE]
     
-    clr_lymph <- matrix(FALSE, nrow=nrow(csv_lymph), ncol=20)
+    clr_lymph <- matrix(0, nrow=nrow(csv_lymph), ncol=20)
     colnames(clr_lymph) <- leaf_cpops
     
-    write.csv(csv_lymph, file=gzfile(paste0(x_dir,"/",fid,".csv.gz")))
-    rm(live.flowD, temp, csv_lymph)
+    
+    if (saveandrm) 
+      rm(live.flowD, temp)
     
     
     ## Gating Lymphocytes. Plotting CD5(8)_CD11b(12) for Not/Granulocytes ####
@@ -261,20 +268,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       abline(h=gti["CD11b.gate.high"], lwd=2)
     })
     
-    clr_lymph[id_lymph%in%gran.flowD@index,"granulocyte"] <- TRUE
+    clr_lymph[id_lymph%in%gran.flowD@index,"granulocyte"] <- 1
+    
     
     csv_lymph1 <- csv_f[lymph1.flowD@index, c(8,9), drop=FALSE]
-    clr_lymph1 <- matrix(FALSE, nrow=nrow(csv_lymph1), ncol=2)
-    colnames(clr_lymph1) <- c("granulocyte","NOTgranulocyte")
-    clr_lymph1[,1] <- lymph1.flowD@index%in%gran.flowD@index
-    clr_lymph1[,2] <- !clr_lymph1[,1]
-    
-    dir.create(paste0(x2_dir,"/CD5CD11b"), showWarnings=FALSE)
-    write.csv(csv_lymph1, file=gzfile(paste0(x2_dir,"/CD5CD11b/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD5CD11b"), showWarnings=FALSE)
-    write.csv(clr_lymph1, file=gzfile(paste0(y2_dir,"/CD5CD11b/",fid,".csv.gz")))
-    
-    rm(lymph1.flowD, temp, tempp, csv_lymph1, clr_lymph1)
+    clr_lymph1 <- matrix(0, nrow=nrow(csv_lymph1), ncol=2)
+    colnames(clr_lymph1) <- c("granulocyte","not granulocyte")
+    clr_lymph1[lymph1.flowD@index%in%gran.flowD@index,1] <- 1
+    clr_lymph1[clr_lymph1[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
+      write.csv(csv_lymph1, file=gzfile(paste0(x2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
+      write.csv(clr_lymph1, file=gzfile(paste0(y2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(lymph1.flowD, temp, tempp, csv_lymph1, clr_lymph1)
+    }
     
     
     ## Gating Not Granulocytes. Plotting Ly6C(9)_CD11b(12) for Not/Monocytes ####
@@ -305,20 +315,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(mon.flowD@filter, lwd=1) #; points(notGran.flowD@flow.frame@exprs[notMon.flowD@index,c(9,12)], col=2, cex=0.1)
     })
     
-    clr_lymph[id_lymph%in%mon.flowD@index,"monocyte"] <- TRUE
+    clr_lymph[id_lymph%in%mon.flowD@index,"monocyte"] <- 1
+    
     
     csv_notgran <- csv_f[notGran.flowD@index, c(9,12), drop=FALSE]
-    clr_notgran <- matrix(FALSE, nrow=nrow(csv_notgran), ncol=2)
-    colnames(clr_notgran) <- c("monocyte","NOTmonocyte")
-    clr_notgran[,1] <- notGran.flowD@index%in%mon.flowD@index
-    clr_notgran[,2] <- !clr_notgran[,1]
-    
-    dir.create(paste0(x2_dir,"/Ly6cCD11b"), showWarnings=FALSE)
-    write.csv(csv_notgran, file=gzfile(paste0(x2_dir,"/Ly6cCD11b/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/Ly6cCD11b"), showWarnings=FALSE)
-    write.csv(clr_notgran, file=gzfile(paste0(y2_dir,"/Ly6cCD11b/",fid,".csv.gz")))
-    
-    rm(lymph.flowD, gran.flowD, temp, csv_notgran, clr_notgran) 
+    clr_notgran <- matrix(0, nrow=nrow(csv_notgran), ncol=2)
+    colnames(clr_notgran) <- c("monocyte","not monocyte")
+    clr_notgran[notGran.flowD@index%in%mon.flowD@index,1] <- 1
+    clr_notgran[clr_notgran[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/Ly6cCD11b_NotGranulocyte"), showWarnings=FALSE)
+      write.csv(csv_notgran, file=gzfile(paste0(x2_dir,"/Ly6cCD11b_NotGranulocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/Ly6cCD11b_NotGranulocyte"), showWarnings=FALSE)
+      write.csv(clr_notgran, file=gzfile(paste0(y2_dir,"/Ly6cCD11b_NotGranulocyte/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(lymph.flowD, gran.flowD, temp, csv_notgran, clr_notgran) 
+    }
     
     
     ## Gating Not Monocytes. Plotting CD11b(12)_SSC-H(5) for Not/Eosinophils ####
@@ -350,20 +363,22 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(eos.flowD@filter, lwd=1) #; points(notMon.flowD@flow.frame@exprs[notEos.flowD@index,c(12,5)], col=2, cex=0.1)
     })
     
-    clr_lymph[id_lymph%in%eos.flowD@index,"eosinophil"] <- TRUE
+    clr_lymph[id_lymph%in%eos.flowD@index,"eosinophil"] <- 1
     
     csv_notmon <- csv_f[notMon.flowD@index, c(12,5), drop=FALSE]
-    clr_notmon <- matrix(FALSE, nrow=nrow(csv_notmon), ncol=2)
-    colnames(clr_notmon) <- c("eosinophil","NOTeosinophil")
-    clr_notmon[,1] <- notMon.flowD@index%in%eos.flowD@index
-    clr_notmon[,2] <- !clr_notmon[,1]
-    
-    dir.create(paste0(x2_dir,"/CD11bSSCh"), showWarnings=FALSE)
-    write.csv(csv_notmon, file=gzfile(paste0(x2_dir,"/CD11bSSCh/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD11bSSCh"), showWarnings=FALSE)
-    write.csv(clr_notmon, file=gzfile(paste0(y2_dir,"/CD11bSSCh/",fid,".csv.gz")))
-    
-    rm(notGran.flowD, mon.flowD, temp, csv_notmon, clr_notmon)
+    clr_notmon <- matrix(0, nrow=nrow(csv_notmon), ncol=2)
+    colnames(clr_notmon) <- c("eosinophil","not eosinophil")
+    clr_notmon[notMon.flowD@index%in%eos.flowD@index,1] <- 1
+    clr_notmon[clr_notmon[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD11bSSCh_NotMonocyte"), showWarnings=FALSE)
+      write.csv(csv_notmon, file=gzfile(paste0(x2_dir,"/CD11bSSCh_NotMonocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD11bSSCh_NotMonocyte"), showWarnings=FALSE)
+      write.csv(clr_notmon, file=gzfile(paste0(y2_dir,"/CD11bSSCh_NotMonocyte/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(notGran.flowD, mon.flowD, temp, csv_notmon, clr_notmon)
+    }
     
     
     ## Gating Not Eosinophils. Plotting CD161(13)_CD19(16) for CD161+/- ####
@@ -395,17 +410,19 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     })
     
     csv_noteos <- csv_f[notEos.flowD@index, c(13,16), drop=FALSE]
-    clr_noteos <- matrix(FALSE, nrow=nrow(csv_noteos), ncol=2)
+    clr_noteos <- matrix(0, nrow=nrow(csv_noteos), ncol=2)
     colnames(clr_noteos) <- c("CD161+","CD161-")
-    clr_noteos[,1] <- notEos.flowD@index%in%CD161.flowD@index
-    clr_noteos[,2] <- !clr_noteos[,1]
-    
-    dir.create(paste0(x2_dir,"/CD161CD19"), showWarnings=FALSE)
-    write.csv(csv_noteos, file=gzfile(paste0(x2_dir,"/CD161CD19/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD161CD19"), showWarnings=FALSE)
-    write.csv(clr_noteos, file=gzfile(paste0(y2_dir,"/CD161CD19/",fid,".csv.gz")))
-    
-    rm(notMon.flowD, eos.flowD, csv_noteos, clr_noteos)
+    clr_noteos[notEos.flowD@index%in%CD161.flowD@index,1] <- 1
+    clr_noteos[clr_noteos[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD161CD19_NotEosinophils"), showWarnings=FALSE)
+      write.csv(csv_noteos, file=gzfile(paste0(x2_dir,"/CD161CD19_NotEosinophils/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD161CD19_NotEosinophils"), showWarnings=FALSE)
+      write.csv(clr_noteos, file=gzfile(paste0(y2_dir,"/CD161CD19_NotEosinophils/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(notMon.flowD, eos.flowD, csv_noteos, clr_noteos)
+    }
     
     
     ## Gating CD161+. Plotting CD5(8)_CD11b(13) for NK T-/Cells ####
@@ -416,7 +433,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       temp,channels=c(8,13), 
       position=c(F,NA), gates=c(2.8,NA))
     temps@flow.frame <- rotate_fcs(temp@flow.frame, c(8,13), theta=-pi/4)$data
-
+    
     NK.flowD <- flowDensity::flowDensity(
       temps,channels=c(8,13), 
       position=c(F,NA), gates=c(gti["CD5.gate.slant2"],NA))
@@ -450,20 +467,22 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     })
     
     csv_cd161 <- csv_f[CD161.flowD@index, c(8,13), drop=FALSE]
-    clr_cd161 <- matrix(FALSE, nrow=nrow(csv_cd161), ncol=2)
+    clr_cd161 <- matrix(0, nrow=nrow(csv_cd161), ncol=2)
     colnames(clr_cd161) <- c("NK","NKT")
-    clr_cd161[,1] <- CD161.flowD@index%in%NK.flowD@index
-    clr_cd161[,2] <- CD161.flowD@index%in%NKT.flowD@index
+    clr_cd161[CD161.flowD@index%in%NK.flowD@index,1] <- 1
+    clr_cd161[CD161.flowD@index%in%NKT.flowD@index,2] <- 1
     cd161_rows <- rowSums(clr_cd161)>0
     csv_cd161 <- csv_cd161[cd161_rows,,drop=FALSE]
     clr_cd161 <- clr_cd161[cd161_rows,,drop=FALSE]
-    
-    dir.create(paste0(x2_dir,"/CD5CD11b"), showWarnings=FALSE)
-    write.csv(csv_cd161, file=gzfile(paste0(x2_dir,"/CD5CD11b/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD5CD11b"), showWarnings=FALSE)
-    write.csv(clr_cd161, file=gzfile(paste0(y2_dir,"/CD5CD11b/",fid,".csv.gz")))
-    
-    rm(notEos.flowD, temp, temps, csv_cd161, clr_cd161)
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
+      write.csv(csv_cd161, file=gzfile(paste0(x2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
+      write.csv(clr_cd161, file=gzfile(paste0(y2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(notEos.flowD, temp, temps, csv_cd161, clr_cd161)
+    }
     
     
     ## Gating NK Cells. Plotting CD11b(12)_Ly6C(9) ####
@@ -497,25 +516,28 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(NKmatNotLy6C.flowD@filter, lwd=1)
     })
     
-    clr_lymph[id_lymph%in%NKimmatLy6C.flowD@index,"NKimmatureLy6c"] <- TRUE
-    clr_lymph[id_lymph%in%NKmatLy6C.flowD@index,"NKmatureLy6c"] <- TRUE
-    clr_lymph[id_lymph%in%NKimmatNotLy6C.flowD@index,"NKimmatureNotLy6c"] <- TRUE
-    clr_lymph[id_lymph%in%NKmatNotLy6C.flowD@index,"NKmatureNotLy6c"] <- TRUE
+    clr_lymph[id_lymph%in%NKimmatLy6C.flowD@index,"NK immature Ly6c+"] <- 1
+    clr_lymph[id_lymph%in%NKmatLy6C.flowD@index,"NK mature Ly6c+"] <- 1
+    clr_lymph[id_lymph%in%NKimmatNotLy6C.flowD@index,"NK immature Ly6c-"] <- 1
+    clr_lymph[id_lymph%in%NKmatNotLy6C.flowD@index,"NK mature Ly6c-"] <- 1
+    
     
     csv_nk <- csv_f[NK.flowD@index, c(9,12), drop=FALSE]
-    clr_nk <- matrix(FALSE, nrow=nrow(csv_nk), ncol=4)
-    colnames(clr_nk) <- c("NKimmatureLy6c","NKmatureLy6c","NKimmatureNotLy6c","NKmatureNotLy6c")
-    clr_nk[,1] <- NK.flowD@index%in%NKimmatLy6C.flowD@index
-    clr_nk[,2] <- NK.flowD@index%in%NKmatLy6C.flowD@index
-    clr_nk[,3] <- NK.flowD@index%in%NKimmatNotLy6C.flowD@index
-    clr_nk[,4] <- NK.flowD@index%in%NKmatNotLy6C.flowD@index
-    
-    dir.create(paste0(x2_dir,"/CD11bLy6c"), showWarnings=FALSE)
-    write.csv(csv_nk, file=gzfile(paste0(x2_dir,"/CD11bLy6c/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD11bLy6c"), showWarnings=FALSE)
-    write.csv(clr_nk, file=gzfile(paste0(y2_dir,"/CD11bLy6c/",fid,".csv.gz")))
-    
-    rm(NKimmatNotLy6C.flowD, NKimmatLy6C.flowD, NKmatNotLy6C.flowD, NKmatLy6C.flowD)
+    clr_nk <- matrix(0, nrow=nrow(csv_nk), ncol=4)
+    colnames(clr_nk) <- c("NK immature Ly6c+","NK mature Ly6c+","NK immature Ly6c-","NK mature Ly6c-")
+    clr_nk[NK.flowD@index%in%NKimmatLy6C.flowD@index,1] <- 1
+    clr_nk[NK.flowD@index%in%NKmatLy6C.flowD@index,2] <- 1
+    clr_nk[NK.flowD@index%in%NKimmatNotLy6C.flowD@index,3] <- 1
+    clr_nk[NK.flowD@index%in%NKmatNotLy6C.flowD@index,4] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD11bLy6c_NK"), showWarnings=FALSE)
+      write.csv(csv_nk, file=gzfile(paste0(x2_dir,"/CD11bLy6c_NK/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD11bLy6c_NK"), showWarnings=FALSE)
+      write.csv(clr_nk, file=gzfile(paste0(y2_dir,"/CD11bLy6c_NK/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(NKimmatNotLy6C.flowD, NKimmatLy6C.flowD, NKmatNotLy6C.flowD, NKmatLy6C.flowD)
+    }
     
     
     ## Gating NK T-cells. Plotting CD11b(12)_Ly6C(9) ####
@@ -550,26 +572,29 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(NKTnotCD11bNotLy6C.flowD@filter, lwd=1)
     })
     
-    clr_lymph[id_lymph%in%NKTnotCD11bLy6C.flowD@index,"NKTnotCD11bLy6C"] <- TRUE
-    clr_lymph[id_lymph%in%NKTCD11bLy6C.flowD@index,"NKTCD11bLy6C"] <- TRUE
-    clr_lymph[id_lymph%in%NKTnotCD11bNotLy6C.flowD@index,"NKTnotCD11bNotLy6C"] <- TRUE
-    clr_lymph[id_lymph%in%NKTCD11bNotLy6C.flowD@index,"NKTCD11bNotLy6C"] <- TRUE
+    clr_lymph[id_lymph%in%NKTnotCD11bLy6C.flowD@index,"NKT CD11b-Ly6C+"] <- 1
+    clr_lymph[id_lymph%in%NKTCD11bLy6C.flowD@index,"NKT CD11b+Ly6C+"] <- 1
+    clr_lymph[id_lymph%in%NKTnotCD11bNotLy6C.flowD@index,"NKT CD11b-Ly6C-"] <- 1
+    clr_lymph[id_lymph%in%NKTCD11bNotLy6C.flowD@index,"NKT CD11b+Ly6C-"] <- 1
+    
     
     csv_nkt <- csv_f[NKT.flowD@index, c(9,12), drop=FALSE]
-    clr_nkt <- matrix(FALSE, nrow=nrow(csv_nkt), ncol=4)
-    colnames(clr_nkt) <- c("NKTnotCD11bLy6C","NKTCD11bLy6C","NKTnotCD11bNotLy6C","NKTCD11bNotLy6C")
-    clr_nkt[,1] <- NKT.flowD@index%in%NKTnotCD11bLy6C.flowD@index
-    clr_nkt[,2] <- NKT.flowD@index%in%NKTCD11bLy6C.flowD@index
-    clr_nkt[,3] <- NKT.flowD@index%in%NKTnotCD11bNotLy6C.flowD@index
-    clr_nkt[,4] <- NKT.flowD@index%in%NKTCD11bNotLy6C.flowD@index
-    
-    dir.create(paste0(x2_dir,"/CD11bLy6cT"), showWarnings=FALSE)
-    write.csv(csv_nkt, file=gzfile(paste0(x2_dir,"/CD11bLy6cT/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD11bLy6cT"), showWarnings=FALSE)
-    write.csv(clr_nkt, file=gzfile(paste0(y2_dir,"/CD11bLy6cT/",fid,".csv.gz")))
-    
-    rm(CD161.flowD, NK.flowD, NKT.flowD, NKTCD11bNotLy6C.flowD, 
-       NKTnotCD11bNotLy6C.flowD, NKTCD11bLy6C.flowD, NKTnotCD11bLy6C.flowD, csv_nkt, clr_nkt)
+    clr_nkt <- matrix(0, nrow=nrow(csv_nkt), ncol=4)
+    colnames(clr_nkt) <- c("NKT CD11b-Ly6C+","NKT CD11b+Ly6C+","NKT CD11b-Ly6C-","NKT CD11b+Ly6C-")
+    clr_nkt[NKT.flowD@index%in%NKTnotCD11bLy6C.flowD@index,1] <- 1
+    clr_nkt[NKT.flowD@index%in%NKTCD11bLy6C.flowD@index,2] <- 1
+    clr_nkt[NKT.flowD@index%in%NKTnotCD11bNotLy6C.flowD@index,3] <- 1
+    clr_nkt[NKT.flowD@index%in%NKTCD11bNotLy6C.flowD@index,4] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD11bLy6cT_NKTcell"), showWarnings=FALSE)
+      write.csv(csv_nkt, file=gzfile(paste0(x2_dir,"/CD11bLy6cT_NKTcell/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD11bLy6cT_NKTcell"), showWarnings=FALSE)
+      write.csv(clr_nkt, file=gzfile(paste0(y2_dir,"/CD11bLy6cT_NKTcell/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(CD161.flowD, NK.flowD, NKT.flowD, NKTCD11bNotLy6C.flowD, 
+         NKTnotCD11bNotLy6C.flowD, NKTCD11bLy6C.flowD, NKTnotCD11bLy6C.flowD, csv_nkt, clr_nkt)
+    }
     
     
     ## Gating not CD161+. Plotting mhcii(7)_CD5(8) for Not/T-cells ####
@@ -584,7 +609,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     Tcell.flowD <- flowDensity::flowDensity(
       temp, channels=c(7,8), 
       position=c(T,T), gates=c(gti["mhcii.gate.low"], gti["CD5.gate2"]))
-
+    
     notTcell.flowD <- flowDensity::notSubFrame(
       notCD161.flowD@flow.frame, channels=c(7,8), 
       position="logical", gates="missing", Tcell.flowD@filter)
@@ -607,18 +632,22 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(Tcell.flowD@filter, lwd=1)
     })
     
+    clr_lymph[id_lymph%in%Tcell.flowD@index,"Tcell"] <- 1
+    
     csv_ncd161 <- csv_f[notCD161.flowD@index, c(7,8), drop=FALSE]
-    clr_ncd161 <- matrix(FALSE, nrow=nrow(csv_ncd161), ncol=2)
-    colnames(clr_ncd161) <- c("Tcell","notTcell")
-    clr_ncd161[,1] <- notCD161.flowD@index%in%Tcell.flowD@index
-    clr_ncd161[,2] <- !clr_ncd161[,1]
-    
-    dir.create(paste0(x2_dir,"/mhciiCD5"), showWarnings=FALSE)
-    write.csv(csv_ncd161, file=gzfile(paste0(x2_dir,"/mhciiCD5/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/mhciiCD5"), showWarnings=FALSE)
-    write.csv(clr_ncd161, file=gzfile(paste0(y2_dir,"/mhciiCD5/",fid,".csv.gz")))
-    
-    rm(csv_ncd161, clr_ncd161)
+    clr_ncd161 <- matrix(0, nrow=nrow(csv_ncd161), ncol=2)
+    colnames(clr_ncd161) <- c("Tcell","not Tcell")
+    clr_ncd161[notCD161.flowD@index%in%Tcell.flowD@index,1] <- 1
+    clr_ncd161[clr_ncd161[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/mhciiCD5_NotCD161"), showWarnings=FALSE)
+      write.csv(csv_ncd161, file=gzfile(paste0(x2_dir,"/mhciiCD5_NotCD161/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/mhciiCD5_NotCD161"), showWarnings=FALSE)
+      write.csv(clr_ncd161, file=gzfile(paste0(y2_dir,"/mhciiCD5_NotCD161/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(csv_ncd161, clr_ncd161)
+    }
     
     
     ## Gating T-cells. Plotting Ly6C(9) for Ly6C+ T-cells ####
@@ -630,16 +659,18 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       position=c(F,NA), gates=c(gti["Ly6C.gate.high"],NA))
     
     TcellNOTLy6C.flowD <- flowDensity::flowDensity(
-      temp, channels=c(9,8), 
+      Tcell.flowD, channels=c(9,8), 
       position=c(F,NA), gates=c(gti["Ly6C.gate4"],NA))
     
     d <- density(Tcell.flowD@flow.frame@exprs[,9], na.rm=T)
     plot(d, main = "T-cell", xlab="09. Ly6C #4", xlim=c(0, 4.5), ylab="Count/Density"); abline(v=gti["Ly6C.gate.high"], lwd=2); abline(v=gti["Ly6C.gate"], lty=2); abline(v=gti["Ly6C.gate4"], lwd=2)
     
-    clr_lymph[id_lymph%in%TcellLy6C.flowD@index,"TcellLy6C"] <- TRUE
-    clr_lymph[id_lymph%in%TcellNOTLy6C.flowD@index,"TcellNOTLy6C"] <- TRUE
+    # clr_lymph[id_lymph%in%TcellLy6C.flowD@index,"Tcell Ly6C+"] <- 1
+    # clr_lymph[id_lymph%in%TcellNOTLy6C.flowD@index,"Tcell Ly6C+"] <- 1
     
-    rm(TcellLy6C.flowD, temp, Tcell.flowD)
+    
+    if (saveandrm) 
+      rm(TcellLy6C.flowD, temp, Tcell.flowD)
     
     
     ## Gating Not T-cells. Plotting CD19(16)_CD11c(14) for cDC/B-cell ####
@@ -681,20 +712,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     
     clr_lymph[id_lymph%in%notTcell.flowD@index & 
                 !id_lymph%in%Bcell.flowD@index & 
-                !id_lymph%in%cDC.flowD@index,"notTcell"] <- TRUE
-
+                !id_lymph%in%cDC.flowD@index,"not Tcell"] <- 1
+    
+    
     csv_nTcell <- csv_f[notTcell.flowD@index, c(16,14), drop=FALSE]
-    clr_nTcell <- matrix(FALSE, nrow=nrow(csv_nTcell), ncol=2)
-    colnames(clr_nTcell) <- c("Bcell","notBcell")
-    clr_nTcell[,1] <- notTcell.flowD@index%in%Bcell.flowD@index
-    clr_nTcell[,2] <- !clr_nTcell[,1]
-    
-    dir.create(paste0(x2_dir,"/CD19CD11c"), showWarnings=FALSE)
-    write.csv(csv_nTcell, file=gzfile(paste0(x2_dir,"/CD19CD11c/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD19CD11c"), showWarnings=FALSE)
-    write.csv(clr_nTcell, file=gzfile(paste0(y2_dir,"/CD19CD11c/",fid,".csv.gz")))
-    
-    rm(notCD161.flowD, notTcell.flowD, csv_nTcell, clr_nTcell)
+    clr_nTcell <- matrix(0, nrow=nrow(csv_nTcell), ncol=2)
+    colnames(clr_nTcell) <- c("Bcell","not Bcell")
+    clr_nTcell[notTcell.flowD@index%in%Bcell.flowD@index,1] <- 1
+    clr_nTcell[clr_nTcell[,1]==0,2] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD19CD11c_NotTcell"), showWarnings=FALSE)
+      write.csv(csv_nTcell, file=gzfile(paste0(x2_dir,"/CD19CD11c_NotTcell/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD19CD11c_NotTcell"), showWarnings=FALSE)
+      write.csv(clr_nTcell, file=gzfile(paste0(y2_dir,"/CD19CD11c_NotTcell/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(notCD161.flowD, notTcell.flowD, csv_nTcell, clr_nTcell)
+    }
     
     
     ## Gating cDC. Plotting CD11b(12)_mhcii(7) ####
@@ -728,22 +762,25 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(cDCCD11b.flowD@filter, lwd=1)
     })
     
-    clr_lymph[id_lymph%in%cDCCD8.flowD@index,"cDCCD8"] <- TRUE
-    clr_lymph[id_lymph%in%cDCCD11b.flowD@index,"cDCCD11b"] <- TRUE
+    clr_lymph[id_lymph%in%cDCCD8.flowD@index,"cDC CD8+"] <- 1
+    clr_lymph[id_lymph%in%cDCCD11b.flowD@index,"cDC CD11b+"] <- 1
+    
     
     csv_cdc <- csv_f[cDC.flowD@index, c(12,7), drop=FALSE]
-    clr_cdc <- matrix(FALSE, nrow=nrow(csv_cdc), ncol=3)
-    colnames(clr_cdc) <- c("cdCCD8","cdCCD11b", "cdc")
-    clr_cdc[,1] <- cDC.flowD@index%in%cDCCD8.flowD@index
-    clr_cdc[,2] <- cDC.flowD@index%in%cDCCD11b.flowD@index
-    clr_cdc[,3] <- !clr_cdc[,1] | !clr_cdc[,2]
-    
-    dir.create(paste0(x2_dir,"/CD11bmhcii"), showWarnings=FALSE)
-    write.csv(csv_cdc, file=gzfile(paste0(x2_dir,"/CD11bmhcii/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD11bmhcii"), showWarnings=FALSE)
-    write.csv(clr_cdc, file=gzfile(paste0(y2_dir,"/CD11bmhcii/",fid,".csv.gz")))
-    
-    rm(cDCCD8.flowD, cDCCD11b.flowD, csv_cdc, clr_cdc)
+    clr_cdc <- matrix(0, nrow=nrow(csv_cdc), ncol=3)
+    colnames(clr_cdc) <- c("cdC CD8+","cdC CD11b+", "cdC")
+    clr_cdc[cDC.flowD@index%in%cDCCD8.flowD@index,1] <- 1
+    clr_cdc[cDC.flowD@index%in%cDCCD11b.flowD@index,2] <- 1
+    clr_cdc[clr_cdc[,1]==0 & clr_cdc[,2]==0,3] <- 1
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD11bmhcii_cDC"), showWarnings=FALSE)
+      write.csv(csv_cdc, file=gzfile(paste0(x2_dir,"/CD11bmhcii_cDC/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD11bmhcii_cDC"), showWarnings=FALSE)
+      write.csv(clr_cdc, file=gzfile(paste0(y2_dir,"/CD11bmhcii_cDC/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(cDCCD8.flowD, cDCCD11b.flowD, csv_cdc, clr_cdc)
+    }
     
     
     ## Gating B-cell. Plotting CD5(8)_CD21(15) for B1/2 B-cells ####
@@ -780,23 +817,26 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(BcellB1.flowD@filter, lwd=1)
     })
     
-    clr_lymph[id_lymph%in%BcellB1.flowD@index,"BcellB1"] <- TRUE
+    clr_lymph[id_lymph%in%BcellB1.flowD@index,"Bcell B1"] <- 1
+    
     
     csv_bcell <- csv_f[Bcell.flowD@index, c(8,15), drop=FALSE]
-    clr_bcell <- matrix(FALSE, nrow=nrow(csv_bcell), ncol=2)
-    colnames(clr_bcell) <- c("BcellB1","BcellB2")
-    clr_bcell[,1] <- Bcell.flowD@index%in%BcellB1.flowD@index
-    clr_bcell[,2] <- Bcell.flowD@index%in%BcellB2.flowD@index
+    clr_bcell <- matrix(0, nrow=nrow(csv_bcell), ncol=2)
+    colnames(clr_bcell) <- c("Bcell B1","Bcell B2")
+    clr_bcell[Bcell.flowD@index%in%BcellB1.flowD@index,1] <- 1
+    clr_bcell[Bcell.flowD@index%in%BcellB2.flowD@index,2] <- 1
     bcell_rows <- rowSums(clr_bcell)>0
     csv_bcell <- csv_bcell[bcell_rows,,drop=FALSE]
     clr_bcell <- clr_bcell[bcell_rows,,drop=FALSE]
-    
-    dir.create(paste0(x2_dir,"/CD5CD21"), showWarnings=FALSE)
-    write.csv(csv_bcell, file=gzfile(paste0(x2_dir,"/CD5CD21/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD5CD21"), showWarnings=FALSE)
-    write.csv(clr_bcell, file=gzfile(paste0(y2_dir,"/CD5CD21/",fid,".csv.gz")))
-    
-    rm(notTcell.flowD, cDC.flowD, csv_bcell, clr_bcell)
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD5CD21_Bcell"), showWarnings=FALSE)
+      write.csv(csv_bcell, file=gzfile(paste0(x2_dir,"/CD5CD21_Bcell/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD5CD21_Bcell"), showWarnings=FALSE)
+      write.csv(clr_bcell, file=gzfile(paste0(y2_dir,"/CD5CD21_Bcell/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(cDC.flowD, csv_bcell, clr_bcell)
+    }
     
     
     ## Gating B2 B-cells. Plotting CD23(11)_CD21(15) ####
@@ -806,7 +846,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     frame.flowD <- flowDensity::flowDensity(
       temp, channels=c(11,15), 
       position=c(F,NA), gates=c(gti["CD23.gate.high"], NA))
-
+    
     temps <- temps2 <- BcellB2.flowD
     temps@flow.frame <- rotate_fcs(BcellB2.flowD@flow.frame,c(11,15), theta=-pi/8)$data
     temps2@flow.frame <- rotate_fcs(BcellB2.flowD@flow.frame,c(11,15), theta=pi/8)$data
@@ -871,34 +911,42 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       lines(MZB.flowD@filter, lwd=1)
     })
     
-    clr_lymph[id_lymph%in%preB.flowD@index,"BcellB2preB"] <- TRUE
-    clr_lymph[id_lymph%in%MZB.flowD@index,"BcellB2MZB"] <- TRUE
-    clr_lymph[id_lymph%in%folB.flowD@index,"BcellB2folB"] <- TRUE
-
-    csv_bcellb2 <- csv_f[BcellB2.flowD@index, c(11,15), drop=FALSE]
-    clr_bcellb2 <- matrix(FALSE, nrow=nrow(csv_bcellb2), ncol=4)
-    colnames(clr_bcellb2) <- c("preB","MZB","folB", "other")
-    clr_bcellb2[,1] <- BcellB2.flowD@index%in%preB.flowD@index
-    clr_bcellb2[,2] <- BcellB2.flowD@index%in%MZB.flowD@index
-    clr_bcellb2[,3] <- BcellB2.flowD@index%in%folB.flowD@index
-    clr_bcellb2[,4] <- BcellB2.flowD@index%in%frame.flowD@index & 
-      !clr_bcellb2[,1] & !clr_bcellb2[,2] & !clr_bcellb2[,3]
+    clr_lymph[id_lymph%in%preB.flowD@index,"Bcell B2 preB"] <- 1
+    clr_lymph[id_lymph%in%MZB.flowD@index,"Bcell B2 MZB"] <- 1
+    clr_lymph[id_lymph%in%folB.flowD@index,"Bcell B2 folB"] <- 1
+    clymph_rows <- rowSums(clr_lymph)>0
+    clr_lymph <- clr_lymph[clymph_rows,]
+    csv_lymph <- csv_lymph[clymph_rows,]
     
+    csv_bcellb2 <- csv_f[BcellB2.flowD@index, c(11,15), drop=FALSE]
+    clr_bcellb2 <- matrix(0, nrow=nrow(csv_bcellb2), ncol=4)
+    colnames(clr_bcellb2) <- c("preB","MZB","folB", "other")
+    clr_bcellb2[BcellB2.flowD@index%in%preB.flowD@index,1] <- 1
+    clr_bcellb2[BcellB2.flowD@index%in%MZB.flowD@index,2] <- 1
+    clr_bcellb2[BcellB2.flowD@index%in%folB.flowD@index,3] <- 1
+    clr_bcellb2[BcellB2.flowD@index%in%frame.flowD@index & 
+                  clr_bcellb2[,1]==0 & clr_bcellb2[,2]==0 & 
+                  clr_bcellb2[,3]==0, 4] <- 1
     bcellb2_rows <- rowSums(clr_bcellb2)>0
     csv_bcellb2 <- csv_bcellb2[bcellb2_rows,,drop=FALSE]
     clr_bcellb2 <- clr_bcellb2[bcellb2_rows,,drop=FALSE]
+
+    if (saveandrm) {
+      dir.create(paste0(x2_dir,"/CD23CD21_B2Bcell"), showWarnings=FALSE)
+      write.csv(csv_bcellb2, file=gzfile(paste0(x2_dir,"/CD23CD21_B2Bcell/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD23CD21_B2Bcell"), showWarnings=FALSE)
+      write.csv(clr_bcellb2, file=gzfile(paste0(y2_dir,"/CD23CD21_B2Bcell/",fid,".csv.gz")), row.names=FALSE)
+      
+      write.csv(csv_lymph, file=gzfile(paste0(x_dir,"/",fid,".csv.gz")), row.names=FALSE)
+      write.csv(clr_lymph, file=gzfile(paste0(y_dir,"/",fid,".csv.gz")), row.names=FALSE)
+      
+      rm(Bcell.flowD, BcellB1.flowD, BcellB2.flowD, MZB.flowD, preB.flowD, folB.flowD, csv_bcellb2, clr_bcellb2)
+    }
     
-    dir.create(paste0(x2_dir,"/CD23CD21"), showWarnings=FALSE)
-    write.csv(csv_bcellb2, file=gzfile(paste0(x2_dir,"/CD23CD21/",fid,".csv.gz")))
-    dir.create(paste0(y2_dir,"/CD23CD21"), showWarnings=FALSE)
-    write.csv(clr_bcellb2, file=gzfile(paste0(y2_dir,"/CD23CD21/",fid,".csv.gz")))
-    
-    rm(Bcell.flowD, BcellB1.flowD, BcellB2.flowD, MZB.flowD, preB.flowD, folB.flowD, csv_bcellb2, clr_bcellb2)
-    
-    dev.off()
+    graphics.off()
   })
   time_output(start1)
-
+  
 }) })
 
-
+time_output(start)

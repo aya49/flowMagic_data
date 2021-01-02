@@ -88,3 +88,59 @@ rotate_matrix <- function(m, theta=NULL) {
   m_new <- m %*% matrix(c(cos(theta), -sin(theta), sin(theta), cos(theta)), 2, 2, byrow=T)
   return(list(data=m_new, theta=theta))
 }
+
+
+
+##Finds markers in the FCS file
+Find.markers <- function(frame,marker.list)
+{
+  #Parameters:
+  #*frame: a flowFrame in the flowSet
+  #**marker.list: A vector of characters
+  #Output:
+  #*channels.ind: a vector of channels numbers in the frame  corresponding to marker.list
+  channels.ind <- unlist(lapply(marker.list, function(x) {
+    ind <- grep(x, frame@parameters@data[,2], ignore.case=T)
+    ind_store <- ind
+    if(length(ind)==0){
+      warning(paste (x, "not found, check markers!"))
+      return(NA)
+    } else {
+      if(length(ind)>1) {
+        cnt <- 0
+        repeat{
+          cnt <- cnt + 1
+          fs.markers<-unlist(lapply(frame@parameters@data[,2], function(x) unlist(strsplit(x," "))[cnt]))
+          ind<-match(x,fs.markers)
+          if (is.na(ind))
+          {
+            fs.markers<-unlist(lapply(frame@parameters@data[,2], function(x) unlist(strsplit(x,"-"))[cnt]))
+            ind<-match(x,fs.markers)
+            if(!is.na(ind))
+              break;
+          } else {
+            break;
+          }
+          if(cnt >= 10) {
+            
+            if (length(ind_store) >= 2){
+              ind <- ind_store[1]
+              warning(paste (x, "found more than one, choosing first. Check markers!"))
+            } else {
+              warning(paste (x, "not found, check markers!"))
+            }
+            break;
+          }
+        }
+      }
+    }
+    return(ind)
+  }))
+  names(channels.ind)<-marker.list
+  #Removing NAs in the channel vector, as not all centres have all of these markers
+  #Note that most centres should have Live/CD4/CD8/CD44/CD62/CD5/CD161/CD25 in their channels
+  ind <- which (is.na(channels.ind))
+  if (length(ind)!=0)
+    channels.ind <- channels.ind[-ind]
+  return(channels.ind)
+}
