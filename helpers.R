@@ -144,3 +144,4 @@ Find.markers <- function(frame,marker.list)
     channels.ind <- channels.ind[-ind]
   return(channels.ind)
 }
+

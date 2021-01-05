@@ -1,12 +1,12 @@
 # date created: 2020-12-12
 # author: alice yue
 # input: immune pregnancy full csv files + clrs
-# output: 2D csv files + clrs
+# output: 2D csv files + clrs + straight thresholds for some gates (for flowLearn)
 
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- 5#parallel::detectCores() - 5
+no_cores <- 10#parallel::detectCores() - 5
 
 
 ## directory ####
@@ -18,7 +18,7 @@ setwd(root)
 source("helpers.R")
 libr(c(
   "furrr", #"rslurm",
-  "flowDensity",
+  "flowDensity", "flowCore",
   "stringr"
 ))
 
@@ -26,9 +26,9 @@ libr(c(
 ## input ####
 # cleaned csv + clr files
 csv_dir1 <- "/mnt/FCS_local3/backup/FCS data/Immune_Clock_Human_Pregnancy/Results/FR-FCM-ZY3Q/LeukocytesRdata"
-# clr_dir1 <- gsub("LeukocytesRdata","clr",csv_dir1)
+clr_dir1 <- gsub("LeukocytesRdata","clr",csv_dir1)
 csv_dir2 <- gsub("3Q","3R",csv_dir1)
-# clr_dir2 <- gsub("3Q","3R",clr_dir1)
+clr_dir2 <- gsub("3Q","3R",clr_dir1)
 gate_file1 <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/gating_projects/pregnancy/gates_original/FR-FCM-ZY3Q.Rdata"
 gate_file2 <- gsub("3Q","3R",gate_file1)
 
@@ -40,6 +40,7 @@ y_dir <- paste0(out_dir,"/nD/y/pregnancy"); dir.create(y_dir, recursive=TRUE, sh
 plot_dir <- paste0(out_dir,"/scatterplots/pregnancy"); dir.create(plot_dir, recursive=TRUE, showWarnings=FALSE)
 x2_dir <- paste0(out_dir,"/2D/x/pregnancy"); dir.create(x2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
 y2_dir <- paste0(out_dir,"/2D/y/pregnancy"); dir.create(y2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
+thres_dir <- paste0(out_dir,"/2D/thresholds/pregnancy"); dir.create(thres_dir, recursive=TRUE, showWarnings=FALSE)
 
 
 ## prep inputs ####
@@ -49,6 +50,13 @@ csv_files <- append(
 csv_files <- csv_files[grepl("Unstim",csv_files)]
 
 gates_tr <- rbind(get(load(gate_file1)), get(load(gate_file2)))
+gates_id <- c(1:11,18,19,25,26,27,29:31,35:37)
+
+png(file=paste0(out_dir, "/pregnancy_gates.png"), width=1000, height=600)
+par(mfrow=c(5,5),mar=(c(5,5,4,2)+0.1))
+for (gates_i in gates_id) 
+  plot(density(gates_tr[,gates_i]), main=gates_i)
+graphics.off()
 
 
 ## gating markers ####
@@ -72,19 +80,29 @@ leaf_cpops <- c(
   "CD8+ memory Tcell","CD8+ naive Tcell",
   "CD4+ Th1 naive Tcell", "CD4+ Th1 memory Tcell")
 
+error_files <- c("Gates_PTLG021_1")
+
 
 ## gating ####
 saveandrm <- TRUE # set to FALSE to check, TRUE to run through everything
 start <- Sys.time()
 
+# files with NA as gates
+# nfile <- c("PTLG003_1","PTLG003_2","PTLG003_BL","PTLG012_2","PTLG012_BL","PTLG028_2","PTLG028_3","PTLG030_2","PTLG030_BL","PTLG031_2")
+
 loop_ind <- loop_ind_f(seq_len(length(csv_files)), no_cores)
 res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
+# for (i in seq_len(length(csv_files))) {
+  # if (!grepl(paste0(nfile,collapse="|"),csv_files[i])) return(NULL)
   
   fid <- stringr::str_extract(csv_files[i], "Gates[_A-Za-z0-9]+.fcs")
+  cat("\n",i,"/",length(csv_files), fid)
   all.gthres <- gates_tr[fid,]
   cat(fid,"\n")
   
   cat("loading... ")
+  
+  # load and prep fcs
   f <- flowCore::read.FCS(gsub(".csv|LeukocytesRdata/","",gsub("Results","data",csv_files[i])))
 
   channels.ind <- sort(Find.markers(f, gating_channels))
@@ -110,9 +128,11 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   start1 <- Sys.time() # time to gate one file
   
   # errored <- FALSE
+  
+  png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
+  par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
   try({
-    png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
-    par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
+    gthres <- list()
     
     singlets.flowD.temp <- flowDensity::flowDensity(
       f, channels=c('Event_length', 'Ir191Di'), 
@@ -186,7 +206,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
 
     flowDensity::plotDens(
       leukocytes.flowD, c(channels.ind["CD66"],channels.ind["CD45"]), 
-      main="*2D* CD66CD45_leukocyte: Leukocytes [leaf: granulocyte]", cex.lab=2, cex.axis=2, cex.main=2)
+      main="*2D* CD66CD45_leukocyte: \nLeukocytes [leaf: granulocyte]", cex.lab=2, cex.axis=2, cex.main=2)
     lines(mononuclear.flowD@filter, lwd=2)
     lines(granulocytes.flowD@filter, lwd=2)
 
@@ -230,6 +250,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     lines(Bcells.flowD@filter, lwd=2)
     lines(Tcells.flowD@filter, lwd=2)
     
+    gthres[["CD3CD19_mononuclear"]] <- all.gthres[8:9]
+    names(gthres[["CD3CD19_mononuclear"]]) <- c("CD3","CD19")
+    
     clr_leuk[id_leuk%in%Bcells.flowD@index,"Bcell"] <- 1
     
     csv_mono <- csv_f[mononuclear.flowD@index, c("CD3","CD19"), drop=FALSE]
@@ -251,15 +274,22 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     
 
     ## gating NKLinNeg > NK, lin-, other ####
-    NKcells.flowD <- flowDensity::flowDensity(NK.LinNeg.flowD, channels=c('Lu175Di', 'Pr141Di'), position=c(T, T), gates=c(all.gthres[10], all.gthres[11]))
-    LinNeg.flowD <- flowDensity::flowDensity(NK.LinNeg.flowD, channels=c('Lu175Di', 'Pr141Di'), position=c(T, F), gates=c(all.gthres[10], all.gthres[11]))
+    NKcells.flowD <- flowDensity::flowDensity(
+      NK.LinNeg.flowD, channels=c('Lu175Di', 'Pr141Di'), 
+      position=c(T, T), gates=c(all.gthres[10], all.gthres[11]))
+    LinNeg.flowD <- flowDensity::flowDensity(
+      NK.LinNeg.flowD, channels=c('Lu175Di', 'Pr141Di'), 
+      position=c(T, F), gates=c(all.gthres[10], all.gthres[11]))
 
     flowDensity::plotDens(
       NK.LinNeg.flowD, c(channels.ind["CD14"],channels.ind["CD7"]), 
       main="*2D* CD14CD7: NK lin- [leaf: NK]", cex.lab=2, cex.axis=2, cex.main=2)
     lines(NKcells.flowD@filter, lwd=2)
     lines(LinNeg.flowD@filter, lwd=2)
-
+    
+    gthres[["CD14CD7_NKLinNeg"]] <- all.gthres[10]
+    names(gthres[["CD14CD7_NKLinNeg"]]) <- "CD7"
+    
     clr_leuk[id_leuk%in%NKcells.flowD@index,"NK"] <- 1
     
     csv_nklin <- csv_f[NK.LinNeg.flowD@index, c("CD14","CD7"), drop=FALSE]
@@ -341,6 +371,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     lines(ncMC.flowD@filter, lwd=2)
     lines(intMC.flowD@filter, lwd=2)
     lines(NOT.MC.flowD@filter, lwd=2)
+    
+    gthres[["CD14CD16_lin-"]] <- all.gthres[18:19]
+    names(gthres[["CD14CD16_lin-"]]) <- c("CD14","CD16")
     
     clr_leuk[id_leuk%in%ncMC.flowD@index,"ncMC"] <- 1
     clr_leuk[id_leuk%in%intMC.flowD@index,"intMC"] <- 1
@@ -468,6 +501,12 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     lines(cd8.Tcells.flowD@filter, lwd=2)
     lines(NOT.cd4.cd8.Tcells.flowD@filter, lwd=2)
     
+    gthres[["CD4CD8_Tcell"]] <- all.gthres[25:26]
+    names(gthres[["CD4CD8_Tcell"]]) <- c("CD4","CD8")
+    if (is.na(all.gthres[25])) 
+      gthres[["CD4CD8_Tcell"]][1] <- 
+        min(cd4.Tcells.flowD@flow.frame@exprs[!is.na(cd4.Tcells.flowD@flow.frame@exprs[,"Nd145Di"]),"Nd145Di"])
+    
     # clr_leuk[id_leuk%in%cd4.Tcells.flowD@index,"CD4+ Tcell"] <- 1
     # clr_leuk[id_leuk%in%cd8.Tcells.flowD@index,"CD8+ Tcell"] <- 1
     # clr_leuk[id_leuk%in%NOT.cd4.cd8.Tcells.flowD@index,"CD4-CD8- Tcell"] <- 1
@@ -505,6 +544,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       xlim=c(1,10), ylim=c(1,10))
     lines(cd4.T.Naive.flowD@filter, lwd=2)
     lines(cd4.T.Memory.flowD@filter, lwd=2)
+    
+    gthres[["CD4CD45RA_Tcell"]] <- all.gthres[27]
+    names(gthres[["CD4CD45RA_Tcell"]]) <- "CD45RA"
     
     clr_leuk[id_leuk%in%cd4.T.Memory.flowD@index,"CD4+ memory Tcell"] <- 1
     
@@ -577,9 +619,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     
     flowDensity::plotDens(
       cd4.T.Naive.flowD, c(channels.ind["FoxP3"],channels.ind["CD25"]), 
-      main="*2D* FoxP3CD25_CD4Tcell: CD4+ naive Tcell [leaf: Tregs, other]", cex.lab=2, cex.axis=2, cex.main=2)
+      main="*2D* FoxP3CD25_CD4Tcell: \nCD4+ naive Tcell [leaf: Tregs, other]", cex.lab=2, cex.axis=2, cex.main=2)
     lines(Tregs.Naive.flowD@filter, lwd=2)
-    
+
     clr_leuk[id_leuk%in%Tregs.Naive.flowD@index,"Tregs naive Tcell"] <- 1
     clr_leuk[id_leuk%in%cd4.T.Naive.flowD@index &
                !id_leuk%in%Tregs.Naive.flowD@index,"CD4+ naive Tcell other"] <- 1
@@ -607,7 +649,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
 
     flowDensity::plotDens(
       NOT.cd4.cd8.Tcells.flowD, c(channels.ind["TCRgd"],channels.ind["CD3"]), 
-      main="*2D* TCRgdCD3_CD4Tcell: CD4-CD8- Tcell [leaf: gamma-delta Tcell]", cex.lab=2, cex.axis=2, cex.main=2)
+      main="*2D* TCRgdCD3_CD4Tcell: \nCD4-CD8- Tcell [leaf: gamma-delta Tcell]", cex.lab=2, cex.axis=2, cex.main=2)
     lines(gammaDelta.Tcells.flowD@filter, lwd=2)
     
     clr_leuk[id_leuk%in%gammaDelta.Tcells.flowD@index,"gamma-delta Tcell"] <- 1
@@ -640,10 +682,13 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     
     flowDensity::plotDens(
       cd8.Tcells.flowD, c(channels.ind["CD8"],channels.ind["CD45RA"]), 
-      main="*2D* CD8CD45RA_notCD4CD8Tcell: CD8+ Tcell [leaf: naive, memory]", cex.lab=2, cex.axis=2, cex.main=2)
+      main="*2D* CD8CD45RA_notCD4CD8Tcell: \nCD8+ Tcell [leaf: naive, memory]", cex.lab=2, cex.axis=2, cex.main=2)
     lines(cd8.T.Naive.flowD@filter, lwd=2)
     lines(cd8.T.Memory.flowD@filter, lwd=2)
 
+    gthres[["CD8CD45RA_notCD4CD8Tcell"]] <- all.gthres[36]
+    names(gthres[["CD8CD45RA_notCD4CD8Tcell"]]) <- "CD45RA"
+    
     clr_leuk[id_leuk%in%cd8.T.Naive.flowD@index,"CD8+ naive Tcell"] <- 1
     clr_leuk[id_leuk%in%cd8.T.Memory.flowD@index,"CD8+ memory Tcell"] <- 1
     
@@ -677,6 +722,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     lines(cd25.cd8.T.Naive.flowD@filter, lwd=2)
     lines(cd25.cd8.T.Memory.flowD@filter, lwd=2)
     
+    gthres[["TbetCD45RA2_CD8Tcell"]] <- all.gthres[37:36]
+    names(gthres[["TbetCD45RA2_CD8Tcell"]]) <- c("Tbet","CD45RA")
+
     # clr_leuk[id_leuk%in%cd25.cd8.T.Naive.flowD@index,"CD25+CD8+ naive Tcell"] <- 1
     # clr_leuk[id_leuk%in%cd25.cd8.T.Memory.flowD@index,"CD25+CD8+ memory Tcell"] <- 1
     # clr_leuk[id_leuk%in%cd8.Tcells.flowD &
@@ -702,12 +750,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
       
       write.csv(csv_leuk, file=gzfile(paste0(x_dir,"/",fid,".csv.gz")), row.names=FALSE)
       write.csv(clr_leuk, file=gzfile(paste0(y_dir,"/",fid,".csv.gz")), row.names=FALSE)
-
+      
       rm(cd8.Tcells.flowD, cd25.cd8.T.Naive.flowD, cd25.cd8.T.Memory.flowD, csv_Tcd82, clr_Tcd82, csv_leuk, clr_leuk)
     }
     
-    graphics.off()
+    
+    save(gthres, file=paste0(thres_dir,"/",fid,".Rdata"))
+    if (any(is.na(unlist(gthres)))) 
+      cat("\n",fid,": ",unlist(gthres)[is.na(unlist(gthres))])
+    
   })
+  graphics.off()
   time_output(start1)
 
 }) })

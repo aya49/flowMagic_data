@@ -1,7 +1,7 @@
 # date created: 2020-12-12
 # author: alice yue
 # input: IMPC Sanger P2 data set's raw FCS files + their gates
-# output: cleaned FCS csv files (cell x marker) + their clr (cell x cell pop)
+# output: cleaned FCS csv files (cell x marker) + their clr (cell x cell pop) + straight thresholds for some gates (for flowLearn)
 
 
 ## parallelization ####
@@ -18,7 +18,7 @@ setwd(root)
 source("helpers.R")
 libr(c(
   "furrr", #"rslurm",
-  "flowDensity",
+  "flowDensity", "flowCore",
   "stringr", 
   "pracma", "quantmod",
   "colorspace"
@@ -51,9 +51,10 @@ fcs_dir <- "/mnt/FCS_local/IMPC/IMPC_2016_Pilot_Data/KCL_WTSI_Sanger"
 out_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data"
 x_dir <- paste0(out_dir,"/nD/x/sangerP2"); dir.create(x_dir, recursive=TRUE, showWarnings=FALSE)
 y_dir <- paste0(out_dir,"/nD/y/sangerP2"); dir.create(y_dir, recursive=TRUE, showWarnings=FALSE)
-plot_dir <- paste0(out_dir,"/nD/scatterplots/sangerP2"); dir.create(plot_dir, recursive=TRUE, showWarnings=FALSE)
+plot_dir <- paste0(out_dir,"/scatterplots/sangerP2"); dir.create(plot_dir, recursive=TRUE, showWarnings=FALSE)
 x2_dir <- paste0(out_dir,"/2D/x/sangerP2"); dir.create(x2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
 y2_dir <- paste0(out_dir,"/2D/y/sangerP2"); dir.create(y2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
+thres_dir <- paste0(out_dir,"/2D/thresholds/sangerP2"); dir.create(thres_dir, recursive=TRUE, showWarnings=FALSE)
 
 
 ## gating names ###
@@ -144,6 +145,8 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
   
   # errored <- FALSE
   try({
+    gthres <- list()
+    
     graphics.off()
     png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
     par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
@@ -209,7 +212,7 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     colnames(csv_f) <- markers
     csv_lymph <- csv_f[id_lymph,,drop=FALSE]
     
-    clr_lymph <- matrix(0, nrow=nrow(csv_lymph), ncol=20)
+    clr_lymph <- matrix(0, nrow=nrow(csv_lymph), ncol=length(leaf_cpops))
     colnames(clr_lymph) <- leaf_cpops
     
     
@@ -250,7 +253,7 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     
     suppressWarnings({
       flowDensity::plotDens(
-        lymph1.flowD@flow.frame, channels=c(8,9), main="*2D* CD5CD11b: Lymphocytes-CD11b+ [leaf: granulocyte]", 
+        lymph1.flowD@flow.frame, channels=c(8,9), main="*2D* CD5CD11b: \nLymphocytes-CD11b+ [leaf: granulocyte]", 
         xlab="08. CD5", ylab="09. Ly6C", 
         xlim=c(0, 4.5), ylim=c(0, 4.5), devn=FALSE); 
       abline(v=gti["CD5.gate"], lwd=2); 
@@ -268,6 +271,9 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       abline(h=gti["CD11b.gate.high"], lwd=2)
     })
     
+    gthres[["CD5CD11b_lymphocyte"]] <- gti[c("CD5.gate","Ly6C.gate1")]
+    names(gthres[["CD5CD11b_lymphocyte"]]) <- c("CD5","Ly6C")
+
     clr_lymph[id_lymph%in%gran.flowD@index,"granulocyte"] <- 1
     
     
@@ -306,7 +312,7 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     
     suppressWarnings({
       flowDensity::plotDens(
-        notGran.flowD@flow.frame, channels=c(9,12), main="*2D* Ly6cCD11b: Not Granulocytes [leaf: monocyte]", 
+        notGran.flowD@flow.frame, channels=c(9,12), main="*2D* Ly6cCD11b: \nNot Granulocytes [leaf: monocyte]", 
         xlab="09. Ly6c", ylab="12. CD11b", 
         xlim=c(0, 4.5), ylim=c(0, 4.5), devn=FALSE); 
       abline(v=gti["Ly6C.gate"], lwd=2); 
@@ -314,6 +320,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       abline(h=gti["CD11b.gate.high"], lwd=2)
       lines(mon.flowD@filter, lwd=1) #; points(notGran.flowD@flow.frame@exprs[notMon.flowD@index,c(9,12)], col=2, cex=0.1)
     })
+    
+    gthres[["Ly6cCD11b_NotGranulocyte"]] <- gti[c("Ly6C.gate","CD11b.gate")]
+    names(gthres[["Ly6cCD11b_NotGranulocyte"]]) <- c("Ly6C","CD11b")
+    
     
     clr_lymph[id_lymph%in%mon.flowD@index,"monocyte"] <- 1
     
@@ -353,7 +363,7 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     
     suppressWarnings({
       flowDensity::plotDens(
-        notMon.flowD@flow.frame, channels=c(12,5), main="*2D* CD11bSSCh: Not Monocytes [leaf: eosinophil]", 
+        notMon.flowD@flow.frame, channels=c(12,5), main="*2D* CD11bSSCh: \nNot Monocytes [leaf: eosinophil]", 
         xlab="12. CD11b", ylab="05. SSC-H", 
         xlim=c(0, 4.5), ylim=c(0, 200000), devn=FALSE); 
       abline(v=gti["CD11b.gate"], lwd=2); 
@@ -362,6 +372,9 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       abline(h=gti["ssc.h.gate.high"], lwd=2)
       lines(eos.flowD@filter, lwd=1) #; points(notMon.flowD@flow.frame@exprs[notEos.flowD@index,c(12,5)], col=2, cex=0.1)
     })
+    
+    gthres[["CD11bSSCh_NotMonocyte"]] <- gti[c("CD11b.gate","ssc.h.gate")]
+    names(gthres[["CD11bSSCh_NotMonocyte"]]) <- c("CD11b","SSCh")
     
     clr_lymph[id_lymph%in%eos.flowD@index,"eosinophil"] <- 1
     
@@ -408,6 +421,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       abline(h=gti["CD19.gate"], lwd=2)
       lines(CD161.flowD@filter, lwd=1) #; points(notEos.flowD@flow.frame@exprs[CD161.flowD@index,c(13,16)], col=2, cex=0.1)
     })
+    
+    gthres[["CD161CD19_NotEosinophils"]] <- gti[c("CD161.gate","CD19.gate")]
+    names(gthres[["CD161CD19_NotEosinophils"]]) <- c("CD161","CD19")
+    
     
     csv_noteos <- csv_f[notEos.flowD@index, c(13,16), drop=FALSE]
     clr_noteos <- matrix(0, nrow=nrow(csv_noteos), ncol=2)
@@ -516,6 +533,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       lines(NKmatNotLy6C.flowD@filter, lwd=1)
     })
     
+    gthres[["CD11bLy6c_NK"]] <- gti[c("Ly6C.gate2","CD11b.gate2")]
+    names(gthres[["CD11bLy6c_NK"]]) <- c("Ly6C","CD11b")
+    
+    
     clr_lymph[id_lymph%in%NKimmatLy6C.flowD@index,"NK immature Ly6c+"] <- 1
     clr_lymph[id_lymph%in%NKmatLy6C.flowD@index,"NK mature Ly6c+"] <- 1
     clr_lymph[id_lymph%in%NKimmatNotLy6C.flowD@index,"NK immature Ly6c-"] <- 1
@@ -571,6 +592,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       lines(NKTCD11bLy6C.flowD@filter, lwd=1)
       lines(NKTnotCD11bNotLy6C.flowD@filter, lwd=1)
     })
+    
+    gthres[["CD11bLy6cT_NKTcell"]] <- gti[c("Ly6C.gate3","CD11b.gate2")]
+    names(gthres[["CD11bLy6cT_NKTcell"]]) <- c("Ly6C","CD11b")
+    
     
     clr_lymph[id_lymph%in%NKTnotCD11bLy6C.flowD@index,"NKT CD11b-Ly6C+"] <- 1
     clr_lymph[id_lymph%in%NKTCD11bLy6C.flowD@index,"NKT CD11b+Ly6C+"] <- 1
@@ -944,6 +969,9 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     }
     
     graphics.off()
+    
+    save(gthres, file=paste0(thres_dir,"/",fid,".Rdata"))
+    
   })
   time_output(start1)
   
