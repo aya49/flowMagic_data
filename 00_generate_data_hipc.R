@@ -6,7 +6,8 @@
 
 ## parallelization ####
 # future::plan(future::multiprocess)
-# no_cores <- 5#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
+doMC::registerDoMC(no_cores)
 
 
 ## directory ####
@@ -28,8 +29,8 @@ libr(c(
 ## input ####
 
 # results from gating
-#gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/B cells Gambia"
-gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/Myeloid Gambia"
+gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/B cells Gambia"
+#gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/Myeloid Gambia"
 
 panel <- "myeloid"
 if (grepl("B cells",gs_dir))
@@ -111,177 +112,182 @@ for (ii in seq_len(length(gs_folders))) {
   
   # fcs file names in the gating set; we'll upload the cleaned fcs file to be safe
   fids <- rownames(flowWorkspace::pData(gs))
+  gsl <- lapply(seq_len(length(gs)), function(x) gs[[x]])
+  rm(gs)
   
-  loop_ind <- loop_ind_f(seq_len(length(gs)), no_cores)
-  # res <- furrr::future_map(loop_ind, function(j) { for (i in j) {
-  for (i in seq_len(length(gs))) {
-    # if (fids[i]%in%error_files) next
-    # if (file.exists((paste0(plot_dir, "/", fids[i], ".png"))))
-    #   if (file.size(paste0(plot_dir, "/", fids[i], ".png"))>500000) next
-    cat("\n- ",i, fids[i])
-    fcs <- flowCore::read.FCS(fcs_files[grepl(fids[i], fcs_files)])
-
-    # can we directly use this clr (T/F cell x cell population matrix)?
-    ir <- flowWorkspace::gh_pop_get_indices(gs[[i]], rootc)
-    il <- lapply(leaves, function(leaf) flowWorkspace::gh_pop_get_indices(gs[[i]], leaf))
-    il <- Reduce(cbind, il)
-    colnames(il) <- leaves_short
-    other <- which(ir)%in%which(rowSums(il)==0)
-    ilm <- cbind(il[ir,], other)
-    
-    if (panel=="bcell") {
-      ilm_ <- ilm[,!colnames(ilm)%in%c(
-        "Plasmablasts","plasma cells","Blasts",
-        "IGD-IGM- B cells","IGD-IGM+ B cells","IGD+IGM- B cells","IGD+IGM+ B cells",
-        "Immature transition B cells")]
-    } else {
-      ilm_ <- ilm[,!colnames(ilm)%in%"CD56+CD16+ NKT cells"]
-    }
-    rowi <- rowSums(ilm_)==1
-    ilm_ <- ilm_[rowi,]
-    ilm_[which(ilm_)] <- 1
-    
-    clm <- fcs@exprs[ir,!markers%in%"Time" & !markers%in%"viability dye"]
-    clm_ <- clm[rowi,]
-    
-    colnames(clm_) <- markers[colnames(clm_)]
-    
-    write.csv(clm_, file=gzfile(paste0(x_dir,"/",fids[i],".csv.gz")), row.names=FALSE)
-    write.csv(ilm_, file=gzfile(paste0(y_dir,"/",fids[i],".csv.gz")), row.names=FALSE)
-    
-    rm(clm,clm_,ilm,ilm_)
-    
-    ## Gating #####
-    gthres <- list()
-    
-    png(file=paste0(plot_dir, "/", fids[i], ".png"), width=2200, height=1800)
-    par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
-    
-    # for each nonleaf cell population
-    for (prnt in parents_short) {
-      prnt_id <- which(flowWorkspace::gh_pop_get_indices(gs[[i]], prnt))
-      if (length(prnt_id)==0) next
+  loop_ind <- loop_ind_f(seq_len(length(gsl)), no_cores)
+  res <- plyr::llply(loop_ind, function(j) {
+    for (i in j) {
+      # for (i in seq_len(length(gsl))) {
+      # if (fids[i]%in%error_files) next
+      # if (file.exists((paste0(plot_dir, "/", fids[i], ".png"))))
+      #   if (file.size(paste0(plot_dir, "/", fids[i], ".png"))>500000) next
+      cat("\n- ",i, fids[i])
+      # gh <- gsl[[i]]
+      fcs <- flowCore::read.FCS(fcs_files[grepl(fids[i], fcs_files)])
       
-      # get each of its child cell population
-      chlds <- flowWorkspace::gs_pop_get_children(gs[[i]], prnt)
-      chlds_short <- sapply(stringr::str_split(chlds, "/"), function(x) x[length(x)])
-      chlds_gates <- lapply(chlds, function(x) flowWorkspace::gh_pop_get_gate(gs[[i]], x))
-      names(chlds_gates) <- names(chlds)
+      # can we directly use this clr (T/F cell x cell population matrix)?
+      ir <- flowWorkspace::gh_pop_get_indices(gsl[[i]], rootc)
+      il <- lapply(leaves, function(leaf) flowWorkspace::gh_pop_get_indices(gsl[[i]], leaf))
+      il <- do.call(cbind, il)
+      colnames(il) <- leaves_short
+      other <- which(ir)%in%which(rowSums(il)==0)
+      ilm <- cbind(il[ir,,drop=FALSE], other)
       
-      # make fcs for plotting
-      fcs_temp <- fcs
-      fcs_temp@exprs[!seq_len(nrow(fcs_temp@exprs))%in%prnt_id,] <- NA
-
-      # get the marker pairs on which each of the children were gated on
-      dims <- matrix(sapply(chlds_gates, function(x) names(x@parameters)), nrow=2)
-      dims <- t(dims)
-      dims_id <- apply(dims, 1, function(x) paste0(x, collapse="_"))
+      if (panel=="bcell") {
+        ilm_ <- ilm[,!colnames(ilm)%in%c(
+          "Plasmablasts","plasma cells","Blasts",
+          "IGD-IGM- B cells","IGD-IGM+ B cells","IGD+IGM- B cells","IGD+IGM+ B cells",
+          "Immature transition B cells")]
+      } else {
+        ilm_ <- ilm[,!colnames(ilm)%in%"CD56+CD16+ NKT cells"]
+      }
+      rowi <- rowSums(ilm_)==1
+      ilm_ <- ilm_[rowi,]
+      ilm_[which(ilm_)] <- 1
       
-      # for each marker pair, get csv and clr; 
-      for (dim_id in unique(dims_id)) {
-        plt_id <- which(dims_id==dim_id)
+      clm <- fcs@exprs[ir,!markers%in%"Time" & !markers%in%"viability dye"]
+      clm_ <- clm[rowi,]
+      
+      colnames(clm_) <- markers[colnames(clm_)]
+      
+      write.table(clm_, file=gzfile(paste0(x_dir,"/",fids[i],".csv.gz")), sep="," ,row.names=FALSE)
+      write.table(ilm_, file=gzfile(paste0(y_dir,"/",fids[i],".csv.gz")), sep=",", row.names=FALSE)
+      
+      rm(clm,clm_,ilm,ilm_)
+      
+      ## Gating #####
+      gthres <- list()
+      
+      png(file=paste0(plot_dir, "/", fids[i], ".png"), width=2200, height=1800)
+      par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
+      
+      # for each nonleaf cell population
+      for (prnt in parents_short) {
+        prnt_id <- which(flowWorkspace::gh_pop_get_indices(gsl[[i]], prnt))
+        if (length(prnt_id)==0) next
         
-        mrk2 <- dims[plt_id[1],]
-        gates <- chlds_gates[plt_id] # for plot
+        # get each of its child cell population
+        chlds <- flowWorkspace::gs_pop_get_children(gsl[[i]], prnt)
+        chlds_short <- sapply(stringr::str_split(chlds, "/"), function(x) x[length(x)])
+        chlds_gates <- lapply(chlds, function(x) flowWorkspace::gh_pop_get_gate(gsl[[i]], x))
+        names(chlds_gates) <- names(chlds)
         
-        gate_id <- paste0(paste0(markers[mrk2],collapse=""),"_",gsub("[ ]","",prnt))
+        # make fcs for plotting
+        fcs_temp <- fcs
+        fcs_temp@exprs[!seq_len(nrow(fcs_temp@exprs))%in%prnt_id,] <- NA
         
-        csv_prnt <- fcs@exprs[prnt_id,mrk2,drop=FALSE]
-        colnames(csv_prnt) <- markers[mrk2]
-        clr_chld <- sapply(plt_id, function(x) 
-          prnt_id %in% which(flowWorkspace::gh_pop_get_indices(gs[[i]], chlds[x])) )
-        if (is.na(dim(clr_chld))) clr_chld <- matrix(clr_chld, ncol=1)
-        colnames(clr_chld) <- chlds_short[plt_id]
+        # get the marker pairs on which each of the children were gated on
+        dims <- matrix(sapply(chlds_gates, function(x) names(x@parameters)), nrow=2)
+        dims <- t(dims)
+        dims_id <- apply(dims, 1, function(x) paste0(x, collapse="_"))
         
-        no_cp <- rowSums(clr_chld)
-        if (sum(no_cp==0)>0) {
-          if (sum(no_cp==0)<50) {
-            c_inds <- no_cp!=0
-            csv_prnt <- csv_prnt[c_inds,,drop=FALSE]
-            clr_chld <- clr_chld[c_inds,,drop=FALSE]
-          } else {
-            clr_chld <- cbind(clr_chld, no_cp==0)
-            colnames(clr_chld)[ncol(clr_chld)] <- "other"
+        # for each marker pair, get csv and clr; 
+        for (dim_id in unique(dims_id)) {
+          plt_id <- which(dims_id==dim_id)
+          
+          mrk2 <- dims[plt_id[1],]
+          gates <- chlds_gates[plt_id] # for plot
+          
+          gate_id <- paste0(paste0(markers[mrk2],collapse=""),"_",gsub("[ ]","",prnt))
+          
+          csv_prnt <- fcs@exprs[prnt_id,mrk2,drop=FALSE]
+          colnames(csv_prnt) <- markers[mrk2]
+          clr_chld <- sapply(plt_id, function(x) 
+            prnt_id %in% which(flowWorkspace::gh_pop_get_indices(gsl[[i]], chlds[x])) )
+          if (is.na(dim(clr_chld))) clr_chld <- matrix(clr_chld, ncol=1)
+          colnames(clr_chld) <- chlds_short[plt_id]
+          
+          no_cp <- rowSums(clr_chld)
+          if (sum(no_cp==0)>0) {
+            if (sum(no_cp==0)<50) {
+              c_inds <- no_cp!=0
+              csv_prnt <- csv_prnt[c_inds,,drop=FALSE]
+              clr_chld <- clr_chld[c_inds,,drop=FALSE]
+            } else {
+              clr_chld <- cbind(clr_chld, no_cp==0)
+              colnames(clr_chld)[ncol(clr_chld)] <- "other"
+            }
           }
-        }
-        
-        # handle some errors: don't do IGM
-        if (any(colnames(clr_chld)%in%"IGM"))
-          clr_chld <- clr_chld[,!colnames(clr_chld)%in%"IGM",drop=FALSE]
-        
-        # handle some errors: convex hulled cell populations overlap i.e. "CD45+CD66-_NonGranulocytes"
-        if (sum(rowSums(clr_chld)>1)>0) { #gate_id=="CD45+CD66-_NonGranulocytes") {
-          for (j in which(rowSums(clr_chld)>1)) {
-            a <- which(clr_chld[j,])[1]
-            clr_chld[j,] <- rep(FALSE, ncol(clr_chld))
-            clr_chld[j,a] <- TRUE
+          
+          # handle some errors: don't do IGM
+          if (any(colnames(clr_chld)%in%"IGM"))
+            clr_chld <- clr_chld[,!colnames(clr_chld)%in%"IGM",drop=FALSE]
+          
+          # handle some errors: convex hulled cell populations overlap i.e. "CD45+CD66-_NonGranulocytes"
+          if (sum(rowSums(clr_chld)>1)>0) { #gate_id=="CD45+CD66-_NonGranulocytes") {
+            for (j in which(rowSums(clr_chld)>1)) {
+              a <- which(clr_chld[j,])[1]
+              clr_chld[j,] <- rep(FALSE, ncol(clr_chld))
+              clr_chld[j,a] <- TRUE
+            }
           }
-        }
-         
-        if (sum(rowSums(clr_chld)>1)>0) print(paste0(prnt,": ",dim_id))
-        # while (sum(no_cp>1)>0) {
-        #   a <- clr_chld[no_cp>1,]
-        #   a <- a[,colSums(a)>0]
-        #   suscol <- colnames(a)[colSums(a[a[,1],])>0] # suspicious cols haha
-        #   supersuscol <- suscol[which.max(colSums(clr_chld[,suscol]))]
-        #   clr_chld[no_cp>1,supersuscol] <- FALSE
-        #   no_cp <- rowSums(clr_chld)
-        # }
-        
-        flowDensity::plotDens(
-          fcs_temp, mrk2, 
-          main=paste0("*2D* ",gate_id,"\n",paste0(colnames(clr_chld), collapse=", ")), cex.lab=2, cex.axis=2, cex.main=2)
-        for (gate in gates) lines(gate@boundaries, lwd=2)
-        
-        clr_chld <- clr_chld[,colSums(clr_chld)>0,drop=FALSE]
-        if (ncol(clr_chld)==1) next
-        
-        # get thresholds
-        if (gate_id%in%c(
-          # myeloid
-          "CD14CD16_HLADR+CD14+Monocytes",
-          "CD123CD11c_HLADR+CD14-", "CD3SSC-A_HLADR-CD14-", 
-          "CD11bCD16_Granulocytes",
-          # "CD64CD11b_CD11b+CD16+MatureNeutrophils",
-          # b cell
-          "CD66CD14_Livecells", "CD19CD20_CD19+Bcells", 
-          "IgDIgM_CD19+Bcells", "CD10CD27_CD19+CD20+"
-        )) {
-          for (mrk in mrk2) {
-            ranges <- apply(clr_chld, 2, function(x) range(csv_prnt[x,markers[mrk]]))
-            ranges <- ranges[,order(ranges[1,])]
-            gth <- c()
-            for (scol in seq_len(ncol(ranges)-1)) {
-              if (any(ranges[1,]>ranges[2,scol])) {
-                gth <- append(gth, min(ranges[1,ranges[1,]>ranges[2,scol]]))
+          
+          if (sum(rowSums(clr_chld)>1)>0) print(paste0(prnt,": ",dim_id))
+          # while (sum(no_cp>1)>0) {
+          #   a <- clr_chld[no_cp>1,]
+          #   a <- a[,colSums(a)>0]
+          #   suscol <- colnames(a)[colSums(a[a[,1],])>0] # suspicious cols haha
+          #   supersuscol <- suscol[which.max(colSums(clr_chld[,suscol]))]
+          #   clr_chld[no_cp>1,supersuscol] <- FALSE
+          #   no_cp <- rowSums(clr_chld)
+          # }
+          
+          flowDensity::plotDens(
+            fcs_temp, mrk2, 
+            main=paste0("*2D* ",gate_id,"\n",paste0(colnames(clr_chld), collapse=", ")), cex.lab=2, cex.axis=2, cex.main=2)
+          for (gate in gates) lines(gate@boundaries, lwd=2)
+          
+          clr_chld <- clr_chld[,colSums(clr_chld)>0,drop=FALSE]
+          if (ncol(clr_chld)==1) next
+          
+          # get thresholds
+          if (gate_id%in%c(
+            # myeloid
+            "CD14CD16_HLADR+CD14+Monocytes",
+            "CD123CD11c_HLADR+CD14-", "CD3SSC-A_HLADR-CD14-", 
+            "CD11bCD16_Granulocytes",
+            # "CD64CD11b_CD11b+CD16+MatureNeutrophils",
+            # b cell
+            "CD66CD14_Livecells", "CD19CD20_CD19+Bcells", 
+            "IgDIgM_CD19+Bcells", "CD10CD27_CD19+CD20+"
+          )) {
+            for (mrk in mrk2) {
+              ranges <- apply(clr_chld, 2, function(x) range(csv_prnt[x,markers[mrk]]))
+              ranges <- ranges[,order(ranges[1,])]
+              gth <- c()
+              for (scol in seq_len(ncol(ranges)-1)) {
+                if (any(ranges[1,]>ranges[2,scol])) {
+                  gth <- append(gth, min(ranges[1,ranges[1,]>ranges[2,scol]]))
+                }
+              }
+              gth <- unique(gth)
+              if (length(gth)>0) {
+                gthres[[gate_id]] <- append(gthres[[gate_id]], gth[1])
+                names(gthres[[gate_id]])[length(gthres[[gate_id]])] <- markers[mrk]
               }
             }
-            gth <- unique(gth)
-            if (length(gth)>0) {
-              gthres[[gate_id]] <- append(gthres[[gate_id]], gth[1])
-              names(gthres[[gate_id]])[length(gthres[[gate_id]])] <- markers[mrk]
-            }
           }
+          
+          clr_chld[which(clr_chld)] <- 1
+          
+          # save
+          dir.create(paste0(x2_dir,"/",gate_id), showWarnings=FALSE)
+          write.csv(csv_prnt, file=gzfile(paste0(x2_dir,"/",gate_id,"/",fids[i],".csv.gz")), row.names=FALSE)
+          dir.create(paste0(y2_dir,"/",gate_id), showWarnings=FALSE)
+          write.csv(clr_chld, file=gzfile(paste0(y2_dir,"/",gate_id,"/",fids[i],".csv.gz")), row.names=FALSE)
         }
-        
-        clr_chld[which(clr_chld)] <- 1
-        
-        # save
-        dir.create(paste0(x2_dir,"/",gate_id), showWarnings=FALSE)
-        write.csv(csv_prnt, file=gzfile(paste0(x2_dir,"/",gate_id,"/",fids[i],".csv.gz")), row.names=FALSE)
-        dir.create(paste0(y2_dir,"/",gate_id), showWarnings=FALSE)
-        write.csv(clr_chld, file=gzfile(paste0(y2_dir,"/",gate_id,"/",fids[i],".csv.gz")), row.names=FALSE)
       }
-    }
-    graphics.off()
-    
-    gthres <- gthres[!names(gthres)%in%"CD16CD56_CD3-"]
-    save(gthres, file=paste0(thres_dir,"/",fids[i],".Rdata"))
-    
-    rm(fcs)
-  }#) })
+      graphics.off()
+      
+      gthres <- gthres[!names(gthres)%in%"CD16CD56_CD3-"]
+      save(gthres, file=paste0(thres_dir,"/",fids[i],".Rdata"))
+      
+      rm(fcs)
+    } 
+  }, .parallel=TRUE)
   time_output(start1)
-  rm(gs)
-}#) 
+  rm(gsl)
+}
 
 time_output(start)

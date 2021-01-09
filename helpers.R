@@ -1,3 +1,11 @@
+## input: full path
+## output: file name
+file_name <- function(full_path) {
+  a <- strsplit(full_path,"/")
+  return(a[[1]][length(a[[1]])])
+}
+
+
 #' @title Formats time into string.
 #' @description Formats time into a string HH:MM:SS given time zone.
 #' @param time A time variable of class \code{POSIXct}, \code{POSIXt}.
@@ -145,3 +153,8 @@ Find.markers <- function(frame,marker.list)
   return(channels.ind)
 }
 
+## get mode
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}

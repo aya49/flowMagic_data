@@ -6,7 +6,7 @@
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- 10#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
 
 
 ## directory ####
