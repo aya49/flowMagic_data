@@ -35,9 +35,9 @@ for (dl in list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)) {
 ## load inputs ####
 x2_dirs <- list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)
 x2_dirs <- x2_dirs[sapply(x2_dirs, function(x) sum(grepl(x,x2_dirs))==1)]
-x2_files <- lapply(x2_dirs, function(x) list.files(x, full.names=TRUE, pattern="csv"))
+x2_files <- plyr::llply(x2_dirs, function(x) list.files(x, full.names=TRUE, pattern="csv"))
 
-ks <- 1:20
+ks <- 1:10
 
 
 ## START ####
@@ -45,8 +45,12 @@ start <- Sys.time()
 
 
 # load csv
-res <- furrr::future_map(x2_files, function(x2_fs) { 
+loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
+res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
+  
+  # load files into matrix
   start1 <- Sys.time()
+  x2_fs <- x2_files[[i]]
   all2D <- purrr::map(x2_fs, function(x2_f) {
     a <- data.table::fread(x2_f, data.table=FALSE)
     a <- a/max(a)
@@ -60,21 +64,36 @@ res <- furrr::future_map(x2_files, function(x2_fs) {
   time_output(start1)
   
   
+  # make distance object from matrix
   start1 <- Sys.time()
   d <- dist(all2D, method="euclidean") # "manhattan", "canberra", "binary" or "minkowski"
   time_output(start1)
   
-  cl_dir <- gsub(file_name(x2_fs[1]),"",gsub("/results/2D/x_2Ddensity/","/results/2D/cluster/2Ddensity_euclidean_pam/",x2_fs[1]))
-  pk <- purrr::map(ks, function(x) cluster::pam(d,k=x))
+  
+  # k medoid with k=ks
+  start1 <- Sys.time()
+  pk <- purrr::map(ks[ks<nrow(all2D)], function(x) cluster::pam(d,k=x))
+  time_output(start1)
+  
+  # save k medoid results
+  cl_dir <- gsub(file_name(x2_fs[1]),"",gsub("/2D/x_2Ddensity/","/2D/xtrain_2Ddensity_euclidean_pam/",x2_fs[1]))
+  
   pkm <- purrr::map(pk, function(x) {
-    cli_dir <- paste0(cl_dir,length(x$medoids))
-    dir.create(cli_dir, recursive=TRUE, showWarnings=FALSE)
-    for (medi in seq_len(length(x$medoids))) {
+    kmm <- purrr::map(seq_len(length(x$medoids)), function(medi) {
+      if (length(x$medoids)==0) return(NULL)
+      
       filesi <- names(x$clustering[x$clustering==medi])
-      write.table(filesi, file=gzfile(paste0(cli_dir,"/",x$medoids[medi])), row.names=FALSE, col.names=FALSE)
-    }
+      filesi <- filesi[!grepl(x$medoids[medi], filesi)]
+      
+      cli_dir <- paste0(cl_dir,length(x$medoids))
+      dir.create(cli_dir, recursive=TRUE, showWarnings=FALSE)
+      if (length(filesi)>0) {
+        write.table(filesi, file=gzfile(paste0(cli_dir,"/",x$medoids[medi])), 
+                    row.names=FALSE, col.names=FALSE)
+      }
+    })
   })
-})
+}) })
   
 time_output(start)
 

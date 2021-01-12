@@ -5,9 +5,9 @@
 
 
 ## parallelization ####
-future::plan(future::multiprocess)
+# future::plan(future::multiprocess)
 no_cores <- 15#parallel::detectCores() - 5
-
+doMC::registerDoMC(no_cores)
 
 ## directory ####
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src"
@@ -31,12 +31,13 @@ dir.create(y2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
 
 
 ## output ####
-for (dl in list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)) {
-  dir.create(gsub("data","results",gsub("/x/","/x_2Ddensity/",dl)), recursive=TRUE, showWarnings=FALSE)
-  dir.create(gsub("data","results",gsub("/x/","/x_2Dscatter/",dl)), recursive=TRUE, showWarnings=FALSE)
-  dir.create(gsub("data","results",gsub("/x/","/x_2Dncells/",dl)), recursive=TRUE, showWarnings=FALSE)
-  dir.create(gsub("data","results",gsub("/x/","/y_vector/",dl)), recursive=TRUE, showWarnings=FALSE)
-  dir.create(gsub("data","results",gsub("/x/","/y_2D/",dl)), recursive=TRUE, showWarnings=FALSE)
+dls <- list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)
+for (dl in dls[!grepl("x$",dls)]) {
+  dir.create(gsub("/data/","/results/",gsub("/x/","/x_2Ddensity/",dl)), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("/data/","/results/",gsub("/x/","/x_2Dscatter/",dl)), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("/data/","/results/",gsub("/x/","/x_2Dncells/",dl)), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("/data/","/results/",gsub("/x/","/y_vector/",dl)), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("/data/","/results/",gsub("/x/","/y_2D/",dl)), recursive=TRUE, showWarnings=FALSE)
 }
 
 
@@ -44,22 +45,26 @@ for (dl in list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)) {
 x2_files <- list.files(x2_dir, recursive=TRUE, full.names=TRUE)
 
 dimsize <- c(400,400)
+overwrite <- FALSE
 
 
 ## START ####
 start <- Sys.time()
 
-loop_ind <- loop_ind_f(seq_len(length(x2_files)), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
-  # load csv
+loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
+# res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
+res <- plyr::llply(loop_ind, function(ii) { purrr::map(ii, function(i) {
+    # load csv
   x2discrete <- x2 <- data.table::fread(x2_files[i], data.table=FALSE)
   y2 <- data.table::fread(gsub("/x/","/y/",x2_files[i]), data.table=FALSE)
   
   # save a vector version of y
-  y2i <- apply(y2, 1, function(x) which(x==1)[1])
-  if ("other"%in%colnames(y2)) 
-    y2i[y2i==which(colnames(y2)=="other")] <- 0
-  write.table(y2i, file=gzfile(gsub("data","results",gsub("/x/","/y_vector/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
+  y2i_file <- gsub("/data/","/results/",gsub("/x/","/y_vector/",x2_files[i]))
+    y2i <- apply(y2, 1, function(x) which(x==1)[1])
+    if ("other"%in%colnames(y2)) 
+      y2i[y2i==which(colnames(y2)=="other")] <- 0
+    write.table(y2i, file=gzfile(y2i_file), col.names=FALSE, row.names=FALSE, sep=",")
+  
   
   # discretize x
   xr <- range(x2[,1])
@@ -75,19 +80,19 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   
   # scatterplot
   plotsc[x2discrete_] <- 1
-  write.table(plotsc, file=gzfile(gsub("data","results",gsub("/x/","/x_2Dscatter/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
+  write.table(plotsc, file=gzfile(gsub("/data/","/results/",gsub("/x/","/x_2Dscatter/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotsc, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
 
   # density
   dens2 = KernSmooth::bkde2D(
     x2, gridsize=c(dimsize[2],dimsize[1]),
     bandwidth=c(max(x2[,1])-min(x2[,1]), max(x2[,2])-min(x2[,2]))/30)$fhat # bandwidth in each coordinate 
-  write.table(dens2, file=gzfile(gsub("data","results",gsub("/x/","/x_2Ddensity/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
+  write.table(dens2, file=gzfile(gsub("/data/","/results/",gsub("/x/","/x_2Ddensity/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(dens2, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
   # answer: number of cells in each pixel
   plotgn <- table(x2discrete)
-  write.table(plotgn, file=gzfile(gsub("data","results",gsub("/x/","/x_2Dncells/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
+  write.table(plotgn, file=gzfile(gsub("/data/","/results/",gsub("/x/","/x_2Dncells/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
   
   # answer: label of each pixel
   plotgs <- plotsc
@@ -95,7 +100,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     getmode(y2i[x2discrete[,1]==x[1] & x2discrete[,2]==x[2]]) )
   for (yi in unique(x2discrete_y))
     plotgs[x2discrete_[x2discrete_y==yi,,drop=FALSE]] <- yi
-  write.table(plotgs, file=gzfile(gsub("data","results",gsub("/x/","/y_2D/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
+  write.table(plotgs, file=gzfile(gsub("/data/","/results/",gsub("/x/","/y_2D/",x2_files[i]))), col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
   
@@ -129,7 +134,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   # scat2 = OpenImageR::rgb_2gray(OpenImageR::readImage(paste0(gsub("/x/","/x_colscat/",x2_files[i]),".png"))) * 1000
   # write.table(scat2, file=gzfile(gsub("/x/","/x_colscat/",x2_files[i])), row.names=FALSE, col.names=FALSE, sep=",")
 
-}) })
+}) }, .parallel=TRUE)
 time_output(start)
 
 # res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {

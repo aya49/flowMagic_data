@@ -1,4 +1,4 @@
-library("PBSmapping")
+# library("PBSmapping")
 
 ## functions for 02_2dgate.R; made for cmpt822 fall 2018
 ## 2018-11 aya43@sfu.ca
@@ -187,8 +187,8 @@ dist_ncc = function(m, m2=NULL) {
 # references plotDens from flowDensity
 plot_int = function(dat, col, main, pch = ".", ...) {
   if (missing(col)) {
-    colPalette = colorRampPalette(c("grey", "black"))
-    col = densCols(dat, colramp=colPalette)
+    colPalette = colorRampPalette(blues9[-(1:3)])#colorRampPalette(c("grey", "black"))
+    col = densCols_(dat, colramp=colPalette)
   }
   if (nrow(dat) < 2) {
     graphics::plot(1, type = "n", axes = F, ...)
@@ -198,8 +198,8 @@ plot_int = function(dat, col, main, pch = ".", ...) {
 }
 
 
-densCols <- function(x, y=NULL, nbin=128, bandwidth=NULL, map=NULL, 
-                     colramp=colorRampPalette(blues9[-(1:3)])) {
+densCols_ <- function(x, y=NULL, nbin=128, bandwidth=NULL, map=NULL, 
+                     colramp=colorRampPalette(c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"))) {
   xy <- xy.coords(x, y, setLab = FALSE)
   select <- is.finite(xy$x) & is.finite(xy$y)
   x <- cbind(xy$x, xy$y)[select, ]
@@ -226,6 +226,31 @@ densCols <- function(x, y=NULL, nbin=128, bandwidth=NULL, map=NULL,
   cols[select] <- colramp(length(dens))[colpal]
   cols
 }
+
+plot_dens <- function(df, xlab=colnames(df)[1], ylab=colnames(df)[2], ...) {
+  # libr(c("flowCore", "flowDensity"))
+  f <- new("flowFrame")
+  f@exprs <- as.matrix(df)
+  flowDensity::plotDens(f, colnames(df), xlab=xlab, ylab=ylab, ...)
+}
+
+# # http://knowledge-forlife.com/r-color-scatterplot-points-density/
+# plot_int2 = function(
+#   df, ylim=c(min(df[,2]), max(df[,2])),  
+#   xlim=c(min(df[,1]),max(df[,1])),
+#   xlab=colnames(df)[1], ylab=colnames(df)[2], main="",
+#   cols=NULL) {
+#   
+#   if (is.null(cols)) colorRampPalette(c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"))(256)
+#   
+#   dc <- densCols(df[,1], df[,2], colramp=colorRampPalette(c("black", "white")))
+#   df$dens <- col2rgb(dc)[1,] + 1L
+#   df$col <- cols[df$dens]
+#   plot(df[,2]~df[,1], data=df[order(df$dens),], 
+#        ylim=ylim,xlim=xlim,pch=20,col=col,
+#        cex=2,xlab=xlab,ylab=ylab,
+#        main=main)
+# }
 
 
 
