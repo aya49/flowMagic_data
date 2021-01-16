@@ -6,7 +6,7 @@
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 10#parallel::detectCores() - 5
 
 
 ## directory ####
@@ -48,6 +48,14 @@ start <- Sys.time()
 loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   
+  dist_dir <- gsub(paste0("/",file_name(x2_files[[i]][1])),".Rdata",x2_files[[i]][1])
+  dist_dir <- gsub("x_2Ddensity","xtrain_2Ddensity_euclidean",dist_dir)
+  dir.create(gsub(paste0("/",file_name(dist_dir)),"",dist_dir), recursive=TRUE, showWarnings=FALSE)
+  
+  # don't overwrite
+  if (file.exists(dist_dir))
+    if (file.size(dist_dir)>0) return(NULL)
+  
   # load files into matrix
   start1 <- Sys.time()
   x2_fs <- x2_files[[i]]
@@ -67,16 +75,32 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   # make distance object from matrix
   start1 <- Sys.time()
   d <- dist(all2D, method="euclidean") # "manhattan", "canberra", "binary" or "minkowski"
+  
+  save(d, file=dist_dir)
+  rm(d)
+  
   time_output(start1)
-  
-  
+}) })
+time_output(start)
+
+
+dist_files <- list.files(gsub("x_2Ddensity","xtrain_2Ddensity_euclidean",x2_dir),
+                         recursive=TRUE, pattern=".Rdata", full.names=TRUE)
+
+start1 <- Sys.time()
+
+loop_ind <- loop_ind_f(sample(seq_len(length(dist_files))), no_cores)
+res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
   # k medoid with k=ks
   start1 <- Sys.time()
-  pk <- purrr::map(ks[ks<nrow(all2D)], function(x) cluster::pam(d,k=x))
+  dist_file <- dist_files[i]
+  d <- get(load(dist_file))
+  ddim <- nrow(as.matrix(d))
+  pk <- purrr::map(ks[ks<ddim], function(x) cluster::pam(d,k=x))
   time_output(start1)
   
   # save k medoid results
-  cl_dir <- gsub(file_name(x2_fs[1]),"",gsub("/2D/x_2Ddensity/","/2D/xtrain_2Ddensity_euclidean_pam/",x2_fs[1]))
+  cl_dir <- gsub(".Rdata","",gsub("euclidean/","euclidean_pam/",dist_file))
   
   pkm <- purrr::map(pk, function(x) {
     kmm <- purrr::map(seq_len(length(x$medoids)), function(medi) {
@@ -94,7 +118,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     })
   })
 }) })
-  
+
 time_output(start)
 
 # res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {

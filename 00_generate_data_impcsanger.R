@@ -271,8 +271,8 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
       abline(h=gti["CD11b.gate.high"], lwd=2)
     })
     
-    gthres[["CD5CD11b_lymphocyte"]] <- gti[c("CD5.gate","Ly6C.gate1")]
-    names(gthres[["CD5CD11b_lymphocyte"]]) <- c("CD5","Ly6C")
+    gthres[["CD5Ly6C_lymphocyte"]] <- gti[c("CD5.gate","Ly6C.gate1")]
+    names(gthres[["CD5Ly6C_lymphocyte"]]) <- c("CD5","Ly6C")
 
     clr_lymph[id_lymph%in%gran.flowD@index,"granulocyte"] <- 1
     
@@ -284,10 +284,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     clr_lymph1[clr_lymph1[,1]==0,2] <- 1
 
     if (saveandrm) {
-      dir.create(paste0(x2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
-      write.csv(csv_lymph1, file=gzfile(paste0(x2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
-      dir.create(paste0(y2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
-      write.csv(clr_lymph1, file=gzfile(paste0(y2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(x2_dir,"/CD5Ly6C_lymphocyte"), showWarnings=FALSE)
+      write.csv(csv_lymph1, file=gzfile(paste0(x2_dir,"/CD5Ly6C_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD5Ly6C_lymphocyte"), showWarnings=FALSE)
+      write.csv(clr_lymph1, file=gzfile(paste0(y2_dir,"/CD5Ly6C_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
       
       rm(lymph1.flowD, temp, tempp, csv_lymph1, clr_lymph1)
     }

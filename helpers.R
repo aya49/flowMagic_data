@@ -159,3 +159,28 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
+
+## f1
+f1score <- function(tfactual, tfpred) {
+  ap <- sum(tfactual & tfpred)
+  ap0 <- ap==0
+  
+  pred <- sum(tfpred)
+  actu <- sum(tfactual)
+  
+  if (ap0) {
+    precision <- recall <- f1 <- 0
+  } else {
+    precision <- ap/pred
+    recall <- ap/actu
+    
+    f1 <- ifelse(precision+recall == 0, 0, 
+                 2 * precision * recall/(precision + recall)) 
+  }
+  data.frame(
+    precision=precision, recall=recall, f1=f1, 
+    true_proportion=actu/length(tfactual), 
+    predicted_proportion=pred/length(tfpred),
+    true_size=actu,
+    predicted_size=pred)
+}

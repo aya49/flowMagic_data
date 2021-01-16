@@ -68,6 +68,19 @@ fcs_files <- list.files(gs_dir, full.names=TRUE, recursive=TRUE, pattern="fcs$")
 
 fcs <- flowCore::read.FCS(fcs_files[1])
 markers <- fcs@parameters@data$desc
+dupm <- duplicated(markers)
+if (any(dupm)) 
+  markers[dupm] <- paste0(markers[dupm],".",fcs@parameters@data$name[dupm])
+
+# accidentally included duplicated markers, the following is a fix
+hmfs <- list.files("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/nD/x/HIPCmyeloid", full.names=TRUE)
+for (hmf in hmfs) {
+  csv_ <- data.table::fread(hmf, data.table=FALSE)
+  if (sum(duplicated(colnames(csv_)))==0) break
+  colnames(csv_)[duplicated(colnames(csv_))] <- "CD16.FITC-A"
+  write.csv(csv_, file=gzfile(hmf), row.names=FALSE)
+}
+
 markers[is.na(markers)] <- fcs@parameters@data$name[is.na(markers)]
 names(markers) <- fcs@parameters@data$name
 
