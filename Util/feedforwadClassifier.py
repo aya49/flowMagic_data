@@ -11,7 +11,7 @@ from keras.regularizers import l2
 from keras import callbacks as cb
 from keras.callbacks import LearningRateScheduler
 import numpy as np
-import Monitoring as mn
+from Util import Monitoring as mn
 import sklearn.metrics
 import matplotlib
 import pylab as plt
