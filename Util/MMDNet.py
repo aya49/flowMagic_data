@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os.path
 
-import CostFunctions as cf
-import Monitoring as mn
+from Util import CostFunctions as cf
+from Util import Monitoring as mn
 from Util import FileIO as io
 
 
