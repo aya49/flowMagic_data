@@ -1,7 +1,7 @@
 
 from keras import callbacks as cb
 from keras.callbacks import LearningRateScheduler
-from keras import initializations
+from keras import initializers
 from keras.layers import Input, Dense, merge, Dropout, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
@@ -35,7 +35,7 @@ def constructMMD(target):
 
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializations.normal(shape,
+    init = lambda shape, name:initializers.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     
@@ -77,7 +77,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
     
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializations.normal(shape,
+    init = lambda shape, name:initializers.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     
@@ -158,7 +158,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
 def loadModel(target, source, sourceIndex, predLabel, path):
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializations.normal(shape,
+    init = lambda shape, name:initializers.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     

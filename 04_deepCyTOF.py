@@ -3,7 +3,7 @@
 ## input: 2D matrices (cell x marker) + their clr (cell x cell population true/false matrix)
 ## ouput: deepCyTOF results
 
-# !/usr/bin/env python3
+
 '''
 This script will train a DeepCyTOF neural network classifier on three CyTOF
 datasets. For each dataset, DeepCyTOF will (1) pick a reference sample and
@@ -13,6 +13,21 @@ sample; (3) predict the cell label information for each remaining sample.
 Created on Jul 30, 2016
 @author: urishaham, huaminli
 '''
+
+root = '/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data'
+
+'''
+packages to install:
+- keras
+- time
+- fcsparser
+- sklearn
+- matplotlib
+- numpy
+- Monitoring
+- pandas
+'''
+
 from keras import backend as K
 import numpy as np
 import os.path
@@ -21,12 +36,15 @@ import time
 from glob import glob
 import pandas as pd
 
+os.chdir(root + "/src")
+
 from Util import CostFunctions as cf
 from Util import DataHandler as dh
 from Util import denoisingAutoEncoder as dae
 from Util import FileIO as io
 from Util import feedforwadClassifier as net
 from Util import MMDNet as mmd
+
 
 
 class Sample:
@@ -72,7 +90,7 @@ Make your choice here - an integer from 0 to 4.
 '''
 
 # nD data folders
-os.chdir('/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data')
+os.chdir(root)
 data_path_nD = 'data/2D/x'
 data_dirs_nD = os.listdir(data_path_nD)
 for i in range(len(data_dirs_nD)):
