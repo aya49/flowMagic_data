@@ -35,6 +35,7 @@ def standard_scale(sample, preprocessor = None):
     return sample, preprocessor
 
 def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 0):
+    X = []
     if mode == 'CSV.GZ':
         data_filename = dataPath + "/" + str(dataIndex) # I'm just going to give it the file name
         X = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename)).tolist()

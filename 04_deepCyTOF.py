@@ -45,16 +45,6 @@ from Util import feedforwadClassifier as net
 from Util import MMDNet as mmd
 
 
-
-class Sample:
-  X = None
-  y = None
-  
-  def __init__(self, X, y=None):
-    self.X = X
-    self.y = y
-
-
 '''
 Parameters.
 dataSet           - A list of names of CyTOF data sets.
@@ -68,7 +58,6 @@ l2_penalty        - The regularization parameter to construct the classifier.
 keepProb          - The keep probability for each single cell to be used as
                     the training set of de-noising autoencoder.
 '''
-dataSet = ['pregnancy', 'sangerP2', 'HIPCbcell', 'HIPCmyeloid']
 
 isCalibrate = False
 denoise = False
@@ -106,40 +95,38 @@ for i in range(len(data_dirs_2D1)):
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
 data_dirs = data_dirs_2D + data_dirs_nD
-for data_dir in data_dirs:
-  data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
-  actual_paths = [x.replace("/x/","/y/") for x in data_paths]
-  
-  data = pd.read_csv(data_paths[0], compression='gzip', error_bad_lines=False)
-  actual = pd.read_csv(actual_paths[0], compression='gzip', error_bad_lines=False)
-  actualv = pd.DataFrame([0]*len(actual))
-  for aci in range(len(actual.columns)):
-    actualv[actual[actual.columns[aci]]==1] = aci+1
-  
-  dataIndex = os.listdir(data_dir)
-  trainIndex = dataIndex
-  testIndex = dataIndex
-  relevantMarkers = np.asarray(range(len(data.columns)))
-  mode = 'CSV.GZ'
-  numClasses = len(actual.columns)
-  keepProb = .8
+# for data_dir in data_dirs:
 
-  '''
-  Choose the reference sample.
-  '''
-  print('Choose the reference sample between ' + str(trainIndex))
-  refSampleInd = dh.chooseReferenceSample(data_dir, trainIndex, relevantMarkers, mode)
+data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
+actual_paths = [x.replace("/x/","/y/") for x in data_paths]
 
-  # for data_path in data_paths:
-  #   data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
-  #   actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
+data = pd.read_csv(data_paths[0])
+actual = pd.read_csv(actual_paths[0].replace("/x/", "/y/"))
+
+dataIndex = os.listdir(data_dir)
+trainIndex = dataIndex
+testIndex = dataIndex
+relevantMarkers = np.asarray(range(len(data.columns)))
+mode = 'CSV.GZ'
+numClasses = len(actual.columns)
+keepProb = .8
+
+'''
+Choose the reference sample.
+'''
+print('Choose the reference sample')
+refSampleInd = dh.chooseReferenceSample(data_dir, trainIndex, relevantMarkers, mode)
+
+# for data_path in data_paths:
+#   data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
+#   actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
 
 
-  print('Load the target ' + str(trainIndex[refSampleInd]))
-  target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarkers, mode)
+print('Load the target ' + str(trainIndex[refSampleInd]))
+target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarkers, mode)
 
-  # # Pre-process sample. Don't need to, my samples are cleaned and processed
-  # target = dh.preProcessSamplesCyTOFData(target)
+# # Pre-process sample. Don't need to, my samples are cleaned and processed
+# target = dh.preProcessSamplesCyTOFData(target)
 
 '''
 Train the de-noising auto encoder.
