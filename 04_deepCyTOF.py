@@ -27,6 +27,11 @@ packages to install:
 - pandas
 '''
 
+import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
+
 from keras import backend as K
 import numpy as np
 import os.path
