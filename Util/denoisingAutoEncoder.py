@@ -5,7 +5,7 @@ from keras.regularizers import l2
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Monitoring as mn
+from Util import Monitoring as mn
 from Util import DataHandler as dh
 import os.path
 from Util import FileIO as io
