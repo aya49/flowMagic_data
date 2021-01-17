@@ -38,7 +38,7 @@ def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 
     X = []
     if mode == 'CSV.GZ':
         data_filename = dataPath + "/" + str(dataIndex) # I'm just going to give it the file name
-        X = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename)).values.tolist()
+        X = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename)).to_numpy()
         print(np.shape(X))
         actual = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename.replace("/x/","/y/")))
         labels = pd.DataFrame([0] * len(actual))
