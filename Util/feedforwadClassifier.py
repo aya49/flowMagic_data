@@ -76,53 +76,55 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
                     hiddenLayersSizes = [12, 6, 3],
                     activation = 'softplus', l2_penalty = 1e-4,
                     path = 'None'):
-# Remove unlabeled cells for training.
-x_train = trainSample.X[trainSample.y != 0]
-y_train = trainSample.y[trainSample.y != 0]
-
-# Labels start from 0.
-y_train = np.int_(y_train) - 1
-
-
-# Special case in GvHD: label in those files are 0,1,3,4 with no 2.
-if mode == 'GvHD' and (i == 5 or i == 9 or
-                       i == 10 or i == 11):
-    y_train[y_train != 0] = y_train[y_train != 0] - 1
-
-# Expand labels, to work with sparse categorical cross entropy.
-y_train = np.expand_dims(y_train, -1)
-
-# Construct a feed-forward neural network.
-inputLayer = Input(shape = (x_train.shape[1],))
-hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                kernel_regularizer = l2(l2_penalty))(inputLayer)
-hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                kernel_regularizer = l2(l2_penalty))(hidden1)
-hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                kernel_regularizer = l2(l2_penalty))(hidden2)
-numClasses = len(np.unique(trainSample.y))# - 1
-outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
-
-encoder = Model(inputs = inputLayer, outputs = outputLayer)
-net = Model(inputs = inputLayer, outputs = outputLayer)
-lrate = LearningRateScheduler(step_decay)
-optimizer = keras.optimizers.RMSprop(lr = 0.0)
-
-net.compile(optimizer = optimizer,
-            loss = 'sparse_categorical_crossentropy')
-net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
-        validation_split = 0.1, verbose = 0,
-        callbacks=[lrate, mn.monitor(),
-        cb.EarlyStopping(monitor = 'val_loss',
-                         patience = 25, mode = 'auto')])
-try:
-    net.save(os.path.join(io.DeepLearningRoot(),
-                          'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
-except OSError:
-    pass
-#plt.close('all')
-
-return net
+    # Remove unlabeled cells for training.
+    x_train = trainSample.X[trainSample.y != 0]
+    y_train = trainSample.y[trainSample.y != 0]
+    
+    # Labels start from 0.
+    y_train = np.int_(y_train) - 1
+    
+    
+    # Special case in GvHD: label in those files are 0,1,3,4 with no 2.
+    if mode == 'GvHD' and (i == 5 or i == 9 or
+                           i == 10 or i == 11):
+        y_train[y_train != 0] = y_train[y_train != 0] - 1
+    
+    # Expand labels, to work with sparse categorical cross entropy.
+    y_train = np.expand_dims(y_train, -1)
+    
+    # Construct a feed-forward neural network.
+    inputLayer = Input(shape = (x_train.shape[1],))
+    hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
+    hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
+    hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
+    numClasses = len(np.unique(trainSample.y)) - 1
+    if numClasses == 1:
+        numClasses += 1
+    outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
+    
+    encoder = Model(inputs = inputLayer, outputs = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
+    lrate = LearningRateScheduler(step_decay)
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
+    
+    net.compile(optimizer = optimizer,
+                loss = 'sparse_categorical_crossentropy')
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
+            validation_split = 0.1, verbose = 0,
+            callbacks=[lrate, mn.monitor(),
+            cb.EarlyStopping(monitor = 'val_loss',
+                             patience = 25, mode = 'auto')])
+    try:
+        net.save(os.path.join(io.DeepLearningRoot(),
+                              'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
+    except OSError:
+        pass
+    #plt.close('all')
+    
+    return net
 
 def prediction(testSample, mode, i, net):
     # Labels start from 0.
@@ -190,7 +192,9 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
                     kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y))# - 1
+    numClasses = len(np.unique(trainSample.y)) - 1
+    if numClasses == 1:
+        numClasses += 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = hidden3)
