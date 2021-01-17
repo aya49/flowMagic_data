@@ -101,8 +101,8 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
                     kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y))# - 1
-    outputLayer = Dense(numClasses+1, activation = 'softmax')(hidden3)
+    numClasses = len(np.unique(trainSample.y)) - 1
+    outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = outputLayer)
     net = Model(inputs = inputLayer, outputs = outputLayer)
@@ -110,7 +110,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     optimizer = keras.optimizers.RMSprop(lr = 0.0)
     
     net.compile(optimizer = optimizer,
-                loss = 'categorical_crossentropy')
+                loss = 'sparse_categorical_crossentropy')
     net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0,
             callbacks=[lrate, mn.monitor(),
@@ -191,8 +191,8 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
                     kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y))# - 1
-    outputLayer = Dense(numClasses+1, activation = 'softmax')(hidden3)
+    numClasses = len(np.unique(trainSample.y)) - 1
+    outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = hidden3)
     # plot data in the 3rd hidden layer
@@ -211,7 +211,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     optimizer = keras.optimizers.RMSprop(lr = 0.0)
 
     net.compile(optimizer = optimizer,
-                loss = 'categorical_crossentropy')
+                loss = 'sparse_categorical_crossentropy')
     net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0, 
             callbacks=[lrate, mn.monitor(),
