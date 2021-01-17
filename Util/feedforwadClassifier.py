@@ -109,7 +109,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
 
-    ls = 'sparse_categorical_crossentropy' if numClasses == 1 else 'binary_crossentropy'
+    ls = 'sparse_categorical_crossentropy' if numClasses > 1 else 'binary_crossentropy'
     net.compile(optimizer = optimizer,
                 loss = ls)
     net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
@@ -211,7 +211,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
     
-    ls = 'sparse_categorical_crossentropy' if numClasses == 1 else 'binary_crossentropy'
+    ls = 'sparse_categorical_crossentropy' if numClasses > 1 else 'binary_crossentropy'
     net.compile(optimizer = optimizer, 
                 loss = ls)
     net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
