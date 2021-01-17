@@ -72,7 +72,7 @@ isCalibrate = False
 denoise = False
 loadModel = False
 
-hiddenLayersSizes = [12, 9, 6]
+hiddenLayersSizes = [12, 6, 3]
 activation = 'softplus'
 l2_penalty = 1e-4
 
@@ -163,9 +163,9 @@ if loadModel:
 else:
   print('Train the classifier on de-noised Target')
 
-  cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
-                                       hiddenLayersSizes, activation, l2_penalty,
-                                       res_dir)
+cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
+                                     hiddenLayersSizes, activation, l2_penalty,
+                                     res_dir)
 
 '''
 Test the performance with and without calibration.
