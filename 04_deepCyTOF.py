@@ -163,9 +163,9 @@ if loadModel:
 else:
   print('Train the classifier on de-noised Target')
 
-cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
-                                     hiddenLayersSizes, activation, l2_penalty,
-                                     res_dir)
+  cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
+                                       hiddenLayersSizes, activation, l2_penalty,
+                                       res_dir)
 
 '''
 Test the performance with and without calibration.
