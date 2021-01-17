@@ -101,7 +101,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
                     kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y)) - 1
+    numClasses = len(np.unique(trainSample.y))# - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = outputLayer)
@@ -109,7 +109,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.RMSprop(lr = 0.0)
     
-    ls = 'sparse_categorical_crossentropy' if numClasses > 1 else 'binary_crossentropy'
+    ls = 'sparse_categorical_crossentropy' if numClasses > 2 else 'binary_crossentropy'
     net.compile(optimizer = optimizer, loss = ls)
     net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0,
@@ -191,7 +191,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
                     kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y)) - 1
+    numClasses = len(np.unique(trainSample.y))# - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = hidden3)
@@ -210,7 +210,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.RMSprop(lr = 0.0)
 
-    ls = 'sparse_categorical_crossentropy' if numClasses > 1 else 'binary_crossentropy'
+    ls = 'sparse_categorical_crossentropy' if numClasses > 2 else 'binary_crossentropy'
     net.compile(optimizer = optimizer,
                 loss = ls)
     net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
