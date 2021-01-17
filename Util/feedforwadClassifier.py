@@ -106,7 +106,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     encoder = Model(inputs = inputLayer, outputs = outputLayer)
     net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
 
     net.compile(optimizer = optimizer, 
                 loss = 'sparse_categorical_crossentropy')
@@ -207,7 +207,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     
     net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
 
     net.compile(optimizer = optimizer, 
                 loss = 'sparse_categorical_crossentropy')

@@ -63,7 +63,7 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
                             kernel_regularizer=l2(l2_penalty_ae))(encoded1)
         
             autoencoder = Model(inputs=input_cell, outputs=decoded)
-            autoencoder.compile(optimizer='rmsprop', loss='mse')
+            autoencoder.compile(optimizer='RMSprop', loss='mse')
             autoencoder.fit(trainData_ae, trainTarget_ae, nb_epoch=80,
                             batch_size=128, shuffle=True,
                             validation_split=0.1, verbose = 0,

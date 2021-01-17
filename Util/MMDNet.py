@@ -135,7 +135,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
     sourceYMMD = np.reshape(sourceYMMD, (-1, 1))
 
     lrate = LearningRateScheduler(step_decay)
-    optimizer = opt.rmsprop(lr=0.0)
+    optimizer = opt.RMSprop(lr=0.0)
     calibMMDNet.compile(optimizer = optimizer, loss = lambda y_true,y_pred: 
        cf.MMD(block3_output, targetXMMD, 
             MMDTargetValidation_split = 0.1).KerasCost(y_true,y_pred))
