@@ -68,7 +68,7 @@ def constructMMD(target):
                       kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(input=calibInput, output=block3_output)
+    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
     
 
     return calibMMDNet, block3_output
@@ -110,7 +110,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
                       kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(input=calibInput, output=block3_output)
+    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
 
     n = target.X.shape[0]
     p = np.random.permutation(n)
@@ -191,7 +191,7 @@ def loadModel(target, source, sourceIndex, predLabel, path):
                       kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(input=calibInput, output=block3_output)
+    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
 
     calibMMDNet.load_weights(os.path.join(io.DeepLearningRoot(),
                                           'savemodels/'+ path + '/ResNet'+ str(sourceIndex)+'.h5'))

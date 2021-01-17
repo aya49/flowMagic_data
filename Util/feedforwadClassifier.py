@@ -103,8 +103,8 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = outputLayer)
-    net = Model(input = inputLayer, output = outputLayer)
+    encoder = Model(inputs = inputLayer, outputs = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
 
@@ -193,7 +193,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = hidden3)
+    encoder = Model(inputs = inputLayer, outputs = hidden3)
     # plot data in the 3rd hidden layer
     h3_data = encoder.predict(x_test, verbose = 0)
     #fig, (ax1) = plt1.subplots(1,1, subplot_kw={'projection':'3d'})
@@ -205,7 +205,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     #ax1.set_title('data in 3rd hidden layer')
     plt1.show()
     
-    net = Model(input = inputLayer, output = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
 
