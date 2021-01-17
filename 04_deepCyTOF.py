@@ -170,69 +170,67 @@ mmd_before = np.zeros(testIndex.size)
 mmd_after = np.zeros(testIndex.size)
 
 for i in np.arange(testIndex.size):
-  # Load the source.
-  sourceIndex = testIndex[i]
-  source = dh.loadDeepCyTOFData(dataPath, sourceIndex, relevantMarkers, mode)
-  source = dh.preProcessSamplesCyTOFData(source)
+# Load the source.
+sourceIndex = testIndex[i]
+source = dh.loadDeepCyTOFData(data_dir, sourceIndex, relevantMarkers, mode)
+source = dh.preProcessSamplesCyTOFData(source)
+
+# De-noising the source.
+denoiseSource = dae.predictDAE(source, DAE, denoise)
+denoiseSource, _ = dh.standard_scale(denoiseSource, preprocessor=preprocessor)
+
+# Predict the cell type of the source.
+print('Run the classifier on source ', str(sourceIndex),
+      'without calibration')
+
+start = time.time()
+acc[i, 0], F1[i, 0], predLabel = net.prediction(denoiseSource, mode, i, cellClassifier)
+end = time.time()
+print(end - start)
+
+sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
+targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
+mmd_before[i] = K.eval(cf.MMD(denoiseSource.X, denoiseTarget.X).cost(
+  K.variable(value=denoiseSource.X[sourceInds]),
+  K.variable(value=denoiseTarget.X[targetInds])) )
+
+# f = open(dataPath + "/predlabel_nocal" + str(sourceIndex) + ".csv", 'w')
+# for item in predLabel:
+#     f.write(str(item.astype(int)) + '\n')
+# f.close()
+
+print('MMD before: ', str(mmd_before[i]))
+if isCalibrate:
+  if loadModel:
+    calibMMDNet = mmd.loadModel(denoiseTarget, denoiseSource,
+                                sourceIndex, predLabel, dataSet[choice])
+    calibrateSource = Sample(calibMMDNet.predict(denoiseSource.X),
+                             denoiseSource.y)
+    calibMMDNet = None
+  else:
+    calibrateSource = mmd.calibrate(denoiseTarget, denoiseSource,
+                                    sourceIndex, predLabel, dataSet[choice])
   
-  # De-noising the source.
-  denoiseSource = dae.predictDAE(source, DAE, denoise)
-  denoiseSource, _ = dh.standard_scale(denoiseSource,
-                                       preprocessor=preprocessor)
-  
-  # Predict the cell type of the source.
   print('Run the classifier on source ', str(sourceIndex),
-        'without calibration')
+        'with calibration')
+  acc[i, 1], F1[i, 1], predLabell = net.prediction(calibrateSource,
+                                                   mode, i,
+                                                   cellClassifier)
   
-  start = time.time()
-  acc[i, 0], F1[i, 0], predLabel = net.prediction(denoiseSource,
-                                                  mode, i,
-                                                  cellClassifier)
-  end = time.time()
-  print(end - start)
-  
-  sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
-  targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
-  mmd_before[i] = K.eval(cf.MMD(denoiseSource.X, denoiseTarget.X).cost(
-    K.variable(value=denoiseSource.X[sourceInds]),
-    K.variable(value=denoiseTarget.X[targetInds])))
-  
-  # f = open(dataPath + "/predlabel_nocal" + str(sourceIndex) + ".csv", 'w')
-  # for item in predLabel:
+  # f = open(dataPath + "/predlabel_cal" + str(sourceIndex) + ".csv", 'w')
+  # for item in predLabell:
   #     f.write(str(item.astype(int)) + '\n')
   # f.close()
   
-  print('MMD before: ', str(mmd_before[i]))
-  if isCalibrate:
-    if loadModel:
-      calibMMDNet = mmd.loadModel(denoiseTarget, denoiseSource,
-                                  sourceIndex, predLabel, dataSet[choice])
-      calibrateSource = Sample(calibMMDNet.predict(denoiseSource.X),
-                               denoiseSource.y)
-      calibMMDNet = None
-    else:
-      calibrateSource = mmd.calibrate(denoiseTarget, denoiseSource,
-                                      sourceIndex, predLabel, dataSet[choice])
-    
-    print('Run the classifier on source ', str(sourceIndex),
-          'with calibration')
-    acc[i, 1], F1[i, 1], predLabell = net.prediction(calibrateSource,
-                                                     mode, i,
-                                                     cellClassifier)
-    
-    # f = open(dataPath + "/predlabel_cal" + str(sourceIndex) + ".csv", 'w')
-    # for item in predLabell:
-    #     f.write(str(item.astype(int)) + '\n')
-    # f.close()
-    
-    mmd_after[i] = K.eval(cf.MMD(calibrateSource.X, denoiseTarget.X).cost(
-      K.variable(value=calibrateSource.X[sourceInds]),
-      K.variable(value=denoiseTarget.X[targetInds])))
-    print('MMD after: ', str(mmd_after[i]))
-    calibrateSource = None
-  source = None
-  denoiseSource = None
+  mmd_after[i] = K.eval(cf.MMD(calibrateSource.X, denoiseTarget.X).cost(
+    K.variable(value=calibrateSource.X[sourceInds]),
+    K.variable(value=denoiseTarget.X[targetInds])))
+  print('MMD after: ', str(mmd_after[i]))
+  calibrateSource = None
+source = None
+denoiseSource = None
 
+# end for loop
 '''
 Output the overall results.
 '''
