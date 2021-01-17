@@ -142,7 +142,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
 
     sourceLabels = np.zeros(sourceXMMD.shape[0])
 
-    calibMMDNet.fit(sourceXMMD,sourceLabels,nb_epoch=500,
+    calibMMDNet.fit(sourceXMMD,sourceLabels,epochs=500,
             batch_size=1000,validation_split=0.1,verbose=0,
             callbacks=[lrate,mn.monitorMMD(sourceXMMD, sourceYMMD, targetXMMD,
                                            targetYMMD, calibMMDNet.predict),

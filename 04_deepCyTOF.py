@@ -154,6 +154,7 @@ if loadModel:
   cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), 'results/deepCyTOF_models/' + data_dir.replace("data/","") + '/cellClassifier.h5'))
 else:
   print('Train the classifier on de-noised Target')
+
 cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
                                      hiddenLayersSizes, activation, l2_penalty,
                                      data_dir.replace("data/",""))
