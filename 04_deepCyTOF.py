@@ -44,6 +44,8 @@ from Util import FileIO as io
 from Util import feedforwadClassifier as net
 from Util import MMDNet as mmd
 
+os.chdir(root)
+
 
 '''
 Parameters.
@@ -78,7 +80,6 @@ Make your choice here - an integer from 0 to 4.
 '''
 
 # nD data folders
-os.chdir(root)
 data_path_nD = 'data/2D/x'
 data_dirs_nD = os.listdir(data_path_nD)
 for i in range(len(data_dirs_nD)):
@@ -145,14 +146,12 @@ denoiseTarget, preprocessor = dh.standard_scale(denoiseTarget, preprocessor=None
 
 if loadModel:
   from keras.models import load_model
-  cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), 'savemodels/' + dataSet[choice] + '/cellClassifier.h5'))
+  cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), 'results/deepCyTOF_models/' + data_dir.replace("data/","") + '/cellClassifier.h5'))
 else:
   print('Train the classifier on de-noised Target')
-  cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
-                                       hiddenLayersSizes,
-                                       activation,
-                                       l2_penalty,
-                                       data_dir.replace("data/",""))
+cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
+                                     hiddenLayersSizes, activation, l2_penalty,
+                                     data_dir.replace("data/",""))
 
 '''
 Test the performance with and without calibration.
