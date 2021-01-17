@@ -1,7 +1,7 @@
 
 from keras import callbacks as cb
 from keras.callbacks import LearningRateScheduler
-from keras import initializers
+from keras import initializations
 from keras.layers import Input, Dense, merge, Dropout, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
@@ -35,7 +35,7 @@ def constructMMD(target):
 
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializers.normal(shape,
+    init = lambda shape, name:initializations.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     
@@ -43,32 +43,32 @@ def constructMMD(target):
     block1_bn1 = BatchNormalization()(calibInput)
     block1_a1 = Activation('relu')(block1_bn1)
     block1_w1 = Dense(mmdNetLayerSizes[0], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a1) 
     block1_bn2 = BatchNormalization()(block1_w1)
     block1_a2 = Activation('relu')(block1_bn2)
     block1_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a2) 
     block1_output = merge([block1_w2, calibInput], mode = 'sum')
     block2_bn1 = BatchNormalization()(block1_output)
     block2_a1 = Activation('relu')(block2_bn1)
     block2_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a1) 
     block2_bn2 = BatchNormalization()(block2_w1)
     block2_a2 = Activation('relu')(block2_bn2)
     block2_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a2) 
     block2_output = merge([block2_w2, block1_output], mode = 'sum')
     block3_bn1 = BatchNormalization()(block2_output)
     block3_a1 = Activation('relu')(block3_bn1)
     block3_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a1) 
     block3_bn2 = BatchNormalization()(block3_w1)
     block3_a2 = Activation('relu')(block3_bn2)
     block3_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a2) 
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
+    calibMMDNet = Model(input=calibInput, output=block3_output)
     
 
     return calibMMDNet, block3_output
@@ -77,7 +77,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
     
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializers.normal(shape,
+    init = lambda shape, name:initializations.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     
@@ -85,32 +85,32 @@ def calibrate(target, source, sourceIndex, predLabel, path):
     block1_bn1 = BatchNormalization()(calibInput)
     block1_a1 = Activation('relu')(block1_bn1)
     block1_w1 = Dense(mmdNetLayerSizes[0], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a1) 
     block1_bn2 = BatchNormalization()(block1_w1)
     block1_a2 = Activation('relu')(block1_bn2)
     block1_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a2) 
     block1_output = merge([block1_w2, calibInput], mode = 'sum')
     block2_bn1 = BatchNormalization()(block1_output)
     block2_a1 = Activation('relu')(block2_bn1)
     block2_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a1) 
     block2_bn2 = BatchNormalization()(block2_w1)
     block2_a2 = Activation('relu')(block2_bn2)
     block2_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a2) 
     block2_output = merge([block2_w2, block1_output], mode = 'sum')
     block3_bn1 = BatchNormalization()(block2_output)
     block3_a1 = Activation('relu')(block3_bn1)
     block3_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a1) 
     block3_bn2 = BatchNormalization()(block3_w1)
     block3_a2 = Activation('relu')(block3_bn2)
     block3_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a2) 
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
+    calibMMDNet = Model(input=calibInput, output=block3_output)
 
     n = target.X.shape[0]
     p = np.random.permutation(n)
@@ -158,7 +158,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
 def loadModel(target, source, sourceIndex, predLabel, path):
     mmdNetLayerSizes = [25, 25]
     l2_penalty = 1e-2
-    init = lambda shape, name:initializers.normal(shape,
+    init = lambda shape, name:initializations.normal(shape,
                                                      scale=.1e-4, name=name)
     space_dim = target.X.shape[1]
     
@@ -166,32 +166,32 @@ def loadModel(target, source, sourceIndex, predLabel, path):
     block1_bn1 = BatchNormalization()(calibInput)
     block1_a1 = Activation('relu')(block1_bn1)
     block1_w1 = Dense(mmdNetLayerSizes[0], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a1) 
     block1_bn2 = BatchNormalization()(block1_w1)
     block1_a2 = Activation('relu')(block1_bn2)
     block1_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block1_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block1_a2) 
     block1_output = merge([block1_w2, calibInput], mode = 'sum')
     block2_bn1 = BatchNormalization()(block1_output)
     block2_a1 = Activation('relu')(block2_bn1)
     block2_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a1) 
     block2_bn2 = BatchNormalization()(block2_w1)
     block2_a2 = Activation('relu')(block2_bn2)
     block2_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block2_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block2_a2) 
     block2_output = merge([block2_w2, block1_output], mode = 'sum')
     block3_bn1 = BatchNormalization()(block2_output)
     block3_a1 = Activation('relu')(block3_bn1)
     block3_w1 = Dense(mmdNetLayerSizes[1], activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a1)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a1) 
     block3_bn2 = BatchNormalization()(block3_w1)
     block3_a2 = Activation('relu')(block3_bn2)
     block3_w2 = Dense(space_dim, activation='linear',
-                      kernel_regularizer=l2(l2_penalty), init = init)(block3_a2)
+                      W_regularizer=l2(l2_penalty), init = init)(block3_a2) 
     block3_output = merge([block3_w2, block2_output], mode = 'sum')
     
-    calibMMDNet = Model(inputs=calibInput, outputs=block3_output)
+    calibMMDNet = Model(input=calibInput, output=block3_output)
 
     calibMMDNet.load_weights(os.path.join(io.DeepLearningRoot(),
                                           'savemodels/'+ path + '/ResNet'+ str(sourceIndex)+'.h5'))

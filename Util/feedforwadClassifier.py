@@ -95,16 +95,16 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(inputLayer)
+                    W_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(hidden1)
+                    W_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(hidden2)
+                    W_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(inputs = inputLayer, outputs = outputLayer)
-    net = Model(inputs = inputLayer, outputs = outputLayer)
+    encoder = Model(input = inputLayer, output = outputLayer)
+    net = Model(input = inputLayer, output = outputLayer)
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
 
@@ -185,15 +185,15 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(inputLayer)
+                    W_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(hidden1)
+                    W_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    kernel_regularizer = l2(l2_penalty))(hidden2)
+                    W_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(inputs = inputLayer, outputs = hidden3)
+    encoder = Model(input = inputLayer, output = hidden3)
     # plot data in the 3rd hidden layer
     h3_data = encoder.predict(x_test, verbose = 0)
     #fig, (ax1) = plt1.subplots(1,1, subplot_kw={'projection':'3d'})
@@ -205,7 +205,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     #ax1.set_title('data in 3rd hidden layer')
     plt1.show()
     
-    net = Model(inputs = inputLayer, outputs = outputLayer)
+    net = Model(input = inputLayer, output = outputLayer)
     lrate = LearningRateScheduler(step_decay)
     optimizer = keras.optimizers.rmsprop(lr = 0.0)
 
