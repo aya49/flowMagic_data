@@ -200,7 +200,8 @@ scoredf2 <- plyr::compact(scoredf2_)
 gs2_files_error <- gs2_files[!gs2_files%in%names(scoredf2)]
 
 scoredf2tb <- dplyr::bind_rows(scoredf2)
-write.table(scoredf2tb, file=gzfile(paste0(score_dir,"/gigaSOM_2D.csv.gz")), sep=",")
+dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
+write.table(scoredf2tb, file=gzfile(paste0(score_dir,"/2D/gigaSOM.csv.gz")), sep=",")
 time_output(start)
 
 
@@ -312,5 +313,6 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
   return(best)
   # return(dplyr::bind_rows(scoredf_cpop_))
 })
-write.table(scoredf, file=gzfile(paste0(score_dir,"/gigaSOM_nD.csv.gz")), sep=",")
+dir.create(paste0(score_dir,"/nD"), showWarnings=FALSE)
+write.table(scoredf, file=gzfile(paste0(score_dir,"/nD/gigaSOM_nD.csv.gz")), sep=",")
 time_output(start)

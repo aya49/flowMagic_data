@@ -245,6 +245,7 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
   # return(dplyr:::bind_rows(scoredf_k_))
 })
 scoredf <- dplyr::bind_rows(scoredf_)
-write.table(scoredf, file=gzfile(paste0(score_dir,"/flowLearn.csv.gz")), sep=",")
+dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
+write.table(scoredf, file=gzfile(paste0(score_dir,"/2D/flowLearn.csv.gz")), sep=",")
 time_output(start)
 
