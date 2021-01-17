@@ -102,7 +102,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y))# - 1
-    outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
+    outputLayer = Dense(numClasses+1, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = outputLayer)
     net = Model(inputs = inputLayer, outputs = outputLayer)
@@ -192,7 +192,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
                     kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y))# - 1
-    outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
+    outputLayer = Dense(numClasses+1, activation = 'softmax')(hidden3)
     
     encoder = Model(inputs = inputLayer, outputs = hidden3)
     # plot data in the 3rd hidden layer
