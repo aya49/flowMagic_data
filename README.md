@@ -11,4 +11,4 @@ in order to get the original code to work with minimal modifications, we used:
 - scikit-learn 0.20.0
 - keras 1.2.2
 - TensorFlow 1.0.0
-- numpy 1.14
+- numpy 1.19
