@@ -95,11 +95,11 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
@@ -185,11 +185,11 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = len(np.unique(trainSample.y)) - 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     

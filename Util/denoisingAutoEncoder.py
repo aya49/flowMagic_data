@@ -56,11 +56,11 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
         
             input_cell = Input(shape=(inputDim,))
             encoded = Dense(ae_encodingDim, activation='relu',
-                            W_regularizer=l2(l2_penalty_ae))(input_cell)
+                            kernel_regularizer=l2(l2_penalty_ae))(input_cell)
             encoded1 = Dense(ae_encodingDim, activation='relu',
-                             W_regularizer=l2(l2_penalty_ae))(encoded)
+                             kernel_regularizer=l2(l2_penalty_ae))(encoded)
             decoded = Dense(inputDim, activation='linear',
-                            W_regularizer=l2(l2_penalty_ae))(encoded1)
+                            kernel_regularizer=l2(l2_penalty_ae))(encoded1)
         
             autoencoder = Model(input=input_cell, output=decoded)
             autoencoder.compile(optimizer='rmsprop', loss='mse')

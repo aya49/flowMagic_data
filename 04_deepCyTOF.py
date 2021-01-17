@@ -96,6 +96,7 @@ for i in range(len(data_dirs_2D1)):
 
 data_dirs = data_dirs_2D + data_dirs_nD
 # for data_dir in data_dirs:
+data_dir = data_dirs[0]
 
 data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
 actual_paths = [x.replace("/x/","/y/") for x in data_paths]
@@ -103,7 +104,7 @@ actual_paths = [x.replace("/x/","/y/") for x in data_paths]
 data = pd.read_csv(data_paths[0])
 actual = pd.read_csv(actual_paths[0].replace("/x/", "/y/"))
 
-dataIndex = os.listdir(data_dir)
+dataIndex = np.array(os.listdir(data_dir))
 trainIndex = dataIndex
 testIndex = dataIndex
 relevantMarkers = np.asarray(range(len(data.columns)))
@@ -151,7 +152,7 @@ else:
                                        hiddenLayersSizes,
                                        activation,
                                        l2_penalty,
-                                       dataSet[choice])
+                                       data_dir.replace("data/",""))
 
 '''
 Test the performance with and without calibration.
