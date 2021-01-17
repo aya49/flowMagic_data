@@ -110,7 +110,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
 
     net.compile(optimizer = optimizer, 
                 loss = 'sparse_categorical_crossentropy')
-    net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0, 
             callbacks=[lrate, mn.monitor(),
             cb.EarlyStopping(monitor = 'val_loss',
