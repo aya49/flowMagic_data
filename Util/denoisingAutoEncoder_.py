@@ -5,7 +5,7 @@ from keras.regularizers import l2
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Monitoring as mn
+from Util import Monitoring as mn
 from Util import DataHandler as dh
 import os.path
 from Util import FileIO as io
@@ -46,7 +46,7 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
         if loadModel:
             from keras.models import load_model
             autoencoder = load_model(os.path.join(io.DeepLearningRoot(),
-                                                  'savemodels/' + path + '/denoisedAE.h5'))
+                                                  'results/deepCyTOF_models/' + path + '/denoisedAE.h5'))
         else:
             # train de-noising auto encoder and save it.
             trainTarget_ae = np.concatenate([sourceX, target.X[toKeepT]],
@@ -56,21 +56,21 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
         
             input_cell = Input(shape=(inputDim,))
             encoded = Dense(ae_encodingDim, activation='relu',
-                            W_regularizer=l2(l2_penalty_ae))(input_cell)
+                            kernel_regularizer=l2(l2_penalty_ae))(input_cell)
             encoded1 = Dense(ae_encodingDim, activation='relu',
-                             W_regularizer=l2(l2_penalty_ae))(encoded)
+                             kernel_regularizer=l2(l2_penalty_ae))(encoded)
             decoded = Dense(inputDim, activation='linear',
-                            W_regularizer=l2(l2_penalty_ae))(encoded1)
+                            kernel_regularizer=l2(l2_penalty_ae))(encoded1)
         
-            autoencoder = Model(input=input_cell, output=decoded)
-            autoencoder.compile(optimizer='rmsprop', loss='mse')
-            autoencoder.fit(trainData_ae, trainTarget_ae, nb_epoch=80,
+            autoencoder = Model(inputs=input_cell, outputs=decoded)
+            autoencoder.compile(optimizer='RMSprop', loss='mse')
+            autoencoder.fit(trainData_ae, trainTarget_ae, epochs=80,
                             batch_size=128, shuffle=True,
                             validation_split=0.1, verbose = 0,
                             callbacks=[mn.monitor(), cb.EarlyStopping(
                             monitor='val_loss', patience=25,  mode='auto')])
             autoencoder.save(os.path.join(io.DeepLearningRoot(),
-                                          'savemodels/' + path + '/denoisedAE.h5'))
+                                          'results/deepCyTOF_models/' + path + '/denoisedAE.h5'))
             del sourceX
             plt.close('all')
         

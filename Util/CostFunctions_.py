@@ -6,7 +6,7 @@ Created on Jul 13, 2016
 import sys
 from keras import backend as K
 import numpy as np
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 IntType = 'int32'
 FloatType = 'float32'
@@ -15,7 +15,7 @@ FloatType = 'float32'
 def squaredDistance(X,Y):
     # X is nxd, Y is mxd, returns nxm matrix of all pairwise Euclidean distances
     # broadcasted subtraction, a square, and a sum.
-    r = K.expand_dims(X, dim=1)
+    r = K.expand_dims(X, 1)
     return K.sum(K.square(r-Y), axis=-1)
 
 class MMD:

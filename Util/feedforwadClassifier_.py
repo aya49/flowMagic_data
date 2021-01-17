@@ -11,7 +11,8 @@ from keras.regularizers import l2
 from keras import callbacks as cb
 from keras.callbacks import LearningRateScheduler
 import numpy as np
-import Monitoring as mn
+import numpy.matlib
+from Util import Monitoring as mn
 import sklearn.metrics
 import matplotlib
 import pylab as plt
@@ -82,42 +83,42 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     
     # Labels start from 0.
     y_train = np.int_(y_train) - 1
-
+    
     
     # Special case in GvHD: label in those files are 0,1,3,4 with no 2.
-    if mode == 'GvHD' and (i == 5 or i == 9 or 
+    if mode == 'GvHD' and (i == 5 or i == 9 or
                            i == 10 or i == 11):
         y_train[y_train != 0] = y_train[y_train != 0] - 1
-
+    
     # Expand labels, to work with sparse categorical cross entropy.
     y_train = np.expand_dims(y_train, -1)
     
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y)) - 1
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
+    numClasses = len(np.unique(trainSample.y)) + 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = outputLayer)
-    net = Model(input = inputLayer, output = outputLayer)
+    encoder = Model(inputs = inputLayer, outputs = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
-
-    net.compile(optimizer = optimizer, 
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
+    
+    net.compile(optimizer = optimizer,
                 loss = 'sparse_categorical_crossentropy')
-    net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
-            validation_split = 0.1, verbose = 0, 
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
+            validation_split = 0.1, verbose = 0,
             callbacks=[lrate, mn.monitor(),
             cb.EarlyStopping(monitor = 'val_loss',
                              patience = 25, mode = 'auto')])
     try:
         net.save(os.path.join(io.DeepLearningRoot(),
-                              'savemodels/' + path + '/cellClassifier.h5'))
+                              'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
     except OSError:
         pass
     #plt.close('all')
@@ -185,15 +186,15 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
-    numClasses = len(np.unique(trainSample.y)) - 1
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
+    numClasses = len(np.unique(trainSample.y)) + 1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = hidden3)
+    encoder = Model(inputs = inputLayer, outputs = hidden3)
     # plot data in the 3rd hidden layer
     h3_data = encoder.predict(x_test, verbose = 0)
     #fig, (ax1) = plt1.subplots(1,1, subplot_kw={'projection':'3d'})
@@ -205,20 +206,20 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     #ax1.set_title('data in 3rd hidden layer')
     plt1.show()
     
-    net = Model(input = inputLayer, output = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
 
-    net.compile(optimizer = optimizer, 
+    net.compile(optimizer = optimizer,
                 loss = 'sparse_categorical_crossentropy')
-    net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0, 
             callbacks=[lrate, mn.monitor(),
             cb.EarlyStopping(monitor = 'val_loss',
                              patience = 25, mode = 'auto')])
     try:
         net.save(os.path.join(io.DeepLearningRoot(),
-                              'savemodels/' + path + '/cellClassifier.h5'))
+                              'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
     except OSError:
         pass
     #plt.close('all')
