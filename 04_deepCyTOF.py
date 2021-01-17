@@ -143,9 +143,11 @@ target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarker
 Train the de-noising auto encoder.
 '''
 print('Train the de-noising auto encoder.')
+res_dir = data_dir.replace("data/","results/").replace("/x/","/deepCyTOF_models/")
+Path(res_dir).mkdir(parents=True, exist_ok=True)
 DAE = dae.trainDAE(target, data_dir, refSampleInd, trainIndex,
                    relevantMarkers, mode, keepProb, denoise,
-                   loadModel, data_dir.replace("data/",""))
+                   loadModel, res_dir)
 denoiseTarget = dae.predictDAE(target, DAE, denoise)
 
 '''
@@ -153,15 +155,17 @@ Train the feed-forward classifier on (de-noised) target.
 '''
 denoiseTarget, preprocessor = dh.standard_scale(denoiseTarget, preprocessor=None)
 
+res_dir = data_dir.replace("data/", "results/").replace("/x/", "/deepCyTOF_models/")
+Path(res_dir).mkdir(parents=True, exist_ok=True)
 if loadModel:
   from keras.models import load_model
-  cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), 'results/deepCyTOF_models/' + data_dir.replace("data/","") + '/cellClassifier.h5'))
+  cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), res_dir + '/cellClassifier.h5'))
 else:
   print('Train the classifier on de-noised Target')
 
-cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
-                                     hiddenLayersSizes, activation, l2_penalty,
-                                     data_dir.replace("data/",""))
+  cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
+                                       hiddenLayersSizes, activation, l2_penalty,
+                                       res_dir)
 
 '''
 Test the performance with and without calibration.

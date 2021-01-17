@@ -45,8 +45,7 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
     if denoise:
         if loadModel:
             from keras.models import load_model
-            autoencoder = load_model(os.path.join(io.DeepLearningRoot(),
-                                                  'savemodels/' + path + '/denoisedAE.h5'))
+            autoencoder = load_model(os.path.join(io.DeepLearningRoot(), path + '/denoisedAE.h5'))
         else:
             # train de-noising auto encoder and save it.
             trainTarget_ae = np.concatenate([sourceX, target.X[toKeepT]],
@@ -69,8 +68,7 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
                             validation_split=0.1, verbose = 0,
                             callbacks=[mn.monitor(), cb.EarlyStopping(
                             monitor='val_loss', patience=25,  mode='auto')])
-            autoencoder.save(os.path.join(io.DeepLearningRoot(),
-                                          'savemodels/' + path + '/denoisedAE.h5'))
+            autoencoder.save(os.path.join(io.DeepLearningRoot(), path + '/denoisedAE.h5'))
             del sourceX
             plt.close('all')
         

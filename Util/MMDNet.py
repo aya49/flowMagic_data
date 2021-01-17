@@ -148,8 +148,7 @@ def calibrate(target, source, sourceIndex, predLabel, path):
                                            targetYMMD, calibMMDNet.predict),
               cb.EarlyStopping(monitor='val_loss',patience=20,mode='auto')])
     plt.close('all')
-    calibMMDNet.save_weights(os.path.join(io.DeepLearningRoot(),
-                                          'savemodels/' + path + '/ResNet'+ str(sourceIndex)+'.h5'))
+    calibMMDNet.save_weights(os.path.join(io.DeepLearningRoot(), path + '/ResNet'+ str(sourceIndex)+'.h5'))
     calibrateSource = Sample(calibMMDNet.predict(source.X),
                                              source.y)
     calibMMDNet = None
@@ -193,7 +192,6 @@ def loadModel(target, source, sourceIndex, predLabel, path):
     
     calibMMDNet = Model(input=calibInput, output=block3_output)
 
-    calibMMDNet.load_weights(os.path.join(io.DeepLearningRoot(),
-                                          'savemodels/'+ path + '/ResNet'+ str(sourceIndex)+'.h5'))
+    calibMMDNet.load_weights(os.path.join(io.DeepLearningRoot(), path + '/ResNet'+ str(sourceIndex)+'.h5'))
     
     return calibMMDNet
