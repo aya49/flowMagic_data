@@ -24,7 +24,6 @@ packages to install:
 - sklearn
 - matplotlib
 - numpy
-- Monitoring
 - pandas
 '''
 
@@ -106,16 +105,22 @@ for i in range(len(data_dirs_2D1)):
   for fold_j in fold_:
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
-for data_dir in data_dirs_2D + data_path_nD:
+data_dirs = data_dirs_2D + data_dirs_nD
+for data_dir in data_dirs:
   data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
-  data = pd.read_csv(data_paths[0], compression='gzip', error_bad_lines=False)
-  actual = pd.read_csv(data_paths[0].replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
+  actual_paths = [x.replace("/x/","/y/") for x in data_paths]
   
-  dataIndex = np.arange(1, len(data_paths) + 1)
+  data = pd.read_csv(data_paths[0], compression='gzip', error_bad_lines=False)
+  actual = pd.read_csv(actual_paths[0], compression='gzip', error_bad_lines=False)
+  actualv = pd.DataFrame([0]*len(actual))
+  for aci in range(len(actual.columns)):
+    actualv[actual[actual.columns[aci]]==1] = aci+1
+  
+  dataIndex = os.listdir(data_dir)
   trainIndex = dataIndex
   testIndex = dataIndex
   relevantMarkers = np.asarray(range(len(data.columns)))
-  mode = 'CSV'
+  mode = 'CSV.GZ'
   numClasses = len(actual.columns)
   keepProb = .8
 
@@ -123,29 +128,26 @@ for data_dir in data_dirs_2D + data_path_nD:
   Choose the reference sample.
   '''
   print('Choose the reference sample between ' + str(trainIndex))
-  refSampleInd = dh.chooseReferenceSample(dataPath, trainIndex,
-                                          relevantMarkers, mode,
-                                          choice)
+  refSampleInd = dh.chooseReferenceSample(data_dir, trainIndex, relevantMarkers, mode)
 
-  for data_path in data_paths:
-    data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
-    actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
+  # for data_path in data_paths:
+  #   data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
+  #   actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
 
 
-print('Load the target ' + str(trainIndex[refSampleInd]))
-target = dh.loadDeepCyTOFData(dataPath, trainIndex[refSampleInd],
-                              relevantMarkers, mode)
+  print('Load the target ' + str(trainIndex[refSampleInd]))
+  target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarkers, mode)
 
-# Pre-process sample.
-target = dh.preProcessSamplesCyTOFData(target)
+  # # Pre-process sample. Don't need to, my samples are cleaned and processed
+  # target = dh.preProcessSamplesCyTOFData(target)
 
 '''
 Train the de-noising auto encoder.
 '''
 print('Train the de-noising auto encoder.')
-DAE = dae.trainDAE(target, dataPath, refSampleInd, trainIndex,
+DAE = dae.trainDAE(target, data_dir, refSampleInd, trainIndex,
                    relevantMarkers, mode, keepProb, denoise,
-                   loadModel, dataSet[choice])
+                   loadModel, data_dir.replace("data/",""))
 denoiseTarget = dae.predictDAE(target, DAE, denoise)
 
 '''

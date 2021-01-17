@@ -117,7 +117,7 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
                              patience = 25, mode = 'auto')])
     try:
         net.save(os.path.join(io.DeepLearningRoot(),
-                              'savemodels/' + path + '/cellClassifier.h5'))
+                              'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
     except OSError:
         pass
     #plt.close('all')
@@ -218,7 +218,7 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
                              patience = 25, mode = 'auto')])
     try:
         net.save(os.path.join(io.DeepLearningRoot(),
-                              'savemodels/' + path + '/cellClassifier.h5'))
+                              'results/deepCyTOF_models/' + path + '/cellClassifier.h5'))
     except OSError:
         pass
     #plt.close('all')

@@ -13,6 +13,7 @@ from Util import MMDNet as mmd
 import os.path
 import sklearn.preprocessing as prep
 from sklearn.model_selection import train_test_split
+import pandas as pd
 
 
 class Sample:
@@ -34,17 +35,28 @@ def standard_scale(sample, preprocessor = None):
     return sample, preprocessor
 
 def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 0):
-    if mode == 'CSV':
-        data_filename = dataPath + '/sample' + str(dataIndex)+'.csv'
-        X = genfromtxt(os.path.join(io.DeepLearningRoot(),data_filename), delimiter=',', skip_header=skip_header)
-    if mode == 'FCS':
-        data_filename = dataPath + '/sample' + str(dataIndex)+'.fcs'
-        _, X = fcsparser.parse(os.path.join(io.DeepLearningRoot() ,data_filename), reformat_meta=True)
-        X = X.as_matrix()
-    X = X[:, relevantMarkers]    
-    label_filename = dataPath + '/labels' + str(dataIndex) + '.csv'
-    labels = genfromtxt(os.path.join(io.DeepLearningRoot(),label_filename), delimiter=',')
+    if mode == 'CSV.GZ':
+        data_filename = dataPath + "/" + str(dataIndex) # I'm just going to give it the file name
+        X = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename)).tolist()
+        actual = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename.replace("/x/","/y/")))
+        labels = pd.DataFrame([0] * len(actual))
+        for aci in range(len(actual.columns)):
+            labels[actual[actual.columns[aci]] == 1] = aci + 1
+        labels = [item for sublist in labels.values.tolist() for item in sublist]
+
+    else:
+        if mode == 'CSV':
+            data_filename = dataPath + '/sample' + str(dataIndex)+'.csv'
+            X = genfromtxt(os.path.join(io.DeepLearningRoot(),data_filename), delimiter=',', skip_header=skip_header)
+        if mode == 'FCS':
+            data_filename = dataPath + '/sample' + str(dataIndex)+'.fcs'
+            _, X = fcsparser.parse(os.path.join(io.DeepLearningRoot() ,data_filename), reformat_meta=True)
+            X = X.as_matrix()
+        label_filename = dataPath + '/labels' + str(dataIndex) + '.csv'
+        labels = genfromtxt(os.path.join(io.DeepLearningRoot(), label_filename), delimiter=',')
     labels = np.int_(labels)
+
+    X = X[:, relevantMarkers]    
     sample = Sample(X, labels)
     
     return sample
@@ -56,7 +68,7 @@ def splitData(sample, test_size):
     testSample = Sample(data_test, label_test)
     return trainSample, testSample
 
-def chooseReferenceSample(dataPath, dataIndex, relevantMarkers, mode, choice):
+def chooseReferenceSample(dataPath, dataIndex, relevantMarkers, mode):
     samples = []
     for i in dataIndex:
         sample = loadDeepCyTOFData(dataPath, i, relevantMarkers, mode)
