@@ -105,153 +105,155 @@ for i in range(len(data_dirs_2D1)):
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
 data_dirs = data_dirs_2D + data_dirs_nD
-# for data_dir in data_dirs: ###################################################
-data_dir = data_dirs_nD[0]
-# data_dir = "src/MultiCenter_16sample"
-
-data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
-actual_paths = [x.replace("/x/","/y/") for x in data_paths]
-
-data = pd.read_csv(data_paths[0])
-actual = pd.read_csv(actual_paths[0].replace("/x/", "/y/"))
-
-# parameters
-dataIndex = np.array(os.listdir(data_dir))
-testIndex = dataIndex
-trainNum = 10 # number of train samples
-trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
-trainIndex = dataIndex[trainIndex]
-relevantMarkers = np.asarray(range(len(data.columns)))
-mode = 'CSV.GZ'
-numClasses = len(actual.columns)
-keepProb = .8
-'''
-dataIndex = np.arange(1, 16 + 1)
-trainIndex = dataIndex
-testIndex = dataIndex
-relevantMarkers = np.asarray([1, 2, 3, 4, 5, 6, 7, 8]) - 1
-mode = 'CSV'
-numClasses = 4
-keepProb = .8
-'''
-
-'''
-Choose the reference sample.
-'''
-print('Choose the reference sample')
-refSampleInd = dh.chooseReferenceSample(data_dir, trainIndex, relevantMarkers, mode)
-target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarkers, mode)
-
-# for data_path in data_paths:
-#   data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
-#   actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
-
-# Pre-process sample. Don't need to, my samples are cleaned and processed
-target = dh.preProcessSamplesCyTOFData(target)
-
-'''
-Train the de-noising auto encoder.
-'''
-print('Train the de-noising auto encoder.')
-res_dir = data_dir.replace("data/","results/").replace("/x/","/deepCyTOF_models/")
-Path(res_dir).mkdir(parents=True, exist_ok=True)
-DAE = dae.trainDAE(target, data_dir, refSampleInd, trainIndex,
-                   relevantMarkers, mode, keepProb, denoise,
-                   loadModel, res_dir)
-denoiseTarget = dae.predictDAE(target, DAE, denoise)
-
-'''
-Train the feed-forward classifier on (de-noised) target.
-'''
-denoiseTarget, preprocessor = dh.standard_scale(denoiseTarget, preprocessor=None)
-
-res_dir = data_dir.replace("data/", "results/").replace("/x/", "/deepCyTOF_models/")
-Path(res_dir).mkdir(parents=True, exist_ok=True)
-if loadModel:
-  from keras.models import load_model
-  cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), res_dir + '/cellClassifier.h5'))
-else:
-  print('Train the classifier on de-noised Target')
-  cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
-                                       hiddenLayersSizes, activation, l2_penalty,
-                                       res_dir)
-
-'''
-Test the performance with and without calibration.
-'''
-# Generate the output table.
-dim = 2 if isCalibrate else 1
-acc = np.zeros((testIndex.size, dim), np.float16)
-F1 = np.zeros((testIndex.size, dim), np.float16)
-mmd_before = np.zeros(testIndex.size)
-mmd_after = np.zeros(testIndex.size)
-
-for i in np.arange(testIndex.size): #################################################
-  # i = 9
-  # Load the source.
-  sourceIndex = testIndex[i]
-  source = dh.loadDeepCyTOFData(data_dir, sourceIndex, relevantMarkers, mode)
-  source = dh.preProcessSamplesCyTOFData(source)
+for data_dir in data_dirs: ###################################################
+  # data_dir = data_dirs[0]
+  # data_dir = "src/MultiCenter_16sample"
   
-  # De-noising the source.
-  denoiseSource = dae.predictDAE(source, DAE, denoise)
-  denoiseSource, _ = dh.standard_scale(denoiseSource, preprocessor=preprocessor)
+  data_paths = [y for x in os.walk(data_dir) for y in glob(os.path.join(x[0], '*.csv.gz'))]
+  actual_paths = [x.replace("/x/","/y/") for x in data_paths]
   
-  # Predict the cell type of the source.
-  print('Run the classifier on source ', str(sourceIndex),
-        'without calibration')
+  data = pd.read_csv(data_paths[0])
+  actual = pd.read_csv(actual_paths[0].replace("/x/", "/y/"))
   
-  start = time.time()
-  acc[i, 0], F1[i, 0], predLabel = net.prediction(denoiseSource, mode, i, cellClassifier)
-  end = time.time()
-  print(end - start)
+  # parameters
+  dataIndex = np.array(os.listdir(data_dir))
+  testIndex = dataIndex
+  trainNum = 10 # number of train samples
+  trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
+  trainIndex = dataIndex[trainIndex]
+  relevantMarkers = np.asarray(range(len(data.columns)))
+  mode = 'CSV.GZ'
+  numClasses = len(actual.columns)
+  keepProb = .8
+  '''
+  dataIndex = np.arange(1, 16 + 1)
+  trainIndex = dataIndex
+  testIndex = dataIndex
+  relevantMarkers = np.asarray([1, 2, 3, 4, 5, 6, 7, 8]) - 1
+  mode = 'CSV'
+  numClasses = 4
+  keepProb = .8
+  '''
   
-  new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
-  Path(new_fold).mkdir(parents=True, exist_ok=True)
-  np.savetxt(new_fold + "/" + str(testIndex[i]).replace(".gz",""), predLabel, delimiter=',', fmt='%i')
+  '''
+  Choose the reference sample.
+  '''
+  print('Choose the reference sample')
+  refSampleInd = dh.chooseReferenceSample(data_dir, trainIndex, relevantMarkers, mode)
+  target = dh.loadDeepCyTOFData(data_dir, trainIndex[refSampleInd], relevantMarkers, mode)
   
-  sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
-  targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
-  mmd_before[i] = K.eval(cf.MMD(denoiseSource.X, denoiseTarget.X).cost(
-    K.variable(value=denoiseSource.X[sourceInds]),
-    K.variable(value=denoiseTarget.X[targetInds])) )
+  # for data_path in data_paths:
+  #   data = pd.read_csv(data_path, compression='gzip', error_bad_lines=False)
+  #   actual = pd.read_csv(data_path.replace("/x/","/y/"), compression='gzip', error_bad_lines=False)
   
-  # f = open(dataPath + "/predlabel_nocal" + str(sourceIndex) + ".csv", 'w')
-  # for item in predLabel:
-  #     f.write(str(item.astype(int)) + '\n')
-  # f.close()
+  # Pre-process sample. Don't need to, my samples are cleaned and processed
+  target = dh.preProcessSamplesCyTOFData(target)
   
-  print('MMD before: ', str(mmd_before[i]))
-  if isCalibrate:
-    if loadModel:
-      calibMMDNet = mmd.loadModel(denoiseTarget, denoiseSource,
-                                  sourceIndex, predLabel, new_fold)
-      calibrateSource = Sample(calibMMDNet.predict(denoiseSource.X),
-                               denoiseSource.y)
-      calibMMDNet = None
-    else:
-      calibrateSource = mmd.calibrate(denoiseTarget, denoiseSource,
-                                      sourceIndex, predLabel, new_fold)
+  '''
+  Train the de-noising auto encoder.
+  '''
+  print('Train the de-noising auto encoder.')
+  res_dir = data_dir.replace("data/","results/").replace("/x/","/deepCyTOF_models/")
+  Path(res_dir).mkdir(parents=True, exist_ok=True)
+  DAE = dae.trainDAE(target, data_dir, refSampleInd, trainIndex,
+                     relevantMarkers, mode, keepProb, denoise,
+                     loadModel, res_dir)
+  denoiseTarget = dae.predictDAE(target, DAE, denoise)
+  
+  '''
+  Train the feed-forward classifier on (de-noised) target.
+  '''
+  denoiseTarget, preprocessor = dh.standard_scale(denoiseTarget, preprocessor=None)
+  
+  res_dir = data_dir.replace("data/", "results/").replace("/x/", "/deepCyTOF_models/")
+  Path(res_dir).mkdir(parents=True, exist_ok=True)
+  if loadModel:
+    from keras.models import load_model
+    cellClassifier = load_model(os.path.join(io.DeepLearningRoot(), res_dir + '/cellClassifier.h5'))
+  else:
+    print('Train the classifier on de-noised Target')
+    cellClassifier = net.trainClassifier(denoiseTarget, mode, refSampleInd,
+                                         hiddenLayersSizes, activation, l2_penalty,
+                                         res_dir)
+  
+  '''
+  Test the performance with and without calibration.
+  '''
+  # Generate the output table.
+  dim = 2 if isCalibrate else 1
+  acc = np.zeros((testIndex.size, dim), np.float16)
+  F1 = np.zeros((testIndex.size, dim), np.float16)
+  mmd_before = np.zeros(testIndex.size)
+  mmd_after = np.zeros(testIndex.size)
+  
+  for i in np.arange(testIndex.size): #################################################
+    # i = 9
+    # Load the source.
+    sourceIndex = testIndex[i]
+    source = dh.loadDeepCyTOFData(data_dir, sourceIndex, relevantMarkers, mode)
+    if len(np.unique(source.y)) == 1:
+      continue
+    source = dh.preProcessSamplesCyTOFData(source)
     
+    # De-noising the source.
+    denoiseSource = dae.predictDAE(source, DAE, denoise)
+    denoiseSource, _ = dh.standard_scale(denoiseSource, preprocessor=preprocessor)
+    
+    # Predict the cell type of the source.
     print('Run the classifier on source ', str(sourceIndex),
-          'with calibration')
-    acc[i, 1], F1[i, 1], predLabell = net.prediction(calibrateSource,
-                                                     mode, i,
-                                                     cellClassifier)
+          'without calibration')
     
-    # f = open(dataPath + "/predlabel_cal" + str(sourceIndex) + ".csv", 'w')
-    # for item in predLabell:
+    start = time.time()
+    acc[i, 0], F1[i, 0], predLabel = net.prediction(denoiseSource, mode, i, cellClassifier)
+    end = time.time()
+    print(end - start)
+    
+    new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
+    Path(new_fold).mkdir(parents=True, exist_ok=True)
+    np.savetxt(new_fold + "/" + str(testIndex[i]).replace(".gz",""), predLabel, delimiter=',', fmt='%i')
+    '''
+    sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
+    targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
+    mmd_before[i] = K.eval(cf.MMD(denoiseSource.X, denoiseTarget.X).cost(
+      K.variable(value=denoiseSource.X[sourceInds]),
+      K.variable(value=denoiseTarget.X[targetInds])) )
+    
+    # f = open(dataPath + "/predlabel_nocal" + str(sourceIndex) + ".csv", 'w')
+    # for item in predLabel:
     #     f.write(str(item.astype(int)) + '\n')
     # f.close()
     
-    mmd_after[i] = K.eval(cf.MMD(calibrateSource.X, denoiseTarget.X).cost(
-      K.variable(value=calibrateSource.X[sourceInds]),
-      K.variable(value=denoiseTarget.X[targetInds])))
-    print('MMD after: ', str(mmd_after[i]))
-    calibrateSource = None
-  
-  source = None
-  denoiseSource = None
+    print('MMD before: ', str(mmd_before[i]))
+    if isCalibrate:
+      if loadModel:
+        calibMMDNet = mmd.loadModel(denoiseTarget, denoiseSource,
+                                    sourceIndex, predLabel, new_fold)
+        calibrateSource = Sample(calibMMDNet.predict(denoiseSource.X),
+                                 denoiseSource.y)
+        calibMMDNet = None
+      else:
+        calibrateSource = mmd.calibrate(denoiseTarget, denoiseSource,
+                                        sourceIndex, predLabel, new_fold)
+      
+      print('Run the classifier on source ', str(sourceIndex),
+            'with calibration')
+      acc[i, 1], F1[i, 1], predLabell = net.prediction(calibrateSource,
+                                                       mode, i,
+                                                       cellClassifier)
+      
+      # f = open(dataPath + "/predlabel_cal" + str(sourceIndex) + ".csv", 'w')
+      # for item in predLabell:
+      #     f.write(str(item.astype(int)) + '\n')
+      # f.close()
+      
+      mmd_after[i] = K.eval(cf.MMD(calibrateSource.X, denoiseTarget.X).cost(
+        K.variable(value=calibrateSource.X[sourceInds]),
+        K.variable(value=denoiseTarget.X[targetInds])))
+      print('MMD after: ', str(mmd_after[i]))
+      calibrateSource = None
+    '''
+    source = None
+    denoiseSource = None
 # end for loop
 '''
 Output the overall results.
