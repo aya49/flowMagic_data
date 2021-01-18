@@ -35,7 +35,6 @@ def standard_scale(sample, preprocessor = None):
     return sample, preprocessor
 
 def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 0):
-    X = []
     if mode == 'CSV.GZ':
         data_filename = dataPath + "/" + str(dataIndex) # I'm just going to give it the file name
         X = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename)).to_numpy()
@@ -43,7 +42,7 @@ def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 
         actual = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename.replace("/x/","/y/")))
         labels = pd.DataFrame([0] * len(actual))
         for aci in range(len(actual.columns)):
-            labels[actual[actual.columns[aci]] == 1] = aci + 1
+            labels[actual[actual.columns[aci]] == 1] = aci
         labels = [item for sublist in labels.values.tolist() for item in sublist]
 
     else:
