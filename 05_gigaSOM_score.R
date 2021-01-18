@@ -261,7 +261,7 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
   cpop_combos <- cpop_combos[!duplicated(cpop_combos)]
   
   # for each cpop combo
-  scoredf_cpop_combos <- purrr::map(cpop_combos, function(cpop_combo) {
+  scoredf_cpop_combos <- furrr::future_map(cpop_combos, function(cpop_combo) {
     
     # for each cell population
     scoredf_cpop_ <- purrr::map_dfr(cpops, function(cpop) {
@@ -309,6 +309,9 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
            lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
     graphics.off()
   })
+  
+  dir.create(paste0(score_dir,"/nD"), showWarnings=FALSE)
+  write.table(scoredf, file=gzfile(paste0(score_dir,"/nD/gigaSOM_nD_",dataset,".csv.gz")), sep=",")
   
   return(best)
   # return(dplyr::bind_rows(scoredf_cpop_))

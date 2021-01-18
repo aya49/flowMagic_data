@@ -208,7 +208,7 @@ for i in np.arange(testIndex.size): ############################################
   
   new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
   Path(new_fold).mkdir(parents=True, exist_ok=True)
-  np.savetxt(new_fold + "/" + str(testIndex[i]).replace(".gz",""), predLabel, delimiter=',')
+  np.savetxt(new_fold + "/" + str(testIndex[i]).replace(".gz",""), predLabel, delimiter=',', fmt='%i')
   
   sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
   targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
