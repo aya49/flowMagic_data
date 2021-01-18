@@ -42,7 +42,7 @@ def loadDeepCyTOFData(dataPath, dataIndex, relevantMarkers, mode, skip_header = 
         actual = pd.read_csv(os.path.join(io.DeepLearningRoot(),data_filename.replace("/x/","/y/")))
         labels = pd.DataFrame([0] * len(actual))
         for aci in range(len(actual.columns)):
-            labels[actual[actual.columns[aci]] == 1] = aci
+            labels[actual[actual.columns[aci]] == 1] = aci + 1
         labels = [item for sublist in labels.values.tolist() for item in sublist]
 
     else:
