@@ -515,10 +515,10 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
     csv_t <- csv_f[Tcells.flowD@index, c("CD4","CD8"), drop=FALSE]
     clr_t <- matrix(0, nrow=nrow(csv_t), ncol=4)
     colnames(clr_t) <- c("CD4+ Tcell", "CD8+ Tcell", "CD4-CD8- Tcell", "CD4+CD8+ Tcell")
-    clr_t[LinNeg.flowD@index%in%cd4.Tcells.flowD@index,1] <- 1
-    clr_t[LinNeg.flowD@index%in%cd8.Tcells.flowD@index,2] <- 1
-    clr_t[LinNeg.flowD@index%in%NOT.cd4.cd8.Tcells.flowD@index,3] <- 1
-    clr_t[LinNeg.flowD@index%in%cd4.cd8.Tcells.flowD@index,4] <- 1
+    clr_t[Tcells.flowD@index%in%cd4.Tcells.flowD@index,1] <- 1
+    clr_t[Tcells.flowD@index%in%cd8.Tcells.flowD@index,2] <- 1
+    clr_t[Tcells.flowD@index%in%NOT.cd4.cd8.Tcells.flowD@index,3] <- 1
+    clr_t[Tcells.flowD@index%in%cd4.cd8.Tcells.flowD@index,4] <- 1
     
     if (saveandrm) {
       dir.create(paste0(x2_dir,"/CD4CD8_Tcell"), showWarnings=FALSE)

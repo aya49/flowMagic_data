@@ -6,17 +6,17 @@
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- 10#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
 
 
 ## directory ####
-root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src"
+root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 setwd(root)
 
 
 ## packages ####
-source("helpers.R")
-source("helpers_2D.R")
+source("src/helpers.R")
+source("src/helpers_2D.R")
 libr(c(
   "furrr", #"rslurm",
   "flowCore",
@@ -25,16 +25,15 @@ libr(c(
 
 
 ## input ####
-main_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
-out_dir <- paste0(main_dir,"/data")
-res_dir <- paste0(main_dir,"/results")
-x2_dir <- paste0(out_dir,"/2D/x"); 
-y2_dir <- paste0(out_dir,"/2D/y"); 
-t2_dir <- paste0(out_dir,"/2D/thresholds"); 
+data_dir <- paste0(root,"/data")
+res_dir <- paste0(root,"/results")
+x2_dir <- paste0(data_dir,"/2D/x"); 
+y2_dir <- paste0(data_dir,"/2D/y"); 
+t2_dir <- paste0(data_dir,"/2D/thresholds"); 
 
 
 ## output ####
-score_dir <- paste0(main_dir,"/scores")
+score_dir <- paste0(root,"/scores")
 dir.create(score_dir, recursive=TRUE, showWarnings=FALSE)
 
 
@@ -150,7 +149,7 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
   names(mn_tfs) <- cpops
   
   # get actual cell populations not from y but from thresholds just to be safe
-  cpop_fname_actual <- purrr::map(cpops, function(cpop) {
+  cpop_fname_actual <- furrr::future_map(cpops, function(cpop) {
     # for each fcs file
     fname_actual <- purrr::map(fnames, function(fname) {
       x2 <- x2s[[fname]]
@@ -179,7 +178,7 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
   
   tempmark <- rep(NA,length(marknames))
   names(tempmark) <- marknames
-  scoredf_k_ <- purrr::map_dfr(ks_, function(k) {
+  scoredf_k_ <- furrr::future_map(ks_, function(k) {
     fts <- lapply(fnames, function(x) tempmark)
     names(fts) <- fnames
     for (mn in marknames) {
@@ -206,7 +205,7 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
     })
     
     # for each cell population
-    scoredf_cpop_ <- purrr::map_dfr(colnames(y2s[[1]]), function(cpop) {
+    scoredf_cpop_ <- purrr::map(colnames(y2s[[1]]), function(cpop) {
       mn_tf <- mn_tfs[[cpop]]
 
       # for each fcs file
@@ -229,6 +228,7 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
         tfactual <- cpop_fname_actual[[cpop]][[fname]]
         
         cbind(data.frame(
+          method="flowLearn",
           data_set=dataset, scatter_plot=scat, cell_population=cpop, 
           train_samples=k, total_samples=length(fnames), fcs=fname, 
           train=any(is.na(fts[[fname]]))
@@ -238,14 +238,18 @@ scoredf_ <- purrr::map(tp2_dirs, function(ft_dir) {
           # predicted_proportion=pred/length(tfpred)
         ), f1score(tfactual, tfpred))
       })
+      score_dir <- paste0(gsub("results/", "scores/", gsub("flowLearn_thresholds","flowLearn",ft_dir)),"/",cpop)
+      dir.create(gsub(paste0(root,"/"),"",score_dir), recursive=TRUE, showWarnings=FALSE)
+      write.table(scoredf_fname_, file=gzfile(paste0(score_dir,"/",k,".csv.gz")), sep=",", row.names=FALSE, col.names=TRUE)
+      
       # return(dplyr::bind_rows(scoredf_fname_))
     })
     # return(dplyr::bind_rows(scoredf_cpop_))
   })
   # return(dplyr:::bind_rows(scoredf_k_))
 })
-scoredf <- dplyr::bind_rows(scoredf_)
-dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
-write.table(scoredf, file=gzfile(paste0(score_dir,"/2D/flowLearn.csv.gz")), sep=",")
+# scoredf <- dplyr::bind_rows(scoredf_)
+# dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
+# write.table(scoredf, file=gzfile(paste0(score_dir,"/2D/flowLearn.csv.gz")), sep=",", row.names=FALSE)
 time_output(start)
 

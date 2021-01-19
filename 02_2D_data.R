@@ -25,9 +25,7 @@ libr(c(
 ## input ####
 out_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data"
 x2_dir <- paste0(out_dir,"/2D/x"); 
-dir.create(x2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
 y2_dir <- paste0(out_dir,"/2D/y"); 
-dir.create(y2_dir, recursive=TRUE, showWarnings=FALSE) #csv, clr
 
 
 ## output ####
@@ -60,10 +58,10 @@ res <- plyr::llply(loop_ind, function(ii) { purrr::map(ii, function(i) {
   
   # save a vector version of y
   y2i_file <- gsub("/data/","/results/",gsub("/x/","/y_vector/",x2_files[i]))
-    y2i <- apply(y2, 1, function(x) which(x==1)[1])
-    if ("other"%in%colnames(y2)) 
-      y2i[y2i==which(colnames(y2)=="other")] <- 0
-    write.table(y2i, file=gzfile(y2i_file), col.names=FALSE, row.names=FALSE, sep=",")
+  y2i <- apply(y2, 1, function(x) which(x==1)[1])
+  if ("other"%in%colnames(y2)) 
+    y2i[y2i==which(colnames(y2)=="other")] <- 0
+  write.table(y2i, file=gzfile(y2i_file), col.names=FALSE, row.names=FALSE, sep=",")
   
   
   # discretize x

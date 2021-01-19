@@ -493,10 +493,10 @@ res <- furrr::future_map(loop_ind, function(ii) { res1 <- purrr::map(ii, functio
     clr_cd161 <- clr_cd161[cd161_rows,,drop=FALSE]
 
     if (saveandrm) {
-      dir.create(paste0(x2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
-      write.csv(csv_cd161, file=gzfile(paste0(x2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
-      dir.create(paste0(y2_dir,"/CD5CD11b_lymphocyte"), showWarnings=FALSE)
-      write.csv(clr_cd161, file=gzfile(paste0(y2_dir,"/CD5CD11b_lymphocyte/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(x2_dir,"/CD5CD11b_CD161"), showWarnings=FALSE)
+      write.csv(csv_cd161, file=gzfile(paste0(x2_dir,"/CD5CD11b_CD161/",fid,".csv.gz")), row.names=FALSE)
+      dir.create(paste0(y2_dir,"/CD5CD11b_CD161"), showWarnings=FALSE)
+      write.csv(clr_cd161, file=gzfile(paste0(y2_dir,"/CD5CD11b_CD161/",fid,".csv.gz")), row.names=FALSE)
       
       rm(notEos.flowD, temp, temps, csv_cd161, clr_cd161)
     }

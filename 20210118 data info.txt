@@ -1,0 +1,254 @@
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD10CD27_CD19+CD20+
+- files: 1349
+- mean number of cells: 4229.767
+- number of cell pops: 2 ( CD10+, CD10- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD10CD38_IGM
+- files: 1344
+- mean number of cells: 3605.433
+- number of cell pops: 2 ( Immature transition B cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD19CD20_CD19+Bcells
+- files: 1350
+- mean number of cells: 4272.1
+- number of cell pops: 2 ( CD19+CD20+, CD19+CD20- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD19SSC-A_Nongranulocytes
+- files: 1350
+- mean number of cells: 56233.7
+- number of cell pops: 2 ( CD19+ B cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD27IgD_CD10-
+- files: 1350
+- mean number of cells: 4194.733
+- number of cell pops: 4 ( Atypical B cells, Unswitched memory B cells, Naive B cells, Switched memory B cells )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD34SSC-A_Livecells
+- files: 1328
+- mean number of cells: 97779.5
+- number of cell pops: 2 ( Blasts, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD38CD138_CD19+Bcells
+- files: 1337
+- mean number of cells: 4468.533
+- number of cell pops: 2 ( plasma cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD38CD27_CD19+Bcells
+- files: 1350
+- mean number of cells: 4621.6
+- number of cell pops: 2 ( Plasmablasts, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/CD66CD14_Livecells
+- files: 1350
+- mean number of cells: 102043.3
+- number of cell pops: 2 ( Non granulocytes, Granulocytes )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/FSC-ASSC-A_Singlets
+- files: 1350
+- mean number of cells: 244304.6
+- number of cell pops: 3 ( Beads, All cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCbcell/IgDIgM_CD19+Bcells
+- files: 1350
+- mean number of cells: 3597.233
+- number of cell pops: 4 ( IGD-IGM- B cells, IGD+IGM- B cells, IGD-IGM+ B cells, IGD+IGM+ B cells )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD11bCD16_Granulocytes
+- files: 1379
+- mean number of cells: 42311
+- number of cell pops: 4 ( CD11b+CD16+ Mature Neutrophils, CD11b-CD16-  Immature Neutrophils 1, CD11b+CD16- Granulocytes, CD11b-CD16+  Immature Neutrophils 2 )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD123CD11c_HLADR+CD14-
+- files: 1379
+- mean number of cells: 5018.467
+- number of cell pops: 3 ( mDC, pDC, B cells )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD123HLA-DR_CD56-CD16-cells
+- files: 41
+- mean number of cells: 2510.767
+- number of cell pops: 2 ( Basophils, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD123NA_CD56-CD16-cells
+- files: 1308
+- mean number of cells: 1541.7
+- number of cell pops: 2 ( Basophils, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD14CD16_HLADR+CD14+Monocytes
+- files: 1378
+- mean number of cells: 8437.467
+- number of cell pops: 2 ( Classical Monocytes, Non classical Monocytes )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD16CD56_CD3-
+- files: 1379
+- mean number of cells: 4623.367
+- number of cell pops: 5 ( CD56 Hi NK, CD56-CD16- cells, CD56-CD16+ NK, CD56 dim CD16- NK, CD56 dim CD16+ NK )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD16CD56_CD3+Tcells
+- files: 1375
+- mean number of cells: 21209.73
+- number of cell pops: 2 ( CD56+CD16+ NKT cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD3gd_CD3+Tcells
+- files: 1379
+- mean number of cells: 20117.73
+- number of cell pops: 2 ( gd T cells, gd- T cells )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD3SSC-A_HLADR-CD14-
+- files: 1379
+- mean number of cells: 28079.93
+- number of cell pops: 2 ( CD3+ T cells, CD3- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD64CD11b_CD11b+CD16+MatureNeutrophils
+- files: 1379
+- mean number of cells: 40353.8
+- number of cell pops: 2 ( CD64+, CD64- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/CD66CD16_Livecells
+- files: 1379
+- mean number of cells: 102329.1
+- number of cell pops: 3 ( Granulocytes, CD45+CD66- (Non Granulocytes), other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/FSC-ASSC-A_Singlets
+- files: 1379
+- mean number of cells: 230546.2
+- number of cell pops: 3 ( Beads, All cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/HLA-DRCD14_CD45+CD66-(NonGranulocytes)
+- files: 41
+- mean number of cells: 40851.83
+- number of cell pops: 3 ( HLADR+ CD14+ Monocytes, HLADR+ CD14-, HLADR- CD14- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/NACD14_CD45+CD66-(NonGranulocytes)
+- files: 1338
+- mean number of cells: 39660.8
+- number of cell pops: 3 ( HLADR+ CD14+ Monocytes, HLADR+ CD14-, HLADR- CD14- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/HIPCmyeloid/viability dyeSSC-A_Allcells
+- files: 1371
+- mean number of cells: 114410
+- number of cell pops: 2 ( Live cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD14CD16_lin-
+- files: 112
+- mean number of cells: 12174.73
+- number of cell pops: 4 ( cMC, ncMC, intMC, notMC )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD14CD7_NKLinNeg
+- files: 112
+- mean number of cells: 14522.63
+- number of cell pops: 2 ( lin-, NK )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD3CD19_mononuclear
+- files: 112
+- mean number of cells: 72839.83
+- number of cell pops: 4 ( Bcell, Tcell, NK lin-, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD4CD45RA_Tcell
+- files: 112
+- mean number of cells: 28725.3
+- number of cell pops: 2 ( CD4+ naive Tcell, CD4+ memory Tcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD4CD8_Tcell
+- files: 112
+- mean number of cells: 49324.1
+- number of cell pops: 4 ( CD4+ Tcell, CD8+ Tcell, CD4-CD8- Tcell, CD4+CD8+ Tcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD66CD45_leukocyte
+- files: 112
+- mean number of cells: 316968.4
+- number of cell pops: 3 ( granulocyte, mononuclear, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/CD8CD45RA_notCD4CD8Tcell
+- files: 112
+- mean number of cells: 15793.47
+- number of cell pops: 2 ( CD8+ naive Tcell, CD8+ memory Tcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/FoxP3CD25_CD4Tcell
+- files: 112
+- mean number of cells: 13613.53
+- number of cell pops: 2 ( Tregs naive Tcell, CD4+ naive Tcell other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/TbetCD45RA2_CD8Tcell
+- files: 112
+- mean number of cells: 19801.63
+- number of cell pops: 3 ( CD25+CD8+ naive Tcell, CD25+CD8+ memory Tcell, CD25+CD8+ Tcell other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/pregnancy/TCRgdCD3_CD4Tcell
+- files: 112
+- mean number of cells: 3538.1
+- number of cell pops: 2 ( gamma-delta Tcell, CD4-CD8- Tcell other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD11bLy6c_NK
+- files: 2328
+- mean number of cells: 7271.967
+- number of cell pops: 4 ( NK immature Ly6c+, NK mature Ly6c+, NK immature Ly6c-, NK mature Ly6c- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD11bLy6cT_NKTcell
+- files: 2328
+- mean number of cells: 2900.5
+- number of cell pops: 4 ( NKT CD11b-Ly6C+, NKT CD11b+Ly6C+, NKT CD11b-Ly6C-, NKT CD11b+Ly6C- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD11bmhcii_cDC
+- files: 2328
+- mean number of cells: 3591.4
+- number of cell pops: 3 ( cdC CD8+, cdC CD11b+, cdC )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD11bSSCh_NotMonocyte
+- files: 2329
+- mean number of cells: 231476.1
+- number of cell pops: 2 ( eosinophil, not eosinophil )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD161CD19_NotEosinophils
+- files: 2328
+- mean number of cells: 223103.6
+- number of cell pops: 2 ( CD161+, CD161- )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD19CD11c_NotTcell
+- files: 2328
+- mean number of cells: 137276.7
+- number of cell pops: 2 ( Bcell, not Bcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD23CD21_B2Bcell
+- files: 2328
+- mean number of cells: 118408.4
+- number of cell pops: 4 ( preB, MZB, folB, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD5CD21_Bcell
+- files: 2328
+- mean number of cells: 121279
+- number of cell pops: 2 ( Bcell B1, Bcell B2 )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/CD5Ly6C_lymphocyte
+- files: 2348
+- mean number of cells: 9635
+- number of cell pops: 2 ( granulocyte, not granulocyte )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/Ly6cCD11b_NotGranulocyte
+- files: 2341
+- mean number of cells: 203294.7
+- number of cell pops: 2 ( monocyte, not monocyte )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/2D/x/sangerP2/mhciiCD5_NotCD161
+- files: 2328
+- mean number of cells: 215828.1
+- number of cell pops: 2 ( Tcell, not Tcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/nD/x/HIPCbcell
+- files: 1350
+- mean number of cells: 107719.8
+- number of cell pops: 8 ( Granulocytes, CD19+CD20-, CD10+, Atypical B cells, Unswitched memory B cells, Naive B cells, Switched memory B cells, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/nD/x/HIPCmyeloid
+- files: 1379
+- mean number of cells: 108543.8
+- number of cell pops: 18 ( Classical Monocytes, Non classical Monocytes, mDC, pDC, B cells, gd T cells, gd- T cells, CD56 Hi NK, CD56-CD16+ NK, CD56 dim CD16- NK, CD56 dim CD16+ NK, Basophils, CD11b-CD16-  Immature Neutrophils 1, CD11b+CD16- Granulocytes, CD11b-CD16+  Immature Neutrophils 2, CD64+, CD64-, other )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/nD/x/pregnancy
+- files: 112
+- mean number of cells: 298828.2
+- number of cell pops: 19 ( leukocyte, granulocyte, Bcell, NK, ncMC, intMC, notMC, cMC, Tcell other, Tregs naive Tcell, Tregs memory Tcell, CD4+ memory Tcell, CD4+ naive Tcell other, gamma-delta Tcell, CD4-CD8- Tcell other, CD8+ memory Tcell, CD8+ naive Tcell, CD4+ Th1 naive Tcell, CD4+ Th1 memory Tcell )
+
+ /mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data/nD/x/sangerP2
+- files: 2328
+- mean number of cells: 232178.3
+- number of cell pops: 19 ( monocyte, granulocyte, eosinophil, NK immature Ly6c+, NK mature Ly6c+, NK immature Ly6c-, NK mature Ly6c-, NKT CD11b-Ly6C+, NKT CD11b+Ly6C+, NKT CD11b-Ly6C-, NKT CD11b+Ly6C-, Tcell, not Tcell, cDC CD8+, cDC CD11b+, Bcell B1, Bcell B2 preB, Bcell B2 MZB, Bcell B2 folB )

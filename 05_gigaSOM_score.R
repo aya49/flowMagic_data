@@ -6,17 +6,17 @@
 
 ## parallelization ####
 future::plan(future::multiprocess)
-no_cores <- 10#parallel::detectCores() - 5
+no_cores <- 13#parallel::detectCores() - 5
 
 
 ## directory ####
-root <- "/mnt/FCS_local3/backup/Brinfkman group/current/Alice/flowMagic_data/src"
+root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 setwd(root)
 
 
 ## packages ####
-source("helpers.R")
-source("helpers_2D.R")
+source("src/helpers.R")
+source("src/helpers_2D.R")
 libr(c(
   "combinat", 
   "flowCore",
@@ -25,15 +25,13 @@ libr(c(
 
 
 ## input ####
-out_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
-y2_dir <- paste0(out_dir,"/data/2D/y"); 
-gs2_dir <- paste0(out_dir,"/results/2D/GigaSOM_clusters"); 
-gsn_dir <- paste0(out_dir,"/results/nD/GigaSOM_clusters"); 
+y2_dir <- paste0(root,"/data/2D/y"); 
+gs2_dir <- paste0(root,"/results/2D/GigaSOM_clusters"); 
+gsn_dir <- paste0(root,"/results/nD/GigaSOM_clusters"); 
 
 
 ## output ####
-score_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/scores"
-gss_dir <- paste0(score_dir,"/2D/GigaSOM")
+gss_dir <- paste0(root,"/2D/GigaSOM")
 dir.create(gss_dir, recursive=TRUE, showWarnings=FALSE)
 
 
@@ -83,6 +81,11 @@ names(cpop_combos_all) <- as.character(2:4)
 
 loop_ind <- loop_ind_f(gs2_files, no_cores)
 scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_files, function(gs_file) { try({
+  score_dir <- gsub("results/2D/GigaSOM_clusters", "scores/2D/GigaSOM", gs_file)
+  if (file.exists(score_dir))
+    if (file.size(score_dir)>0)
+      return(NULL)
+  
   predicted <- as.data.frame(data.table::fread(gs_file, data.table=FALSE))
   y <- as.data.frame(data.table::fread(gsub("results/2D/GigaSOM_clusters","data/2D/y",gs_file), data.table=FALSE))
   x <- as.data.frame(data.table::fread(gsub("results/2D/GigaSOM_clusters","data/2D/x",gs_file), data.table=FALSE))
@@ -118,9 +121,10 @@ scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_file
       tfpred <- predicted$index%in%cpop_combo[[cpopi]]
       
       cbind(data.frame(
+        method="gigaSOM",
         data_set=dataset, scatter_plot=scat, cell_population=cpop, 
-        # train_samples=k, total_samples=length(fnames), train=any(is.na(fts[[fname]]))
-        fcs=fname
+        train_samples=NA, total_samples=NA, fcs=fname, 
+        train=NA
       ), f1score(tfactual, tfpred))
     })
   })
@@ -136,9 +140,10 @@ scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_file
         tfpred <- predicted$index%in%cpop_combo[[cpopi]]
         
         cbind(data.frame(
+          method="gigaSOM",
           data_set=dataset, scatter_plot=scat, cell_population=cpop, 
-          # train_samples=k, total_samples=length(fnames), train=any(is.na(fts[[fname]]))
-          fcs=fname
+          train_samples=NA, total_samples=NA, fcs=fname, 
+          train=NA
         ), f1score(tfactual, tfpred))
       })
       scoredf_cpop_ <- rbind(scoredf_cpop_, rep(0,ncol(scoredf_cpop_)))
@@ -148,10 +153,15 @@ scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_file
   }
   
   # get best cpop combo
-  meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x$f1)))
+  meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
   best_combo <- which.max(meanf1s)
   best <- scoredf_cpop_combos[[best_combo]]
   best <- best[best$cell_population!="other",,drop=FALSE]
+  
+  score_directory <- stringr::str_split(score_dir,"/")[[1]]
+  score_directory <- paste0(score_directory[-length(score_directory)], collapse="/")
+  dir.create(gsub(paste0(root,"/"), "", score_directory), recursive=TRUE, showWarnings=FALSE)
+  write.table(best, file=gzfile(gsub(paste0(root,"/"), "", score_dir)), sep=',', row.names=FALSE, col.names=TRUE)
   
   ## plot!
   try ({
@@ -166,7 +176,7 @@ scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_file
     png(paste(sub(".csv.gz",".png",gsub("clusters","plots",gs_file),".png")), 
         width=800, height=450)
     par(mfrow=c(1,2))
-    plot_dens(x_, xlab="tsne 1", ylab="tsne 2", main="actual")
+    plot_dens(x, xlab="tsne 1", ylab="tsne 2", main="actual")
     colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")
     colours <- colours[seq_len(length(cpops))]
     names(colours) <- cpops
@@ -179,35 +189,35 @@ scoredf2_ <- furrr::future_map(loop_ind, function(gs_files) { purrr::map(gs_file
     }
     legend("topright", legend=cpops, col=colours, 
            lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-    clust_vec <- rep(NA, nrow(predicted_))
+    clust_vec <- rep(NA, nrow(predicted))
     for (cpopi in seq_len(length(cpops)))
       for (clust in cpop_combos[[best_combo]][cpopi]) 
-        clust_vec[predicted_[,1]%in%clust] <- cpops[cpopi]
+        clust_vec[predicted[,1]%in%clust] <- cpops[cpopi]
     cols <- colours[clust_vec]
-    cols[is.na(cols) | !good_ind] <- "black"
-    plot(x_, cex=.1, col=cols, xlab="tsne 1", ylab="tsne 2", main="clustered")
+    # cols[is.na(cols) | !good_ind] <- "black"
+    plot(x, cex=.1, col=cols, xlab="tsne 1", ylab="tsne 2", main="clustered")
     legend("topright", legend=cpops, col=colours, 
            lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
     graphics.off()
   })
   # return(dplyr::bind_rows(scoredf_cpop_))
-  return(best)
+  # return(best)
   
 }) }) })
-scoredf2_ <- unlist(scoredf2_, recursive=FALSE)
-names(scoredf2_) <- gs2_files
-scoredf2 <- plyr::compact(scoredf2_)
-gs2_files_error <- gs2_files[!gs2_files%in%names(scoredf2)]
-
-scoredf2tb <- dplyr::bind_rows(scoredf2)
-dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
-write.table(scoredf2tb, file=gzfile(paste0(score_dir,"/2D/gigaSOM.csv.gz")), sep=",")
+# scoredf2_ <- unlist(scoredf2_)
+# names(scoredf2_) <- gs2_files
+# scoredf2 <- plyr::compact(scoredf2_)
+# gs2_files_error <- gs2_files[!gs2_files%in%names(scoredf2)]
+# 
+# scoredf2tb <- Reduce(rbind, scoredf2)
+# dir.create(paste0(score_dir,"/2D"), showWarnings=FALSE)
+# write.table(scoredf2tb, file=gzfile(paste0(score_dir,"/2D/gigaSOM.csv.gz")), sep=",", row.names=FALSE)
 time_output(start)
 
 
 start <- Sys.time()
 
-scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
+scoredf <- furrr::future_map(gsn_files, function(gs_file) {
   # get_inds <- sample(seq_len(nrow(predicted)), 400)
   predicted_ <- as.data.frame(data.table::fread(gs_file, data.table=FALSE))
   y_ <- as.data.frame(data.table::fread(gsub("results/nD/GigaSOM_clusters","data/nD/y",gs_file), data.table=FALSE))
@@ -269,9 +279,10 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
       tfpred <- predicted$index%in%cpop_combo[cpop]
       
       cbind(data.frame(
-        data_set=dataset, scatter_plot=scat, cell_population=cpop, 
-        # train_samples=k, total_samples=length(fnames), train=any(is.na(fts[[fname]]))
-        fcs=fname
+        method="gigaSOM",
+        data_set=dataset, scatter_plot=NA, cell_population=cpop, 
+        train_samples=NA, total_samples=NA, fcs=fname, 
+        train=NA
       ), f1score(tfactual, tfpred))
     })
   })
@@ -281,10 +292,18 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
   best_combo <- which.max(meanf1s)
   best <- scoredf_cpop_combos[[best_combo]]
   
+  score_dir <- gsub("results/nD/GigaSOM_clusters", "scores/nD/GigaSOM", gs_file)
+  score_directory <- stringr::str_split(score_dir,"/")[[1]]
+  score_directory <- paste0(score_directory[-length(score_directory)], collapse="/")
+  dir.create(score_directory, recursive=TRUE, showWarnings=FALSE)
+  write.table(best, file=gzfile(score_dir), sep=",", row.names=FALSE, col.names=TRUE)
+  
   try({
-    tx <- Rtsne::Rtsne(x_[!duplicated(x_),,drop=FALSE])$Y
+    tx <- as.matrix(data.table::fread(gsub("GigaSOM_clusters","Rtsne",gs_file), data.table=FALSE))
     
-    png(paste(sub(".csv.gz",".png",gsub("clusters","plots",gs_file),".png")), 
+    png_file <- paste(sub(".csv.gz",".png",gsub("clusters","plots",gs_file),".png"))
+    dir.create(gsub(file_name(png_file),"",png_file), recursive=TRUE, showWarnings=FALSE)
+    png(png_file, 
         width=900, height=400)
     par(mfrow=c(1,2))
     colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")
@@ -310,12 +329,13 @@ scoredf <- purrr::map_dfr(gsn_files, function(gs_file) {
     graphics.off()
   })
   
-  dir.create(paste0(score_dir,"/nD"), showWarnings=FALSE)
-  write.table(scoredf, file=gzfile(paste0(score_dir,"/nD/gigaSOM_nD_",dataset,".csv.gz")), sep=",")
-  
-  return(best)
+  # return(best)
   # return(dplyr::bind_rows(scoredf_cpop_))
 })
-dir.create(paste0(score_dir,"/nD"), showWarnings=FALSE)
-write.table(scoredf, file=gzfile(paste0(score_dir,"/nD/gigaSOM_nD.csv.gz")), sep=",")
+# dir.create(paste0(score_dir,"/nD"), showWarnings=FALSE)
+# write.table(scoredf, file=gzfile(paste0(score_dir,"/nD/gigaSOM_nD.csv.gz")), sep=",", row.names=FALSE)
 time_output(start)
+
+
+
+

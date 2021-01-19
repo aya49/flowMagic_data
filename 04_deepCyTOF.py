@@ -105,7 +105,7 @@ for i in range(len(data_dirs_2D1)):
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
 data_dirs = data_dirs_2D + data_dirs_nD
-for data_dir in data_dirs: ###################################################
+for data_dir in data_dirs[41:43]: ###################################################
   # data_dir = data_dirs[0]
   # data_dir = "src/MultiCenter_16sample"
   
