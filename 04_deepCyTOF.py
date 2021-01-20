@@ -41,6 +41,7 @@ from pathlib import Path
 
 from glob import glob
 import pandas as pd
+import random
 
 os.chdir(root + "/src")
 
@@ -104,8 +105,8 @@ for i in range(len(data_dirs_2D1)):
   for fold_j in fold_:
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
-data_dirs = data_dirs_2D + data_dirs_nD
-for data_dir in data_dirs[41:43]: ###################################################
+data_dirs = data_dirs_2D + data_dirs_nD # data_dirs[0:20] data_dirs[20:33] data_dirs[33:38] data_dirs[38:]
+for data_dir in data_dirs[34:38]: ###################################################
   # data_dir = data_dirs[0]
   # data_dir = "src/MultiCenter_16sample"
   
@@ -118,9 +119,13 @@ for data_dir in data_dirs[41:43]: ##############################################
   # parameters
   dataIndex = np.array(os.listdir(data_dir))
   testIndex = dataIndex
-  trainNum = 10 # number of train samples
-  trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
-  trainIndex = dataIndex[trainIndex]
+  trainNum = 10  # number of train samples
+  if "/nD/" in data_dir:
+    trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
+    trainIndex = dataIndex[trainIndex]
+  else:
+    pam_dir = data_dir.replace("data/2D/x","results/2D/xtrain_2Ddensity_euclidean_pam")
+    trainIndex = np.array(os.listdir(pam_dir + "/" + str(trainNum)))
   relevantMarkers = np.asarray(range(len(data.columns)))
   mode = 'CSV.GZ'
   numClasses = len(actual.columns)

@@ -35,13 +35,20 @@ x_dirs <- append(x2_dirs, xn_dirs)
 
 
 for (x_dir in x_dirs) {
-  x_files <- list.files(x_dir, full.names=TRUE, ".csv.gz")
+  x_files <- sample(list.files(x_dir, full.names=TRUE, ".csv.gz"),30)
   if (length(x_files)==0) next
   cat("\n\n", x_dir)
-  y1 <- data.table::fread(gsub("/x/","/y/",x_files[1]))
+  
+  x_lengths <- sapply(x_files, function(x) length(count.fields(x,skip=1)))
+  ys <- sapply(x_files, function(x) data.table::fread(gsub("/x/","/y/",x)))
+
+  if (nrow(ys[[1]])!=x_lengths[1])
+    cat("\n- diff num cells")
+  if (any(rowSums(ys[[1]])==0))
+    cat("\n- not all labelled")
   cat("\n- files:",length(x_files))
-  cat("\n- mean number of cells:", mean(sapply(sample(x_files,30), function(x) length(count.fields(x,skip=1)))))
-  cat("\n- number of cell pops:", ncol(y1), "(",paste0(colnames(y1), collapse=", "),")")
+  cat("\n- mean number of cells:", mean(x_lengths))
+  cat("\n- number of cell pops:", ncol(ys[[1]]), "(",paste0(colnames(ys[[1]]), collapse=", "),")")
 }
 
 

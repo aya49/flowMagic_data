@@ -132,6 +132,7 @@ res <- plyr::llply(loop_ind, function(ii) { purrr::map(ii, function(i) {
   # scat2 = OpenImageR::rgb_2gray(OpenImageR::readImage(paste0(gsub("/x/","/x_colscat/",x2_files[i]),".png"))) * 1000
   # write.table(scat2, file=gzfile(gsub("/x/","/x_colscat/",x2_files[i])), row.names=FALSE, col.names=FALSE, sep=",")
 
+  return(FALSE)
 }) }, .parallel=TRUE)
 time_output(start)
 
