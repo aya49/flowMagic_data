@@ -5,9 +5,10 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 20#parallel::detectCores() - 5
+no_cores <- 2#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
-root <- "/home/ayue/projects/flowMagic_data"
+# root <- "/home/ayue/projects/flowMagic_data"
+root <- "/mnt/f/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
@@ -90,13 +91,14 @@ fcs_files <- fcs_files[unlist(sapply(store.allFCS[,"Barcodes"], grep, fcs_files)
 saveandrm <- TRUE # set to FALSE to check, TRUE to run through everything
 start <- Sys.time()
 
-loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
+# loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
+loop_ind <- loop_ind_f(1:2, no_cores)
 res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   # res <- rslurm::slurm_apply(
   #   params=seq_len(nrow(store.allFCS)),
   #   jobname=""
   #   f=function(ii) { purrr::map(ii, function(i) {
-  if (store.allFCS[i,"Barcodes"]%in%error_bc) next
+  if (store.allFCS[i,"Barcodes"]%in%error_bc) return(NULL)
   
   fid <- paste0(stringr::str_pad(i, 4, pad="0"), "_", 
                 store.allFCS[i,"Genotype"], "_",
@@ -129,8 +131,8 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   gthres <- list()
   
   graphics.off()
-  png(file=paste0(plotn_dir,"/",dset, "/", fid, ".png"), width=5*400, height=4*400)
-  par(mfrow=c(4,5))
+  png(file=paste0(plotn_dir,"/",dset, "/", fid, ".png"), width=5*400, height=3*400)
+  par(mfrow=c(3,5))
   
   ## Gating All Events. for singlets #####
   temp <- flowDensity::flowDensity(
