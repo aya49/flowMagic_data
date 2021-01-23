@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 00_generate_data_impcsanger
 #SBATCH -o 00_generate_data_impcsanger.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

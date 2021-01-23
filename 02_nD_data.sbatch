@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 02_nD_data
 #SBATCH -o 02_nD_data.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

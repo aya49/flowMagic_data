@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 00_generate_data_pregnancy
 #SBATCH -o 00_generate_data_pregnancy.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

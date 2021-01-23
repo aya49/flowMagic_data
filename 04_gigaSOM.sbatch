@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 05_gigaSOM_score
 #SBATCH -o 05_gigaSOM_score.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

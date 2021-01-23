@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 04_flowLearn
 #SBATCH -o 04_flowLearn.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

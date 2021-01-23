@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 03_good_samples
 #SBATCH -o 03_good_samples.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities

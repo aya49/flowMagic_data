@@ -1,4 +1,5 @@
 #!/bin/bash 
+#SBATCH -J 05_deepCyTOF_score
 #SBATCH -o 05_deepCyTOF_score.out
 
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities
