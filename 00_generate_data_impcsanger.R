@@ -4,25 +4,9 @@
 # output: cleaned FCS csv files (cell x marker) + their clr (cell x cell pop) + straight thresholds for some gates (for flowLearn)
 
 
-## directory ####
-root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
-setwd(root)
-
-
-## packages ####
-source("src/helpers.R")
-libr(c(
-  "furrr", "future", #"rslurm",
-  "flowDensity", "flowCore",
-  "stringr"
-  # "pracma", "quantmod",
-  # "colorspace"
-))
-
-
-## parallelization ####
-future::plan(future::multiprocess)
+## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
+source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
 
 
 ## input ####
@@ -47,14 +31,10 @@ fcs_dir <- "/mnt/FCS_local/IMPC/IMPC_2016_Pilot_Data/KCL_WTSI_Sanger"
 
 
 ## ouput ####
-data_dir <- paste0(root,"/data")
-x_dir <- paste0(data_dir,"/nD/x/sangerP2")
-y_dir <- paste0(data_dir,"/nD/y/sangerP2")
-plot_dir <- paste0(data_dir,"/scatterplots/sangerP2")
-x2_dir <- paste0(data_dir,"/2D/x/sangerP2")
-y2_dir <- paste0(data_dir,"/2D/y/sangerP2")
-thres_dir <- paste0(data_dir,"/2D/thresholds/sangerP2")
-temp <- lapply(c(x_dir, y_dir, plot_dir, x2_dir, y2_dir, thres_dir), dir.create, recursive=TRUE, showWarnings=FALSE)
+dset <- "sangerP2"
+plyr::a_ply(
+  paste0(c(xn_dir, yn_dir, plotn_dir, x2_dir, y2_dir, thres_dir, filt_dir),"/",dset),
+  dir.create, recursive=TRUE, showWarnings=FALSE)
 
 
 ## meta data ####
@@ -109,12 +89,12 @@ saveandrm <- TRUE # set to FALSE to check, TRUE to run through everything
 start <- Sys.time()
 
 loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
+res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   # res <- rslurm::slurm_apply(
   #   params=seq_len(nrow(store.allFCS)),
   #   jobname=""
   #   f=function(ii) { purrr::map(ii, function(i) {
-  if (store.allFCS[i,"Barcodes"]%in%error_bc) return(NULL)
+  if (store.allFCS[i,"Barcodes"]%in%error_bc) next
   
   fid <- paste0(stringr::str_pad(i, 4, pad="0"), "_", 
                 store.allFCS[i,"Genotype"], "_",
@@ -147,7 +127,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   gthres <- list()
   
   graphics.off()
-  png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
+  png(file=paste0(plotn_dir,"/",dset, "/", fid, ".png"), width=2200, height=1800)
   par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
   
   ## Gating All Events. for singlets #####
@@ -271,11 +251,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     # abline(h=gti["CD11b.gate.high"], lwd=2)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("CD5.gate","Ly6C.gate1")]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD5","Ly6C")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%gran.flowD@index,"granulocyte"] <- 1
   
   csv_ <- csv_f[lymph1.flowD@index, c(8,9), drop=FALSE]
@@ -284,11 +259,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[lymph1.flowD@index%in%gran.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(gran.flowD@index)
+  names(filt_) <- colnames(clr_)[1]
+  
+  gthres[[scat]] <- gate_ <- gti[c("CD5.gate","Ly6C.gate1")]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD5","Ly6C")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(lymph1.flowD, temp, tempp)
   }
@@ -324,11 +311,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(mon.flowD@filter, lwd=1) #; points(notGran.flowD@flow.frame@exprs[notMon.flowD@index,c(9,12)], col=2, cex=0.1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate","CD11b.gate")]
-  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%mon.flowD@index,"monocyte"] <- 1
   
   csv_ <- csv_f[notGran.flowD@index, c(9,12), drop=FALSE]
@@ -337,11 +319,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[notGran.flowD@index%in%mon.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(mon.flowD@filter)
+  names(filt_) <- colnames(clr_)[1]
+  
+  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate","CD11b.gate")]
+  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(lymph.flowD, gran.flowD, temp) 
   }
@@ -378,11 +372,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(eos.flowD@filter, lwd=1) #; points(notMon.flowD@flow.frame@exprs[notEos.flowD@index,c(12,5)], col=2, cex=0.1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("CD11b.gate","ssc.h.gate")]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD11b","SSCh")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%eos.flowD@index,"eosinophil"] <- 1
   
   csv_ <- csv_f[notMon.flowD@index, c(12,5), drop=FALSE]
@@ -391,11 +380,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[notMon.flowD@index%in%eos.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(eos.flowD@filter)
+  names(filt_) <- colnames(clr_)[1]
+  
+  gthres[[scat]] <- gate_ <- gti[c("CD11b.gate","ssc.h.gate")]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD11b","SSCh")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(notGran.flowD, mon.flowD, temp)
   }
@@ -431,22 +432,29 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(CD161.flowD@filter, lwd=1) #; points(notEos.flowD@flow.frame@exprs[CD161.flowD@index,c(13,16)], col=2, cex=0.1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("CD161.gate","CD19.gate")]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD161","CD19")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   csv_ <- csv_f[notEos.flowD@index, c(13,16), drop=FALSE]
   clr_ <- matrix(0, nrow=nrow(csv_), ncol=2)
   colnames(clr_) <- c("CD161+","CD161-")
   clr_[notEos.flowD@index%in%CD161.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(CD161.flowD@filter, notCD161.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- gti[c("CD161.gate","CD19.gate")]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD161","CD19")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(notMon.flowD, eos.flowD)
   }
@@ -504,11 +512,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   csv_ <- csv_[cd161_rows,,drop=FALSE]
   clr_ <- clr_[cd161_rows,,drop=FALSE]
   
+  filt_ <- list(NK.flowD@filter, NKT.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(notEos.flowD, temp, temps)
   }
@@ -546,11 +560,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(NKmatNotLy6C.flowD@filter, lwd=1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate2","CD11b.gate2")]
-  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%NKimmatLy6C.flowD@index,"NK immature Ly6c+"] <- 1
   clr_lymph[id_lymph%in%NKmatLy6C.flowD@index,"NK mature Ly6c+"] <- 1
   clr_lymph[id_lymph%in%NKimmatNotLy6C.flowD@index,"NK immature Ly6c-"] <- 1
@@ -564,11 +573,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[NK.flowD@index%in%NKimmatNotLy6C.flowD@index,3] <- 1
   clr_[NK.flowD@index%in%NKmatNotLy6C.flowD@index,4] <- 1
   
+  filt_ <- list(NKimmatLy6C.flowD@filter, NKmatNotLy6C.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate2","CD11b.gate2")]
+  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(NKimmatNotLy6C.flowD, NKimmatLy6C.flowD, NKmatNotLy6C.flowD, NKmatLy6C.flowD)
   }
@@ -607,11 +628,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(NKTnotCD11bNotLy6C.flowD@filter, lwd=1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate3","CD11b.gate2")]
-  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%NKTnotCD11bLy6C.flowD@index,"NKT CD11b-Ly6C+"] <- 1
   clr_lymph[id_lymph%in%NKTCD11bLy6C.flowD@index,"NKT CD11b+Ly6C+"] <- 1
   clr_lymph[id_lymph%in%NKTnotCD11bNotLy6C.flowD@index,"NKT CD11b-Ly6C-"] <- 1
@@ -625,11 +641,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[NKT.flowD@index%in%NKTnotCD11bNotLy6C.flowD@index,3] <- 1
   clr_[NKT.flowD@index%in%NKTCD11bNotLy6C.flowD@index,4] <- 1
   
+  filt_ <- list(NKTnotCD11bLy6C.flowD@filter, NKTCD11bLy6C.flowD@filter, NKTnotCD11bNotLy6C.flowD@filter, NKTCD11bNotLy6C.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:4]
+  
+  gthres[[scat]] <- gate_ <- gti[c("Ly6C.gate3","CD11b.gate2")]
+  names(gthres[[scat]]) <- names(gate_) <- c("Ly6C","CD11b")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(CD161.flowD, NK.flowD, NKT.flowD, NKTCD11bNotLy6C.flowD, 
        NKTnotCD11bNotLy6C.flowD, NKTCD11bLy6C.flowD, NKTnotCD11bLy6C.flowD)
@@ -680,11 +708,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[notCD161.flowD@index%in%Tcell.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(Tcell.flowD@filter)
+  names(filt_) <- colnames(clr_)[1]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(csv_ncd161, clr_ncd161)
   }
@@ -762,11 +796,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[notTcell.flowD@index%in%Bcell.flowD@index,2] <- 1
   clr_[clr_[,1]==0 & clr_[,2]==0,2] <- 1
   
+  filt_ <- list(cDC.flowD@filter, Bcell.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(notCD161.flowD, notTcell.flowD)
   }
@@ -804,11 +844,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     lines(cDCCD11b.flowD@filter, lwd=1)
   })
   
-  gthres[[scat]] <- gate_ <- gti[c("CD11b.gate3","mhcii.gate")]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD11b","mhcii")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_lymph[id_lymph%in%cDCCD8.flowD@index,"cDC CD8+"] <- 1
   clr_lymph[id_lymph%in%cDCCD11b.flowD@index,"cDC CD11b+"] <- 1
   
@@ -819,11 +854,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[cDC.flowD@index%in%cDCCD11b.flowD@index,2] <- 1
   clr_[clr_[,1]==0 & clr_[,2]==0,3] <- 1
   
+  filt_ <- list(cDCCD8.flowD@filter, cDCCD11b.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- gti[c("CD11b.gate3","mhcii.gate")]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD11b","mhcii")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cDCCD8.flowD, cDCCD11b.flowD)
   }
@@ -875,11 +922,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   csv_ <- csv_[bcell_rows,,drop=FALSE]
   clr_ <- clr_[bcell_rows,,drop=FALSE]
   
+  filt_ <- list(BcellB1.flowD@index, BcellB2.flowD@index)
+  names(filt_) <- colnames(clr_)[1:2]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cDC.flowD)
   }
@@ -978,14 +1031,20 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   csv_ <- csv_[bcellb2_rows,,drop=FALSE]
   clr_ <- clr_[bcellb2_rows,,drop=FALSE]
   
+  filt_ <- list(preB.flowD@index, MZB.flowD@index, folB.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:3]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
     
-    write.csv(csv_lymph, file=gzfile(paste0(x_dir,"/",fid,".csv.gz")), row.names=FALSE)
-    write.csv(clr_lymph, file=gzfile(paste0(y_dir,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    write.csv(csv_lymph, file=gzfile(paste0(xn_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
+    write.csv(clr_lymph, file=gzfile(paste0(yn_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
     
     rm(Bcell.flowD, BcellB1.flowD, BcellB2.flowD, MZB.flowD, preB.flowD, folB.flowD)
   }
@@ -994,5 +1053,5 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   # save(gthres, file=paste0(thres_dir,"/",fid,".Rdata"))
 
   time_output(start1)
-}) }) })
+}) }) }, .parallel=TRUE)
 time_output(start)

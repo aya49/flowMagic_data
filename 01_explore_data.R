@@ -4,33 +4,14 @@
 # output: explore data
 
 
-## parallelization ####
-future::plan(future::multiprocess)
-no_cores <- 5#parallel::detectCores() - 5
-
-
-## directory ####
-root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src"
-setwd(root)
-
-
-## packages ####
-source("helpers.R")
-libr(c(
-  "furrr", #"rslurm",
-  "data.table"
-))
+## set directory, load packages, set parallel ####
+no_cores <- 15#parallel::detectCores() - 5
+source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
 
 
 ## input ####
-out_dir <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/data"
-x2_dir <- paste0(out_dir,"/2D/x")
-y2_dir <- paste0(out_dir,"/2D/y")
-xn_dir <- paste0(out_dir,"/nD/x")
-yn_dir <- paste0(out_dir,"/nD/y")
-
-x2_dirs <- list.dirs(x2_dir, recursive=TRUE, full.names=TRUE)
-xn_dirs <- list.dirs(xn_dir, recursive=TRUE, full.names=TRUE)
+x2_dirs <- list_leaf_dirs(x2_dir)
+xn_dirs <- list_leaf_dirs(xn_dir)
 x_dirs <- append(x2_dirs, xn_dirs)
 
 

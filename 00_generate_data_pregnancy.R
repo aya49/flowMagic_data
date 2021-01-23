@@ -4,23 +4,9 @@
 # output: 2D csv files + clrs + straight thresholds for some gates (for flowLearn)
 
 
-## directory ####
-root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
-setwd(root)
-
-
-## packages ####
-source("src/helpers.R")
-libr(c(
-  "furrr", #"rslurm",
-  "flowDensity", "flowCore",
-  "stringr"
-))
-
-
-## parallelization ####
-future::plan(future::multiprocess)
+## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
+source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
 
 
 ## input ####
@@ -34,14 +20,10 @@ gate_file2 <- gsub("3Q","3R",gate_file1)
 
 
 ## ouput ####
-data_dir <- paste0(root,"/data")
-x_dir <- paste0(data_dir,"/nD/x/pregnancy")
-y_dir <- paste0(data_dir,"/nD/y/pregnancy")
-plot_dir <- paste0(data_dir,"/scatterplots/pregnancy")
-x2_dir <- paste0(data_dir,"/2D/x/pregnancy")
-y2_dir <- paste0(data_dir,"/2D/y/pregnancy")
-thres_dir <- paste0(data_dir,"/2D/thresholds/pregnancy")
-temp <- lapply(c(x_dir, y_dir, plot_dir, x2_dir, y2_dir, thres_dir), dir.create, recursive=TRUE, showWarnings=FALSE)
+dset <- "pregnancy"
+plyr::a_ply(
+  paste0(c(xn_dir, yn_dir, plotn_dir, x2_dir, y2_dir, thres_dir, filt_dir),"/",dset),
+  dir.create, recursive=TRUE, showWarnings=FALSE)
 
 
 ## prep inputs ####
@@ -53,7 +35,7 @@ csv_files <- csv_files[grepl("Unstim",csv_files)]
 gates_tr <- rbind(get(load(gate_file1)), get(load(gate_file2)))
 gates_id <- c(1:11,18,19,25,26,27,29:31,35:37)
 
-png(file=paste0(out_dir, "/pregnancy_gates.png"), width=1000, height=600)
+png(file=paste0(data_dir, "/pregnancy_gates.png"), width=1000, height=600)
 par(mfrow=c(5,5),mar=(c(5,5,4,2)+0.1))
 for (gates_i in gates_id) 
   plot(density(gates_tr[,gates_i]), main=gates_i)
@@ -92,7 +74,7 @@ start <- Sys.time()
 # nfile <- c("PTLG003_1","PTLG003_2","PTLG003_BL","PTLG012_2","PTLG012_BL","PTLG028_2","PTLG028_3","PTLG030_2","PTLG030_BL","PTLG031_2")
 
 loop_ind <- loop_ind_f(seq_len(length(csv_files)), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
+res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
 
   fid <- stringr::str_extract(csv_files[i], "Gates[_A-Za-z0-9]+.fcs")
   cat("\n",i,"/",length(csv_files), fid)
@@ -128,7 +110,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   
   # errored <- FALSE
   
-  png(file=paste0(plot_dir, "/", fid, ".png"), width=2200, height=1800)
+  png(file=paste0(plot_dir, "/", dset,"/",fid, ".png"), width=2200, height=1800)
   par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
   
   gthres <- list()
@@ -221,11 +203,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[id_leuk%in%mononuclear.flowD@index,2] <- 1
   clr_[rowSums(clr_)==0,3] <- 1
   
+  filt_ <- list(mononuclear.flowD@filter, granulocytes.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(leukocytes.flowD, leukocytes.temp, mononuclear.flowD.temp, mononuclear.temp, granulocytes, granulocytes.flowD) 
   }
@@ -252,11 +240,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(Bcells.flowD@filter, lwd=2)
   lines(Tcells.flowD@filter, lwd=2)
   
-  gthres[[scat]] <- gate_<- all.gthres[8:9]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD3","CD19")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_leuk[id_leuk%in%Bcells.flowD@index,"Bcell"] <- 1
   
   csv_ <- csv_f[mononuclear.flowD@index, c("CD3","CD19"), drop=FALSE]
@@ -267,11 +250,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[mononuclear.flowD@index%in%NK.LinNeg.flowD@index,3] <- 1
   clr_[rowSums(clr_)==0,4] <- 1
   
+  gthres[[scat]] <- gate_<- all.gthres[8:9]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD3","CD19")
+  
+  filt_ <- list(Bcells.flowD@filter, Tcells.flowD@filter, NK.LinNeg.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:3]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(mononuclear.flowD) 
   }
@@ -293,11 +288,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(NKcells.flowD@filter, lwd=2)
   lines(LinNeg.flowD@filter, lwd=2)
   
-  gthres[[scat]] <- gate_ <- all.gthres[10]
-  names(gthres[[scat]]) <- names(gate_) <- "CD7"
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_leuk[id_leuk%in%NKcells.flowD@index,"NK"] <- 1
   
   csv_ <- csv_f[NK.LinNeg.flowD@index, c("CD14","CD7"), drop=FALSE]
@@ -309,11 +299,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   csv_ <- csv_[nklin_rows,]
   clr_ <- clr_[nklin_rows,]
   
+  filt_ <- list(LinNeg.flowD@filter, NKcells.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[10]
+  names(gthres[[scat]]) <- names(gate_) <- "CD7"
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(NK.LinNeg.flowD) 
   }
@@ -382,11 +384,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(intMC.flowD@filter, lwd=2)
   lines(NOT.MC.flowD@filter, lwd=2)
   
-  gthres[[scat]] <- gate_ <- all.gthres[18:19]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD14","CD16")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_leuk[id_leuk%in%ncMC.flowD@index,"ncMC"] <- 1
   clr_leuk[id_leuk%in%intMC.flowD@index,"intMC"] <- 1
   clr_leuk[id_leuk%in%NOT.MC.flowD@index,"notMC"] <- 1
@@ -400,11 +397,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[LinNeg.flowD@index%in%intMC.flowD@index,3] <- 1
   clr_[LinNeg.flowD@index%in%NOT.MC.flowD@index,4] <- 1
   
+  filt_ <- list(cMC.flowD@filter, ncMC.flowD@filter, intMC.flowD@filter, NOT.MC.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:4]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[18:19]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD14","CD16")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cMC.flowD, ncMC.flowD, intMC.flowD) 
   }
@@ -514,15 +523,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(cd4.Tcells.flowD@filter, lwd=2)
   lines(cd8.Tcells.flowD@filter, lwd=2)
   lines(NOT.cd4.cd8.Tcells.flowD@filter, lwd=2)
-  
-  gthres[[scat]] <- gate_ <- all.gthres[25:26]
-  names(gthres[[scat]]) <- names(gate_) <- c("CD4","CD8")
-  if (is.na(all.gthres[25])) 
-    gthres[["CD4CD8_Tcell"]][1] <- gate_[1] <- 
-    min(cd4.Tcells.flowD@flow.frame@exprs[!is.na(cd4.Tcells.flowD@flow.frame@exprs[,"Nd145Di"]),"Nd145Di"])
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
+
   # clr_leuk[id_leuk%in%cd4.Tcells.flowD@index,"CD4+ Tcell"] <- 1
   # clr_leuk[id_leuk%in%cd8.Tcells.flowD@index,"CD8+ Tcell"] <- 1
   # clr_leuk[id_leuk%in%NOT.cd4.cd8.Tcells.flowD@index,"CD4-CD8- Tcell"] <- 1
@@ -536,11 +537,26 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[Tcells.flowD@index%in%NOT.cd4.cd8.Tcells.flowD@index,3] <- 1
   clr_[Tcells.flowD@index%in%cd4.cd8.Tcells.flowD@index,4] <- 1
   
+  filt_ <- list(cd4.Tcells.flowD@filter, cd8.Tcells.flowD@filter, NOT.cd4.cd8.Tcells.flowD, cd4.cd8.Tcells.flowD)
+  names(filt_) <- colnames(clr_)[1:4]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[25:26]
+  names(gthres[[scat]]) <- names(gate_) <- c("CD4","CD8")
+  if (is.na(all.gthres[25])) 
+    gthres[["CD4CD8_Tcell"]][1] <- gate_[1] <- 
+    min(cd4.Tcells.flowD@flow.frame@exprs[!is.na(cd4.Tcells.flowD@flow.frame@exprs[,"Nd145Di"]),"Nd145Di"])
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(Tcells.flowD) 
   }
@@ -563,11 +579,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(cd4.T.Naive.flowD@filter, lwd=2)
   lines(cd4.T.Memory.flowD@filter, lwd=2)
   
-  gthres[[scat]] <- gate_ <- all.gthres[27]
-  names(gthres[[scat]]) <- names(gate_) <- "CD45RA"
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   clr_leuk[id_leuk%in%cd4.T.Memory.flowD@index,"CD4+ memory Tcell"] <- 1
   
   csv_ <- csv_f[cd4.Tcells.flowD@index, c("CD4","CD45RA"), drop=FALSE]
@@ -576,11 +587,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[cd4.Tcells.flowD@index%in%cd4.T.Naive.flowD@index,1] <- 1
   clr_[cd4.Tcells.flowD@index%in%cd4.T.Memory.flowD@index,2] <- 1
   
+  filt_ <- list(cd4.T.Naive.flowD@filter, cd4.T.Memory.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[27]
+  names(gthres[[scat]]) <- names(gate_) <- "CD45RA"
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cd4.T.Memory.flowD) 
   }
@@ -620,7 +643,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   }
   
   
-  
   ## gating CD4+Tcell > Tregs naive ####
   cd4.T.Naive.temp <- rotate_fcs(flowDensity::getflowFrame(cd4.T.Naive.flowD),c(channels.ind["FoxP3"],channels.ind["CD25"]),theta=-pi/3)$data
   
@@ -655,11 +677,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[cd4.T.Naive.flowD@index%in%Tregs.Naive.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(Tregs.Naive.flowD@filter)
+  names(filt_) <- colnames(clr_)[1]
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cd4.T.Naive.flowD, Tregs.Naive.flowD) 
   }
@@ -687,11 +715,17 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[NOT.cd4.cd8.Tcells.flowD@index%in%gammaDelta.Tcells.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
+  filt_ <- list(gammaDelta.Tcells.flowD@filter)
+  names(filt_) <- colnames(clr_)[1]
+
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(NOT.cd4.cd8.Tcells.flowD, gammaDelta.Tcells.flowD) 
   }
@@ -711,12 +745,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
     main=paste0(scat,"\n[leaf: naive, memory CD8+ Tcell]"), cex.lab=2, cex.axis=2, cex.main=2)
   lines(cd8.T.Naive.flowD@filter, lwd=2)
   lines(cd8.T.Memory.flowD@filter, lwd=2)
-  
-  gthres[[scat]] <- gate_ <- all.gthres[36]
-  names(gthres[[scat]]) <- names(gate_) <- "CD45RA"
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
+
   clr_leuk[id_leuk%in%cd8.T.Naive.flowD@index,"CD8+ naive Tcell"] <- 1
   clr_leuk[id_leuk%in%cd8.T.Memory.flowD@index,"CD8+ memory Tcell"] <- 1
   
@@ -726,11 +755,23 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[cd8.Tcells.flowD@index%in%cd8.T.Naive.flowD@index,1] <- 1
   clr_[cd8.Tcells.flowD@index%in%cd8.T.Memory.flowD@index,2] <- 1
   
+  filt_ <- list(cd8.T.Naive.flowD@filter, cd8.T.Memory.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[36]
+  names(gthres[[scat]]) <- names(gate_) <- "CD45RA"
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     rm(cd8.T.Naive.flowD, cd8.T.Memory.flowD) 
   }
@@ -752,11 +793,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   lines(cd25.cd8.T.Naive.flowD@filter, lwd=2)
   lines(cd25.cd8.T.Memory.flowD@filter, lwd=2)
   
-  gthres[[svat]] <- gate_ <- all.gthres[37:36]
-  names(gthres[[scat]]) <- names(gate_) <- c("Tbet","CD45RA")
-  dir.create(paste0(thres_dir,"/",scat), showWarnings=FALSE)
-  save(gate_, file=paste0(thres_dir,"/",scat,"/",fid,".Rdata"))
-  
   # clr_leuk[id_leuk%in%cd25.cd8.T.Naive.flowD@index,"CD25+CD8+ naive Tcell"] <- 1
   # clr_leuk[id_leuk%in%cd25.cd8.T.Memory.flowD@index,"CD25+CD8+ memory Tcell"] <- 1
   # clr_leuk[id_leuk%in%cd8.Tcells.flowD &
@@ -770,18 +806,30 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   clr_[cd8.Tcells.flowD@index%in%cd25.cd8.T.Memory.flowD@index,2] <- 1
   clr_[rowSums(clr_)==0,3] <- 1
   
+  filt_ <- list(cd8.T.Naive.flowD@filter, cd8.T.Memory.flowD@filter)
+  names(filt_) <- colnames(clr_)[1:2]
+  
+  gthres[[scat]] <- gate_ <- all.gthres[37:36]
+  names(gthres[[scat]]) <- names(gate_) <- c("Tbet","CD45RA")
+  
   if (saveandrm) {
-    dir.create(paste0(x2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
-    dir.create(paste0(y2_dir,"/",scat), showWarnings=FALSE)
-    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(x2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(csv_, file=gzfile(paste0(x2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    dir.create(paste0(y2_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    write.csv(clr_, file=gzfile(paste0(y2_dir,"/",dset,"/",scat,"/",fid,".csv.gz")), row.names=FALSE)
+    
+    dir.create(paste0(filt_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(filt_, file=paste0(filt_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
+    
+    dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
+    save(gate_, file=paste0(thres_dir,"/",dset,"/",scat,"/",fid,".Rdata"))
     
     leuk_rows <- rowSums(clr_leuk)>0
     csv_leuk <- csv_leuk[leuk_rows,]
     clr_leuk <- clr_leuk[leuk_rows,]
     
-    write.csv(csv_leuk, file=gzfile(paste0(x_dir,"/",fid,".csv.gz")), row.names=FALSE)
-    write.csv(clr_leuk, file=gzfile(paste0(y_dir,"/",fid,".csv.gz")), row.names=FALSE)
+    write.csv(csv_leuk, file=gzfile(paste0(x_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
+    write.csv(clr_leuk, file=gzfile(paste0(y_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
     
     rm(cd8.Tcells.flowD, cd25.cd8.T.Naive.flowD, cd25.cd8.T.Memory.flowD, csv_leuk, clr_leuk)
   }
@@ -793,6 +841,6 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   graphics.off()
   time_output(start1)
   
-}) }) })
+}) }) }, .parallel=TRUE)
 
 time_output(start)

@@ -227,12 +227,6 @@ densCols_ <- function(x, y=NULL, nbin=128, bandwidth=NULL, map=NULL,
   cols
 }
 
-plot_dens <- function(df, xlab=colnames(df)[1], ylab=colnames(df)[2], ...) {
-  # libr(c("flowCore", "flowDensity"))
-  f <- new("flowFrame")
-  f@exprs <- as.matrix(df)
-  flowDensity::plotDens(f, colnames(df), xlab=xlab, ylab=ylab, ...)
-}
 
 # # http://knowledge-forlife.com/r-color-scatterplot-points-density/
 # plot_int2 = function(

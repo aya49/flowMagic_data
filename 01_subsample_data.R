@@ -4,22 +4,9 @@
 # output: subsampled versions (because they're taking too much space...); each files should have max m rows; I'll experiment with m
 
 
-## parallelization ####
-future::plan(future::multiprocess)
-no_cores <- 5#parallel::detectCores() - 5
-
-
-## directory ####
-root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src"
-setwd(root)
-
-
-## packages ####
-source("helpers.R")
-libr(c(
-  "furrr", #"rslurm",
-  "data.table"
-))
+## set directory, load packages, set parallel ####
+no_cores <- 15#parallel::detectCores() - 5
+source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
 
 
 

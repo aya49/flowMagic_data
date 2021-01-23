@@ -1,8 +1,24 @@
+## generic functions ################
+
 ## input: full path
 ## output: file name
 file_name <- function(full_path) {
-  a <- strsplit(full_path,"/")
-  return(a[[1]][length(a[[1]])])
+  a <- strsplit(full_path,"/")[[1]]
+  a[length(a)]
+}
+
+## input: full path
+## output: folder path
+folder_name <- function(full_path) {
+  a <- strsplit(full_path,"/")[[1]]
+  paste0(a[-length(a)], collapse="/")
+}
+
+## input: full path
+## output: all leaf directories in path
+list_leaf_dirs <- function(full_path) {
+  a <- list.dirs(full_path, recursive=TRUE)
+  a[grepl(a, function(x) sum(grepl(x,a))==1)]
 }
 
 
@@ -77,6 +93,52 @@ libr = function(pkgs) {
 }
 
 
+## input: vector of numbers
+## output: mode
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+
+## input: two T/F vectors indicating whether each object is in a class
+## output: F1 + (see data frame)
+f1score <- function(tfactual, tfpred) {
+  ap <- sum(tfactual & tfpred)
+  ap0 <- ap==0
+  
+  pred <- sum(tfpred)
+  actu <- sum(tfactual)
+  
+  if (ap0) {
+    precision <- recall <- f1 <- 0
+  } else {
+    precision <- ap/pred
+    recall <- ap/actu
+    
+    f1 <- ifelse(precision+recall == 0, 0, 
+                 2 * precision * recall/(precision + recall)) 
+  }
+  data.frame(
+    precision=precision, recall=recall, f1=f1, 
+    true_proportion=actu/length(tfactual), 
+    predicted_proportion=pred/length(tfpred),
+    true_size=actu,
+    predicted_size=pred)
+}
+
+
+## gating functions ####################
+
+## input: 2D matrix
+## output: flowDensity::plotDens plot
+plot_dens <- function(df, xlab=colnames(df)[1], ylab=colnames(df)[2], ...) {
+  libr(c("flowCore", "flowDensity"))
+  f <- new("flowFrame")
+  f@exprs <- as.matrix(df)
+  flowDensity::plotDens(f, colnames(df), xlab=xlab, ylab=ylab, ...)
+}
+
 
 #' @title Rotates values in a fcs or matrix
 rotate_fcs <- function(data, chans=NULL, theta=NULL) {
@@ -96,7 +158,6 @@ rotate_matrix <- function(m, theta=NULL) {
   m_new <- m %*% matrix(c(cos(theta), -sin(theta), sin(theta), cos(theta)), 2, 2, byrow=T)
   return(list(data=m_new, theta=theta))
 }
-
 
 
 ##Finds markers in the FCS file
@@ -151,36 +212,4 @@ Find.markers <- function(frame,marker.list)
   if (length(ind)!=0)
     channels.ind <- channels.ind[-ind]
   return(channels.ind)
-}
-
-## get mode
-getmode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
-
-## f1
-f1score <- function(tfactual, tfpred) {
-  ap <- sum(tfactual & tfpred)
-  ap0 <- ap==0
-  
-  pred <- sum(tfpred)
-  actu <- sum(tfactual)
-  
-  if (ap0) {
-    precision <- recall <- f1 <- 0
-  } else {
-    precision <- ap/pred
-    recall <- ap/actu
-    
-    f1 <- ifelse(precision+recall == 0, 0, 
-                 2 * precision * recall/(precision + recall)) 
-  }
-  data.frame(
-    precision=precision, recall=recall, f1=f1, 
-    true_proportion=actu/length(tfactual), 
-    predicted_proportion=pred/length(tfpred),
-    true_size=actu,
-    predicted_size=pred)
 }
