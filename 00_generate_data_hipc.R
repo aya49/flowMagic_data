@@ -6,7 +6,8 @@
 
 ## set directory, load packages, set parallel ####
 no_cores <- 20#parallel::detectCores() - 5
-root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+# root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+root <- "/home/ayue/projects/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
