@@ -6,14 +6,13 @@
 
 ## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
-source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
+root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+source(paste0(root,"/src/RUNME.R"))
 
-
-## input ####
 
 # results from gating
-gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/B cells Gambia"
-#gs_dir <- "/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/Myeloid Gambia"
+for (gs_dir in paste0("/mnt/f/FCS data/Tobias Kollmann/shiny_app_data/",
+                      c("B cells Gambia","Myeloid Gambia"))) {
 
 panel <- "myeloid"
 if (grepl("B cells",gs_dir))
@@ -22,7 +21,7 @@ if (grepl("B cells",gs_dir))
 
 ## ouput ####
 dset <- paste0("HIPC",panel)
-plyr::a_ply(
+plyr::l_ply(
   paste0(c(xn_dir, yn_dir, plotn_dir, x2_dir, y2_dir, thres_dir, filt_dir),"/",dset),
   dir.create, recursive=TRUE, showWarnings=FALSE)
 
@@ -314,3 +313,5 @@ for (ii in seq_len(length(gs_folders))) {
 }
 
 time_output(start)
+
+}

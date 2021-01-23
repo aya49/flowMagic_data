@@ -6,7 +6,8 @@
 
 ## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
-source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
+root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+source(paste0(root,"/src/RUNME.R"))
 
 
 

@@ -6,7 +6,8 @@
 
 ## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
-source("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/RUNME.R")
+root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+source(paste0(root,"/src/RUNME.R"))
 
 
 ## input ####
@@ -32,7 +33,7 @@ fcs_dir <- "/mnt/FCS_local/IMPC/IMPC_2016_Pilot_Data/KCL_WTSI_Sanger"
 
 ## ouput ####
 dset <- "sangerP2"
-plyr::a_ply(
+plyr::l_ply(
   paste0(c(xn_dir, yn_dir, plotn_dir, x2_dir, y2_dir, thres_dir, filt_dir),"/",dset),
   dir.create, recursive=TRUE, showWarnings=FALSE)
 

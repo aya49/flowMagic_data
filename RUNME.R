@@ -29,7 +29,7 @@ scores_dir <- paste0(root, "/scores")
 
 xn_dir <- paste0(data_dir,"/nD/x")
 yn_dir <- paste0(data_dir,"/nD/y")
-plotn_dir <- paste0(root,"/nD/scatterplots")
+plotn_dir <- paste0(data_dir,"/nD/scatterplots")
 x2_dir <- paste0(data_dir,"/2D/x")
 y2_dir <- paste0(data_dir,"/2D/y")
 thres_dir <- paste0(data_dir,"/2D/thresholds")
