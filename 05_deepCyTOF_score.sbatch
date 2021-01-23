@@ -2,7 +2,6 @@
 #SBATCH -J 05_deepCyTOF_score
 #SBATCH -o 05_deepCyTOF_score.out
 
-/mnt/FCS_local2/Brinkman\ group/Alice/singularities
 singularity exec -B /mnt:/mnt \
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities/rstudio_202101.im Rscript \
 /mnt/FCS_local2/Brinkman\ group/Alice/flowMagic_data/05_deepCyTOF_score.R
