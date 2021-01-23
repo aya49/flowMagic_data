@@ -4,4 +4,4 @@
 
 singularity exec -B /mnt:/mnt \
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities/autokeras.im python \
-/mnt/FCS_local2/Brinkman\ group/Alice/flowMagic_data/04_deepCyTOF.py
+/mnt/FCS_local2/Brinkman\ group/Alice/flowMagic_data/src/04_deepCyTOF.py

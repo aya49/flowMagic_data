@@ -4,4 +4,4 @@
 
 singularity exec -B /mnt:/mnt \
 /mnt/FCS_local2/Brinkman\ group/Alice/singularities/rstudio_202101.im Rscript \
-/mnt/FCS_local2/Brinkman\ group/Alice/flowMagic_data/03_good_samples.R
+/mnt/FCS_local2/Brinkman\ group/Alice/flowMagic_data/src/03_good_samples.R
