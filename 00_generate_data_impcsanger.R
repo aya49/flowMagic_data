@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 25#parallel::detectCores() - 5
 root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
@@ -128,8 +128,8 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   gthres <- list()
   
   graphics.off()
-  png(file=paste0(plotn_dir,"/",dset, "/", fid, ".png"), width=2200, height=1800)
-  par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
+  png(file=paste0(plotn_dir,"/",dset, "/", fid, ".png"), width=5*400, height=4*400)
+  par(mfrow=c(4,5))
   
   ## Gating All Events. for singlets #####
   temp <- flowDensity::flowDensity(
