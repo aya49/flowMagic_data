@@ -21,7 +21,7 @@ results_dir <- "/mnt/FCS_local/IMPC/IMPC-Results/3i/Panel_P2-cell/Results_201701
 gt_dir <- paste0(results_dir, "/gates")
 
 # fcs metadata; obtained from 01_preProcessing
-store.allFCS_dir <- paste0(results_dir, "/store.allFCS.Rdata") 
+store.allFCS_dir <- paste0(results_dir, "/store.allFCS.Rdata")
 
 # matrix used to transform fcs files; obtained from 02_Clean, or create by applying logicleTransform on globalFrame obtained from 01_preProcessing
 lgl_dir <- paste0(results_dir, "/lgl.Rdata")
