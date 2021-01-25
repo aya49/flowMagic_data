@@ -5,8 +5,9 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 20#parallel::detectCores() - 5
+no_cores <- 10#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+# root <- "/mnt/f/Brinkman group/current/Alice/flowMagic_data"
 root <- "/home/ayue/projects/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
@@ -82,7 +83,7 @@ start <- Sys.time()
 
 # res <- furrr::future_map(seq_len(length(gs_folders)), function(ii) { 
 for (ii in seq_len(length(gs_folders))) {
-  cat("\n\n",gs_folders[ii])
+  cat("\n",gs_folders[ii])
   start1 <- Sys.time()
   suppressMessages( gs <- flowWorkspace::load_gs(gs_folders[ii]) )
   # gs_get_pop_paths(gs, path = "full") # all cell poulations
@@ -111,6 +112,7 @@ for (ii in seq_len(length(gs_folders))) {
   fids <- rownames(flowWorkspace::pData(gs))
   gsl <- lapply(seq_len(length(gs)), function(x) gs[[x]])
   rm(gs)
+  cat("(",length(gsl),") ")
   
   loop_ind <- loop_ind_f(seq_len(length(gsl)), no_cores)
   plyr::l_ply(loop_ind, function(j) { plyr::l_ply(j, function(i) {
@@ -122,7 +124,7 @@ for (ii in seq_len(length(gs_folders))) {
     cat("\n- ",i, fid)
     # gh <- gsl[[i]]
     # fcs <- flowCore::read.FCS(fcs_files[grepl(fids[i], fcs_files)])
-    
+
     # can we directly use clr (T/F cell x cell population matrix)?
     ir <- flowWorkspace::gh_pop_get_indices(gsl[[i]], rootc)
     il <- lapply(leaves, function(leaf) flowWorkspace::gh_pop_get_indices(gsl[[i]], leaf))
@@ -130,7 +132,7 @@ for (ii in seq_len(length(gs_folders))) {
     colnames(il) <- leaves_short
     other <- which(ir)%in%which(rowSums(il)==0)
     ilm <- cbind(il[ir,,drop=FALSE], other)
-    
+
     if (panel=="bcell") {
       ilm_ <- ilm[,!colnames(ilm)%in%c(
         "Plasmablasts","plasma cells","Blasts",
@@ -142,22 +144,22 @@ for (ii in seq_len(length(gs_folders))) {
     rowi <- rowSums(ilm_)==1
     ilm_ <- ilm_[rowi,]
     ilm_[which(ilm_)] <- 1
-    
+
     clm <- flowWorkspace::gh_pop_get_data(gsl[[i]], rootc)@exprs[,!markers%in%"Time" & !markers%in%"viability dye"]
     clm_ <- clm[rowi,]
-    
+
     colnames(clm_) <- markers[colnames(clm_)]
-    
+
     write.table(clm_, file=gzfile(paste0(xn_dir,"/",dset,"/",fid,".csv.gz")), sep="," ,row.names=FALSE)
     write.table(ilm_, file=gzfile(paste0(yn_dir,"/",dset,"/",fid,".csv.gz")), sep=",", row.names=FALSE)
-    
+
     rm(clm,clm_,ilm,ilm_)
-    
+
     ## Gating #####
-    gthres <- list()
+    # gthres <- list()
     
-    png(file=paste0(plotn_dir, "/", dset,"/",fid, ".png"), width=2200, height=1800)
-    par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
+    png(file=paste0(plotn_dir, "/", dset,"/",fid, ".png"), width=5*400, height=3*400)
+    par(mfrow=c(3,5),mar=(c(5,5,4,2)+0.1))
     
     # for each nonleaf cell population
     for (prnt in parents_short) {
@@ -197,12 +199,13 @@ for (ii in seq_len(length(gs_folders))) {
           # "CD64CD11b_CD11b+CD16+MatureNeutrophils",
           # b cell
           "CD66[.A-Za-z]*CD14[.A-Za-z]*[_]Livecells", 
-          "CD19[.A-Za-z]*CD20[.A-Za-z]*[_]CD19+Bcells", 
+          "CD19[.A-Za-z]*CD20[.A-Za-z]*[_]CD19[+]Bcells", 
           "IgD[.A-Za-z]*IgM[.A-Za-z]*[_]CD19[+]Bcells", 
-          "CD10[.A-Za-z]*CD27[.A-Za-z]*[_]CD19+CD20+",
+          "CD10[.A-Za-z]*CD27[.A-Za-z]*[_]CD19[+]CD20+",
           "CD7[.A-Za-z]*IgD[.A-Za-z]*[_]CD10[-]"
         ), function(x) grepl(x, scat, ignore.case=TRUE)))
         if (fltf) scat <- paste0(scat,"_")
+        if (!fltf) next
         
         # get 2D csv and clr
         csv_prnt <- fcs_temp@exprs[,stringr::str_split(dim_id,"_")[[1]],drop=FALSE]
@@ -282,9 +285,10 @@ for (ii in seq_len(length(gs_folders))) {
             }
             gth <- unique(gth)
             if (length(gth)>0) {
-              gthres[[scat]] <- append(gthres[[scat]], gth[1])
+              # gthres[[scat]] <- append(gthres[[scat]], gth[1])
               gate_ <- append(gate_, gth[1])
-              names(gthres[[scat]])[length(gthres[[scat]])] <- names(gate_)[length(gate_)] <- mrkr
+              # names(gthres[[scat]])[length(gthres[[scat]])] <- 
+              names(gate_)[length(gate_)] <- mrkr
             }
           }
           dir.create(paste0(thres_dir,"/",dset,"/",scat), showWarnings=FALSE)
@@ -305,7 +309,7 @@ for (ii in seq_len(length(gs_folders))) {
     # gthres <- gthres[!names(gthres)%in%"CD16CD56_CD3-"]
     # save(gthres, file=paste0(thres_dir,"/",fids[i],".Rdata"))
     
-    rm(fcs)
+    # rm(fcs)
   }) }, .parallel=TRUE)
   time_output(start1)
   rm(gsl)
