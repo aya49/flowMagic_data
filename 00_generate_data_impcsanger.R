@@ -92,8 +92,7 @@ fcs_files <- fcs_files[unlist(sapply(store.allFCS[,"Barcodes"], grep, fcs_files)
 saveandrm <- TRUE # set to FALSE to check, TRUE to run through everything
 start <- Sys.time()
 
-# loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
-loop_ind <- loop_ind_f(1:2, no_cores)
+loop_ind <- loop_ind_f(seq_len(nrow(store.allFCS)), no_cores)
 res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   # res <- rslurm::slurm_apply(
   #   params=seq_len(nrow(store.allFCS)),

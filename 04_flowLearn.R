@@ -5,8 +5,9 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 20#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
 root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+# root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
@@ -84,9 +85,9 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
   # get x, thresholds
   x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
   ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
-  x2s <- purrr::map(paste0(x2_diri,"/",fnames_,".csv.gz"), 
+  x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
                     data.table::fread, data.table=FALSE)
-  y2s <- purrr::map(paste0(gsub("/x/","/y/",x2_diri),"/",fnames_,".csv.gz"), 
+  y2s <- purrr::map(paste0(gsub("/x/","/y/",x2_diri),"/",fnames,".csv.gz"), 
                     data.table::fread, data.table=FALSE)
   names(y2s) <- names(x2s) <- names(ftos) <- fnames
   marknames <- names(ftos[[1]])
@@ -98,6 +99,7 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
   
   # for each threshold, predict for all files
   fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
+  protoIdxs <- NULL
   for (markname in marknames) {
     # make a density data object for flowLearn
     densdat <- new('DensityData')
@@ -109,8 +111,14 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
     }
 
     # for each number of training data, predict threshold
+    if (is.null(protoIdxs)) {
+      protoIdxs <- plyr::llply(ks, function(k) 
+        flowLearn::flSelectPrototypes(densdat, k))
+      names(protoIdxs) <- as.character(ks)
+    }
     for (k in ks) {
-      protoIdx <- flowLearn::flSelectPrototypes(densdat, k)
+      if (k>=nrow(densdat@data)) break
+      protoIdx <- protoIdxs[[as.character(k)]]
       ddp <- flowLearn::flPredictThresholds(densdat, protoIdx)
       
       ddpt <- ddp@data$gate.high
@@ -126,21 +134,22 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
   
   
   ## plot ####
+  ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
   # load prediced thresholds
-  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks, function(k) 
+  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
     get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
   names(fts) <- names(ftos[[1]])
 
   pl_dir <- gsub("thresholds","plots",fl_dir)
   dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
   for (fname in fnames) 
-    for (ki in ks) {
-      png(paste0(pl_dir,"/",fname,"_",ks[ki],".png"), width=400, height=400)
+    for (ki in ks_) {
       x2 <- x2s[[fname]]
       fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][[fname]]); names(ft) <- marknames
-      flPlot(x2, marknames, ft, fto, main=paste0("data: ", dataset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+      png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
+      flPlot(x2, marknames, ft, fto, main=paste0("data: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
       graphics.off()
     }
   time_output(start1, "plotted")
@@ -194,14 +203,15 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
   
   # for each number of train data used; cell population
   fl <- length(fnames)
-  for (ki in seq_len(length(ks))) for (cpop in cpops) {
-    k <- ks[ki]
+  for (ki in seq_len(length(ks_))) for (cpop in cpops) {
+    k <- ks_[ki]
     mn_tf <- mn_tfs[[cpop]]
     # for each fcs file
     scoredf_fname_ <- purrr::map_dfr(fnames, function(fname) {
+      print(fname)
       x2 <- x2s[[fname]]
       fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][[fname]]); names(ft) <- marknames
+      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
       ftna <- is.na(ft)
       ft[ftna] <- fto[ftna]
 
