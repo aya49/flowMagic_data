@@ -15,8 +15,8 @@ source(paste0(root,"/src/RUNME.R"))
 x2_folds <- list_leaf_dirs(x2_dir)
 x2_folds_ <- gsub("/data/","/results/",x2_folds)
 plyr::l_ply(
-  paste0("/",c("x_2Ddensity","x_2Dscatter","y_2Dncells","y_vector","scatterplots"),"/"), 
-  function(x) dir.create(gsub("/x/",x,x2_folds_), recursive=TRUE, showWarnings=FALSE))
+  paste0("/",c("x_2Ddensity","x_2Dscatter","y_2Dncells","y_vector","scatterplots","y_2D"),"/"), 
+  function(x) plyr::l_ply(gsub("/x/",x,x2_folds_), dir.create, recursive=TRUE, showWarnings=FALSE))
 
 
 ## load inputs ####
@@ -33,9 +33,11 @@ wi <- 10; hi <- 6 # number of plots per png
 ## START ####
 start <- Sys.time()
 
+cat("out of",length(x2_files),"\n")
 loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 # res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
 res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
+  cat(i," ")
   x2_file <- x2_files[i]
   
   # load csv
