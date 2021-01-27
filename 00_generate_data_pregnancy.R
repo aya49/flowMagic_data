@@ -7,8 +7,8 @@
 ## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
-root <- "/home/ayue/projects/flowMagic_data"
-# root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
+# root <- "/home/ayue/projects/flowMagic_data"
+root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
@@ -113,7 +113,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   
   # errored <- FALSE
   
-  png(file=paste0(plot_dir, "/", dset,"/",fid, ".png"), width=2200, height=1800)
+  png(file=paste0(plotn_dir, "/", dset,"/",fid, ".png"), width=2200, height=1800)
   par(mfrow=c(4,5),mar=(c(5,5,4,2)+0.1))
   
   gthres <- list()
@@ -540,7 +540,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   clr_[Tcells.flowD@index%in%NOT.cd4.cd8.Tcells.flowD@index,3] <- 1
   clr_[Tcells.flowD@index%in%cd4.cd8.Tcells.flowD@index,4] <- 1
   
-  filt_ <- list(cd4.Tcells.flowD@filter, cd8.Tcells.flowD@filter, NOT.cd4.cd8.Tcells.flowD, cd4.cd8.Tcells.flowD)
+  filt_ <- list(cd4.Tcells.flowD@filter, cd8.Tcells.flowD@filter, NOT.cd4.cd8.Tcells.flowD@filter, cd4.cd8.Tcells.flowD@filter)
   names(filt_) <- colnames(clr_)[1:4]
   
   gthres[[scat]] <- gate_ <- all.gthres[25:26]
@@ -809,7 +809,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   clr_[cd8.Tcells.flowD@index%in%cd25.cd8.T.Memory.flowD@index,2] <- 1
   clr_[rowSums(clr_)==0,3] <- 1
   
-  filt_ <- list(cd8.T.Naive.flowD@filter, cd8.T.Memory.flowD@filter)
+  filt_ <- list(cd25.cd8.T.Naive.flowD@filter, cd25.cd8.T.Memory.flowD@filter)
   names(filt_) <- colnames(clr_)[1:2]
   
   gthres[[scat]] <- gate_ <- all.gthres[37:36]
@@ -831,8 +831,8 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
     csv_leuk <- csv_leuk[leuk_rows,]
     clr_leuk <- clr_leuk[leuk_rows,]
     
-    write.csv(csv_leuk, file=gzfile(paste0(x_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
-    write.csv(clr_leuk, file=gzfile(paste0(y_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
+    write.csv(csv_leuk, file=gzfile(paste0(xn_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
+    write.csv(clr_leuk, file=gzfile(paste0(yn_dir,"/",dset,"/",fid,".csv.gz")), row.names=FALSE)
     
     rm(cd8.Tcells.flowD, cd25.cd8.T.Naive.flowD, cd25.cd8.T.Memory.flowD, csv_leuk, clr_leuk)
   }

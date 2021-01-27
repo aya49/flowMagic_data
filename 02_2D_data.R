@@ -102,17 +102,17 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
   x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
   plot_no <- ceiling(length(x2_files)/(wi*hi))
   
-  scat <- file_name(x2_files)
+  dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
   
   xi <- 1
   for (i in seq_len(plot_no)) {
-    png(file=paste0(gsub("/data/2D/x","/results/2D/scatterplots",x2_fold),"/",i,".png"),
-        width=wi*350, height=hi=350)
-    par(mfcol=c(wi,hi))
+    png(file=paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",i,".png"),
+        width=wi*350, height=hi*350)
+    par(mfcol=c(hi,wi))
     
     for (pi in seq_len(wi*hi)) {
       x2_file <- x2_files[xi]
-      if (!file.exists()) break
+      if (!file.exists(x2_file)) break
       
       x2 <- data.table::fread(x2_file)
       f2 <- get(load(gsub("/x/","/filters/",gsub(".csv.gz",".Rdata",x2_file))))

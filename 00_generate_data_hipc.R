@@ -6,10 +6,10 @@
 
 ## set directory, load packages, set parallel ####
 no_cores <- 15#parallel::detectCores() - 5
-root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+# root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 # root <- "/mnt/f/Brinkman group/current/Alice/flowMagic_data"
 # root <- "/home/ayue/projects/flowMagic_data"
-# root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
+root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
@@ -123,38 +123,38 @@ for (ii in seq_len(length(gs_folders))) {
     #   if (file.size(paste0(plot_dir, "/", fids[i], ".png"))>500000) next
     fid <- fids[i]
     cat("\n- ",i, fid)
-    # # gh <- gsl[[i]]
-    # # fcs <- flowCore::read.FCS(fcs_files[grepl(fids[i], fcs_files)])
-    # 
-    # # can we directly use clr (T/F cell x cell population matrix)?
-    # ir <- flowWorkspace::gh_pop_get_indices(gsl[[i]], rootc)
-    # il <- lapply(leaves, function(leaf) flowWorkspace::gh_pop_get_indices(gsl[[i]], leaf))
-    # il <- do.call(cbind, il)
-    # colnames(il) <- leaves_short
-    # other <- which(ir)%in%which(rowSums(il)==0)
-    # ilm <- cbind(il[ir,,drop=FALSE], other)
-    # 
-    # if (panel=="bcell") {
-    #   ilm_ <- ilm[,!colnames(ilm)%in%c(
-    #     "Plasmablasts","plasma cells","Blasts",
-    #     "IGD-IGM- B cells","IGD-IGM+ B cells","IGD+IGM- B cells","IGD+IGM+ B cells",
-    #     "Immature transition B cells")]
-    # } else {
-    #   ilm_ <- ilm[,!colnames(ilm)%in%"CD56+CD16+ NKT cells"]
-    # }
-    # rowi <- rowSums(ilm_)==1
-    # ilm_ <- ilm_[rowi,]
-    # ilm_[which(ilm_)] <- 1
-    # 
-    # clm <- flowWorkspace::gh_pop_get_data(gsl[[i]], rootc)@exprs[,!markers%in%"Time" & !markers%in%"viability dye"]
-    # clm_ <- clm[rowi,]
-    # 
-    # colnames(clm_) <- markers[colnames(clm_)]
-    # 
-    # write.table(clm_, file=gzfile(paste0(xn_dir,"/",dset,"/",fid,".csv.gz")), sep="," ,row.names=FALSE)
-    # write.table(ilm_, file=gzfile(paste0(yn_dir,"/",dset,"/",fid,".csv.gz")), sep=",", row.names=FALSE)
-    # 
-    # rm(clm,clm_,ilm,ilm_)
+    # gh <- gsl[[i]]
+    # fcs <- flowCore::read.FCS(fcs_files[grepl(fids[i], fcs_files)])
+
+    # can we directly use clr (T/F cell x cell population matrix)?
+    ir <- flowWorkspace::gh_pop_get_indices(gsl[[i]], rootc)
+    il <- lapply(leaves, function(leaf) flowWorkspace::gh_pop_get_indices(gsl[[i]], leaf))
+    il <- do.call(cbind, il)
+    colnames(il) <- leaves_short
+    other <- which(ir)%in%which(rowSums(il)==0)
+    ilm <- cbind(il[ir,,drop=FALSE], other)
+
+    if (panel=="bcell") {
+      ilm_ <- ilm[,!colnames(ilm)%in%c(
+        "Plasmablasts","plasma cells","Blasts",
+        "IGD-IGM- B cells","IGD-IGM+ B cells","IGD+IGM- B cells","IGD+IGM+ B cells",
+        "Immature transition B cells")]
+    } else {
+      ilm_ <- ilm[,!colnames(ilm)%in%"CD56+CD16+ NKT cells"]
+    }
+    rowi <- rowSums(ilm_)==1
+    ilm_ <- ilm_[rowi,]
+    ilm_[which(ilm_)] <- 1
+
+    clm <- flowWorkspace::gh_pop_get_data(gsl[[i]], rootc)@exprs[,!markers%in%"Time" & !markers%in%"viability dye"]
+    clm_ <- clm[rowi,]
+
+    colnames(clm_) <- markers[colnames(clm_)]
+
+    write.table(clm_, file=gzfile(paste0(xn_dir,"/",dset,"/",fid,".csv.gz")), sep="," ,row.names=FALSE)
+    write.table(ilm_, file=gzfile(paste0(yn_dir,"/",dset,"/",fid,".csv.gz")), sep=",", row.names=FALSE)
+
+    rm(clm,clm_,ilm,ilm_)
 
     ## Gating #####
     # gthres <- list()
