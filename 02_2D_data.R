@@ -33,14 +33,14 @@ wi <- 10; hi <- 6 # number of plots per png
 
 
 ## START ####
+fe <- which(!unlist(plyr::llply(gsub("/data/2D/x","/results/2D/y_2D",x2_files), file.exists)))
+
 start <- Sys.time()
 
 cat("out of",length(x2_files),"\n")
-loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
-# res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
-res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
-  if (file.exists(gsub("2D/x","2D/scatterplots",x2_fold),"/",i,".png")) return(NULL)
-  
+loop_ind <- loop_ind_f(sample(fe), no_cores)
+res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
+# res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   cat(i," ")
   x2_file <- x2_files[i]
   
