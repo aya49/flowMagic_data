@@ -23,6 +23,7 @@ global_logger(ConsoleLogger(stderr, Logging.Debug))
 
 # get files
 cd("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data")
+# cd("/home/ayue/projects/flowMagic_data")
 
 datasets = readdir("data/2D/x")
 for dataset in datasets
@@ -30,6 +31,11 @@ for dataset in datasets
   for scat in scats
     csvfiles = Glob.glob("*.csv.gz","data/2D/x/$dataset/$scat")
     for csvfile in csvfiles
+      fname = replace(csvfile,"data/2D/x"=>"results/2D/GigaSOM_clusters")
+      if isfile(fname)
+        continue
+      end
+      
       exprs = DataFrame(load(File(format"CSV", csvfile)))
       # clr = DataFrame(load(File(format"CSV", replace(csvfile,"/x/"=>"/y/"))))
       # ncpop = ncol(clr)
@@ -40,7 +46,7 @@ for dataset in datasets
       clusters = GigaSOM.mapToGigaSOM(som, exprs) # extraction of per-cell cluster IDs
       # e = GigaSOM.embedGigaSOM(som, exprs)        # EmbedSOM projection to 2D
 
-      save(File(format"CSV", replace(csvfile,"data/2D/x"=>"results/2D/GigaSOM_clusters")), clusters)
+      save(File(format"CSV", fname), clusters)
     end
   end
 end
@@ -49,6 +55,11 @@ datasets = readdir("data/nD/x")
 for dataset in datasets
   csvfiles = Glob.glob("*.csv.gz","data/nD/x/$dataset")
   for csvfile in csvfiles
+    fname = replace(csvfile,"data/nD/x"=>"results/nD/GigaSOM_clusters")
+    if isfile(fname)
+      continue
+    end
+
     exprs = DataFrame(load(File(format"CSV", csvfile)))
     clr = DataFrame(load(File(format"CSV", replace(csvfile,"/x/"=>"/y/"))))
     ncpop = ncol(clr)
@@ -61,7 +72,7 @@ for dataset in datasets
     clusters = GigaSOM.mapToGigaSOM(som, exprs) # extraction of per-cell cluster IDs
     # e = GigaSOM.embedGigaSOM(som, exprs)        # EmbedSOM projection to 2D
 
-    save(File(format"CSV", replace(csvfile,"data/nD/x"=>"results/nD/GigaSOM_clusters")), clusters)
+    save(File(format"CSV", fname), clusters)
   end
 end
 

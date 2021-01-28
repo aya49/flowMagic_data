@@ -15,8 +15,9 @@ source(paste0(root,"/src/RUNME.R"))
 ## output ####
 x2_folds <- list_leaf_dirs(x2_dir)
 x2_folds_ <- gsub("/data/","/results/",x2_folds)
+plyr::l_ply(gsub("/x/","/scatterplots/",x2_folds), dir.create, recursive=TRUE, showWarnings=FALSE)
 plyr::l_ply(
-  paste0("/",c("x_2Ddensity","x_2Dscatter","y_2Dncells","y_vector","scatterplots","y_2D"),"/"), 
+  paste0("/",c("x_2Ddensity","x_2Dscatter","y_2Dncells","y_vector","y_2D"),"/"), 
   function(x) plyr::l_ply(gsub("/x/",x,x2_folds_), dir.create, recursive=TRUE, showWarnings=FALSE))
 
 
@@ -38,6 +39,8 @@ cat("out of",length(x2_files),"\n")
 loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 # res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) {
 res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
+  if (file.exists(gsub("2D/x","2D/scatterplots",x2_fold),"/",i,".png")) return(NULL)
+  
   cat(i," ")
   x2_file <- x2_files[i]
   
@@ -98,11 +101,12 @@ time_output(start)
 
 
 ## plotting ####
+start <- Sys.time()
 res <- plyr::llply(x2_folds, function(x2_fold) {
   x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
   plot_no <- ceiling(length(x2_files)/(wi*hi))
   
-  dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
+  # dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
   
   xi <- 1
   for (i in seq_len(plot_no)) {

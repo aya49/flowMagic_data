@@ -14,7 +14,8 @@ Created on Jul 30, 2016
 @author: urishaham, huaminli
 '''
 
-root = '/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data'
+# root = '/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data'
+root = '/home/ayue/projects/flowMagic_data'
 
 '''
 packages to install:
@@ -105,7 +106,7 @@ for i in range(len(data_dirs_2D1)):
   for fold_j in fold_:
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 
-data_dirs = data_dirs_2D[10:] # data_dirs[0:20] data_dirs[20:33] data_dirs[33:38] data_dirs[38:]
+data_dirs = data_path_nD # data_dirs[0:20] data_dirs[20:33] data_dirs[33:38] data_dirs[38:]
 for data_dir in data_dirs: ###################################################
   # data_dir = data_dirs[0]
   # data_dir = "src/MultiCenter_16sample"
@@ -194,6 +195,10 @@ for data_dir in data_dirs: ###################################################
   for i in np.arange(testIndex.size): #################################################
     # i = 9
     # Load the source.
+    fname = new_fold + "/" + str(testIndex[i]).replace(".gz","")
+    if os.path.isfile(fname):
+      next
+    
     sourceIndex = testIndex[i]
     source = dh.loadDeepCyTOFData(data_dir, sourceIndex, relevantMarkers, mode)
     if len(np.unique(source.y)) == 1:
@@ -215,7 +220,7 @@ for data_dir in data_dirs: ###################################################
     
     new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
     Path(new_fold).mkdir(parents=True, exist_ok=True)
-    np.savetxt(new_fold + "/" + str(testIndex[i]).replace(".gz",""), predLabel, delimiter=',', fmt='%i')
+    np.savetxt(fname, predLabel, delimiter=',', fmt='%i')
     '''
     sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
     targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
