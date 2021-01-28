@@ -30,6 +30,8 @@ res <- plyr::llply(loop_ind, function(xn_fs) { plyr::llply(xn_fs, function(xn_f)
   xn <- data.table::fread(xn_f, data.table=FALSE)
   tx <- Rtsne::Rtsne(xn[!duplicated(xn),,drop=FALSE])$Y
   tx_file <- gs_xr(xn_f)
+  if (file.exists(tx_file)) return(NULL)
+  
   tx_dir <- stringr::str_split(tx_file,"/")[[1]]
   tx_dir <- paste0(tx_dir[-length(tx_dir)],collapse="/")
   colnames(tx) <- c("tsne 1", "tsne 2")

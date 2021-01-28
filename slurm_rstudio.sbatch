@@ -1,8 +1,7 @@
-#!/bin/bash 
-#SBATCH -J 00_generate_data_hipc
-#SBATCH -o 00_generate_data_hipc_%A_%a.out
-#SBATCH --nodelist=BIOINFO17L,BIOINFO22L,BIOINFO23L,BIOINFO25L,BIOINFO26L
+#!/bin/bash
+#SBATCH -J nD
+#SBATCH -o ./02_nD_data_%A_%a.out
+#SBATCH -N 1 -n 15
 
-singularity exec -B /:/ \
-/home/ayue/projects/singularities/rstudio.im Rscript \
-/home/ayue/projects/flowMagic_data/src/00_generate_data_hipc.R
+singularity exec -B /mnt:/mnt \
+/mnt/FCS_local3/backup/Brinkman\ group/current/Alice/singularities/rstudio.im Rscript /mnt/FCS_local3/backup/Brinkman\ group/current/Alice/flowMagic_data/src/02_nD_data.R
