@@ -55,15 +55,15 @@ def trainDAE(target, dataPath, refSampleInd, trainIndex, relevantMarkers, mode,
         
             input_cell = Input(shape=(inputDim,))
             encoded = Dense(ae_encodingDim, activation='relu',
-                            kernel_regularizer=l2(l2_penalty_ae))(input_cell)
+                            W_regularizer=l2(l2_penalty_ae))(input_cell)
             encoded1 = Dense(ae_encodingDim, activation='relu',
-                             kernel_regularizer=l2(l2_penalty_ae))(encoded)
+                             W_regularizer=l2(l2_penalty_ae))(encoded)
             decoded = Dense(inputDim, activation='linear',
-                            kernel_regularizer=l2(l2_penalty_ae))(encoded1)
+                            W_regularizer=l2(l2_penalty_ae))(encoded1)
         
-            autoencoder = Model(inputs=input_cell, outputs=decoded)
-            autoencoder.compile(optimizer='RMSprop', loss='mse')
-            autoencoder.fit(trainData_ae, trainTarget_ae, epochs=80,
+            autoencoder = Model(input=input_cell, output=decoded)
+            autoencoder.compile(optimizer='rmsprop', loss='mse')
+            autoencoder.fit(trainData_ae, trainTarget_ae, nb_epoch=80,
                             batch_size=128, shuffle=True,
                             validation_split=0.1, verbose = 0,
                             callbacks=[mn.monitor(), cb.EarlyStopping(

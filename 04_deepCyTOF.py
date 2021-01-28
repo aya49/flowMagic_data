@@ -14,8 +14,8 @@ Created on Jul 30, 2016
 @author: urishaham, huaminli
 '''
 
-# root = '/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data'
-root = '/home/ayue/projects/flowMagic_data'
+root = '/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data'
+# root = '/home/ayue/projects/flowMagic_data'
 
 '''
 packages to install:

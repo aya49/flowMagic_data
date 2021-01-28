@@ -96,29 +96,27 @@ def trainClassifier(trainSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = np.max(y_train)+1
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = outputLayer)
-    net = Model(input = inputLayer, output = outputLayer)
+    encoder = Model(inputs = inputLayer, outputs = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
     
-    # ls = 'sparse_categorical_crossentropy' if numClasses > 2 else 'binary_crossentropy'
     net.compile(optimizer = optimizer,
                 loss = 'sparse_categorical_crossentropy')
-    net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0,
             callbacks=[lrate, mn.monitor(),
             cb.EarlyStopping(monitor = 'val_loss',
                              patience = 25, mode = 'auto')])
     try:
-        
         net.save(os.path.join(io.DeepLearningRoot(), path + '/cellClassifier.h5'))
     except OSError:
         pass
@@ -187,16 +185,15 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     # Construct a feed-forward neural network.
     inputLayer = Input(shape = (x_train.shape[1],))
     hidden1 = Dense(hiddenLayersSizes[0], activation = activation,
-                    W_regularizer = l2(l2_penalty))(inputLayer)
+                    kernel_regularizer = l2(l2_penalty))(inputLayer)
     hidden2 = Dense(hiddenLayersSizes[1], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden1)
+                    kernel_regularizer = l2(l2_penalty))(hidden1)
     hidden3 = Dense(hiddenLayersSizes[2], activation = activation,
-                    W_regularizer = l2(l2_penalty))(hidden2)
+                    kernel_regularizer = l2(l2_penalty))(hidden2)
     numClasses = np.max(y_train)+1
-
     outputLayer = Dense(numClasses, activation = 'softmax')(hidden3)
     
-    encoder = Model(input = inputLayer, output = hidden3)
+    encoder = Model(inputs = inputLayer, outputs = hidden3)
     # plot data in the 3rd hidden layer
     h3_data = encoder.predict(x_test, verbose = 0)
     #fig, (ax1) = plt1.subplots(1,1, subplot_kw={'projection':'3d'})
@@ -208,14 +205,13 @@ def plotHidden(trainSample, testSample, mode = 'None', i = 0,
     #ax1.set_title('data in 3rd hidden layer')
     plt1.show()
     
-    net = Model(input = inputLayer, output = outputLayer)
+    net = Model(inputs = inputLayer, outputs = outputLayer)
     lrate = LearningRateScheduler(step_decay)
-    optimizer = keras.optimizers.rmsprop(lr = 0.0)
-    
-    # ls = 'sparse_categorical_crossentropy' if numClasses > 2 else 'binary_crossentropy'
-    net.compile(optimizer = optimizer, 
+    optimizer = keras.optimizers.RMSprop(lr = 0.0)
+
+    net.compile(optimizer = optimizer,
                 loss = 'sparse_categorical_crossentropy')
-    net.fit(x_train, y_train, nb_epoch = 80, batch_size = 128, shuffle = True,
+    net.fit(x_train, y_train, epochs = 80, batch_size = 128, shuffle = True,
             validation_split = 0.1, verbose = 0, 
             callbacks=[lrate, mn.monitor(),
             cb.EarlyStopping(monitor = 'val_loss',
