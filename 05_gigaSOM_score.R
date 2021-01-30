@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 20#parallel::detectCores() - 5
+no_cores <- 10#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -97,6 +97,8 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   gs_f_ <- stringr::str_split(gs_dir_,"/")[[1]]
   scat <- gs_f_[length(gs_f_)]
   dset <- gs_f_[length(gs_f_)-1]
+  
+  nD <- FALSE
   if (dset=="GigaSOM_clusters") {
     scat <- NA
     dset <- scat
@@ -106,7 +108,7 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     y_f <- gsub("results", "data", gsub("GigaSOM_clusters","x",gs_files[1]))
     y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
     cpopsn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
-    clustn <- max(predicted[,1])
+    clustn <- max(predicted)
     
     # get cpop combos
     cpop_combos <- get_cpop_combos(clustn, cpopn)
@@ -115,19 +117,19 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   plyr::l_ply(gs_files, function(gs_f) { try({
     score_file <- gsub("results", "scores", gsub("_clusters","",gs_f))
     
-    predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))
-    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","x",gs_f))
+    predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1]
+    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_f))
     y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
     if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
-    x_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_f))
+    x_f <- gsub("results", "data", gsub("GigaSOM_clusters","x",gs_f))
     x <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
     
     fname <- gsub(".csv.gz","",gs_f_[length(gs_f_)])
     cpops <- colnames(y)
     cpopsn <- length(cpops)
-    clustn <- max(predicted[,1])
+    clustn <- max(predicted)
     
-    clusttf <- plyr::llply(seq_len(clustn), function(x) predicted[,1]==x)
+    clusttf <- plyr::llply(seq_len(clustn), function(x) predicted==x)
     actualtf <- plyr::llply(seq_len(cpopsn), function(x) y[,x]==1)
     names(actualtf) <- cpops
     
@@ -135,13 +137,11 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     if (!nD) cpop_combos <- cpop_combos_all_2D[[as.character(cpopsn)]]
 
     # for each cpop combo
+    if (!nD & "other"%in%cpops & cpopsn>2) 
+      cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopsn-1)]])
     scoredf_cpop_combos <- clust_score(
       cpop_combos, clusttf, actualtf, cpops, dset, scat, fname)
-    if (!nD & "other"%in%cpops & cpopsn>2) 
-      scoredf_cpop_combos <- append(scoredf_cpop_combos,clust_score(
-        cpop_combos_all_2D[[as.character(cpopsn-1)]], 
-        clusttf, actualtf, cpops, dset, scat, fname))
-    
+
     # get best cpop combo
     meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
     best_combo <- which.max(meanf1s)
@@ -155,16 +155,18 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     tx <- x
     ft_ <- NULL
     if (nD) {
-      tx <- as.matrix(data.table::fread(gsub("GigaSOM_clusters","Rtsne",gs_file), data.table=FALSE))
-      ft_ <- get(load(gsub("results/2D/GigaSOM_clusters","data/2D/filters",gs_file)))
+      tx <- as.matrix(data.table::fread(gsub("GigaSOM_clusters","Rtsne",gs_f), data.table=FALSE))
+    } else {
+      ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_clusters","data/2D/filters",gs_f))))
     }
-    tfs <- plyr::llply(cpops, function(cpop) Reduce('|',clusttf[cpop_combo[[cpop]]]) )
+    tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi) 
+      Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
     names(tfs) <- cpops
     
     colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
     names(colours) <- cpops
     
-    png(gsub(".csv.gz",".png",gsub("clusters","plots",gs_file)),width=800,height=450)
+    png(gsub(".csv.gz",".png",gsub("clusters","plots",gs_f)),width=800,height=450)
     par(mfrow=c(1,2))
     
     plot_dens(tx, main="actual")
@@ -175,13 +177,13 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     legend("topright", legend=cpops, col=colours, 
            lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
     
-    clust_vec <- rep(NA, nrow(predicted))
+    clust_vec <- rep(NA, length(predicted))
     for (cpop in cpops) 
       clust_vec[tfs[[cpop]]] <- cpop
     cols <- colours[clust_vec]
     plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
          cex=.1, main="clustered", col=cols)
-    legend("topright", legend=cpops, col=cols, 
+    legend("topright", legend=cpops, col=colours, 
            lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
     
     graphics.off()

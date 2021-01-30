@@ -51,7 +51,7 @@ time_output <- function(start, msg="") {
   start <- as.POSIXct(start)
   end <- Sys.time()
   time_elapsed <- difftime(end, start, units="secs")
-  message(msg, ifelse(msg == "", "", ": "),
+  message("\n", msg, ifelse(msg == "", "", ": "),
           tstr(start), "-", tstr(end), " > ", tstr(time_elapsed))
 }
 

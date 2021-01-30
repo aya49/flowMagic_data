@@ -71,7 +71,11 @@ flPlot <- function(x2, marknames, ft, fto, main) {
 ## START ####
 start <- Sys.time()
 
-res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
+# res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
+for (thres_dir_ in thres_dirs) { try({
+  if (file.exists(paste0(scores_dir,"/",ks[length(ks)],".csv.gz")))
+    next
+  
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -208,7 +212,7 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
     mn_tf <- mn_tfs[[cpop]]
     # for each fcs file
     scoredf_fname_ <- purrr::map_dfr(fnames, function(fname) {
-      print(fname)
+      # print(fname)
       x2 <- x2s[[fname]]
       fto <- ftos[[fname]]
       ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
@@ -238,7 +242,7 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
     write.table(scoredf_fname_, file=gzfile(paste0(scores_dir,"/",k,".csv.gz")), sep=",", row.names=FALSE, col.names=TRUE)
   }
   time_output(start1, "scored")
-}) }, .parallel=TRUE)
+}) }#, .parallel=TRUE)
 time_output(start)
 
 

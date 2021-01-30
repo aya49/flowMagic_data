@@ -14,7 +14,8 @@ libr(c(
   "plyr", "purrr", "furrr", "doMC", #"rslurm",
   "data.table", "stringr",
   "flowCore", "flowDensity", "flowLearn",
-  "RColorBrewer"
+  "RColorBrewer",
+  "Rfast"
 ))
 
 

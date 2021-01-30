@@ -96,7 +96,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
               col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
-}) }) }, .parallel=TRUE)
+}) }) })
 time_output(start)
 
 
