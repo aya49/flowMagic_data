@@ -94,7 +94,7 @@ names(cpop_combos_all_2D) <- as.character(2:4)
 
 # loop_ind <- loop_ind_f(sample(append(gs2_files, gsn_files)), no_cores)
 # plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
-for (gs_dir_ in append(gsn_dirs, gs2_dirs)) {
+for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
