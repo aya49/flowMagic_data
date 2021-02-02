@@ -71,53 +71,53 @@ l_ply(loop_ind, function(dc_files) { plyr::l_ply(dc_files, function(dc_file) {
 time_output(start)
 
 
-## PLOT ####
-start <- Sys.time()
-
-# loop_ind <- loop_ind_f(dc2_files, no_cores)
-l_ply(append(dcn_files, dc2_files), function(dc_file) { try({
-  predicted <- read.csv(dc_file)[,1]
-  actual <- data.table::fread(paste0(gsub("/deepCyTOF_labels","/y",gsub(
-    "/results/","/data/",dc_file)),".gz"), data.table=FALSE)
-  cpops <- colnames(actual)
-  
-  nD <- grepl("/nD/", dc_file)
-
-  ft_ <- NULL
-  if (nD) {
-    tx <- data.table::fread(paste0(gsub(
-      "/deepCyTOF_labels","/Rtsne",dc_file),".gz"), data.table=FALSE)
-  } else {
-    tx <- data.table::fread(paste0(gsub("results","data",gsub(
-      "/deepCyTOF_labels","/x",dc_file)),".gz"), data.table=FALSE)
-    ft_ <- get(load(gsub(".csv",".Rdata",gsub("results/2D/deepCyTOF_labels","data/2D/filters",dc_file))))
-  }
-  colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
-  names(colours) <- cpops
-  
-  png(gsub(".csv",".png",gsub("labels","plots",dc_file)),width=800,height=450)
-  par(mfrow=c(1,2))
-  
-  plot_dens(tx, main="actual")
-  for (cpopi in seq_len(length(cpops))) {
-    cpop <- cpops[cpopi]
-    if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
-    if (nD & cpopi%in%predicted) 
-      points(tx[predicted==cpopi,,drop=FALSE], cex=.1, col=colours[cpop])
-  }
-  legend("topright", legend=cpops, col=colours, 
-         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-  
-  clust_vec <- rep(NA, length(predicted))
-  for (cpopi in seq_len(length(cpops)))
-    clust_vec[predicted==cpopi] <- cpops[cpopi]
-  cols <- colours[clust_vec]
-  plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2],
-       cex=.1, col=cols, main="classified")
-  legend("topright", legend=cpops, col=colours, 
-         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-  
-  graphics.off()
-}) }, .parallel=TRUE)
-time_output(start)
+# ## PLOT ####
+# start <- Sys.time()
+# 
+# # loop_ind <- loop_ind_f(dc2_files, no_cores)
+# l_ply(append(dcn_files, dc2_files), function(dc_file) { try({
+#   predicted <- read.csv(dc_file)[,1]
+#   actual <- data.table::fread(paste0(gsub("/deepCyTOF_labels","/y",gsub(
+#     "/results/","/data/",dc_file)),".gz"), data.table=FALSE)
+#   cpops <- colnames(actual)
+#   
+#   nD <- grepl("/nD/", dc_file)
+# 
+#   ft_ <- NULL
+#   if (nD) {
+#     tx <- data.table::fread(paste0(gsub(
+#       "/deepCyTOF_labels","/Rtsne",dc_file),".gz"), data.table=FALSE)
+#   } else {
+#     tx <- data.table::fread(paste0(gsub("results","data",gsub(
+#       "/deepCyTOF_labels","/x",dc_file)),".gz"), data.table=FALSE)
+#     ft_ <- get(load(gsub(".csv",".Rdata",gsub("results/2D/deepCyTOF_labels","data/2D/filters",dc_file))))
+#   }
+#   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
+#   names(colours) <- cpops
+#   
+#   png(gsub(".csv",".png",gsub("labels","plots",dc_file)),width=800,height=450)
+#   par(mfrow=c(1,2))
+#   
+#   plot_dens(tx, main="actual")
+#   for (cpopi in seq_len(length(cpops))) {
+#     cpop <- cpops[cpopi]
+#     if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
+#     if (nD & cpopi%in%predicted) 
+#       points(tx[predicted==cpopi,,drop=FALSE], cex=.1, col=colours[cpop])
+#   }
+#   legend("topright", legend=cpops, col=colours, 
+#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+#   
+#   clust_vec <- rep(NA, length(predicted))
+#   for (cpopi in seq_len(length(cpops)))
+#     clust_vec[predicted==cpopi] <- cpops[cpopi]
+#   cols <- colours[clust_vec]
+#   plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2],
+#        cex=.1, col=cols, main="classified")
+#   legend("topright", legend=cpops, col=colours, 
+#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+#   
+#   graphics.off()
+# }) }, .parallel=TRUE)
+# time_output(start)
 

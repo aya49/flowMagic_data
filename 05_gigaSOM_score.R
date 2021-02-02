@@ -186,56 +186,56 @@ for (gs_dir_ in append(gsn_dirs, gs2_dirs)) {
 time_output(start)
 
 
-## plot! ####
-start <- Sys.time()
-
-gl2_files <- list.files(gl2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
-gln_files <- list.files(gln_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
-
-loop_ind <- loop_ind_f(sample(append(gl2_files, gln_files)), no_cores)
-plyr::l_ply(loop_ind, function(gl_fs) { plyr::l_ply(gl_fs, function(gl_f) { try({
-  nD <- grepl("/nD/", gl_f)
-  
-  tfs <- as.data.frame(data.table::fread(gl_f, data.table=FALSE))
-  y_f <- gsub("results", "data", gsub("GigaSOM_labels","y",gs_f))
-  y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
-  cpops <- colnames(y)
-  
-  ft_ <- NULL
-  if (nD) {
-    tx <- as.matrix(data.table::fread(gsub("GigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
-  } else {
-    x_f <- gsub("results", "data", gsub("GigaSOM_labels","x",gl_f))
-    tx <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
-    ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_labels","data/2D/filters",gs_f))))
-  }
-  
-  colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
-  names(colours) <- cpops
-  
-  png(gsub(".csv.gz",".png",gsub("labels","plots",gl_f)),width=800,height=450)
-  par(mfrow=c(1,2))
-  
-  plot_dens(tx, main="actual")
-  for (cpop in cpops) {
-    if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
-    if (nD) points(tx[y[,cpop]==1,,drop=FALSE], cex=.1, col=colours[cpop])
-  }
-  legend("topright", legend=cpops, col=colours, 
-         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-  
-  clust_vec <- rep(NA, nrow(x))
-  for (cpop in cpops) 
-    clust_vec[tfs[,cpop]] <- cpop
-  cols <- colours[clust_vec]
-  plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
-       cex=.1, main="clustered", col=cols)
-  legend("topright", legend=cpops, col=colours, 
-         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-  
-  graphics.off()
-}) }) }, .parallel=TRUE)
-time_output(start)
+# ## plot! ####
+# start <- Sys.time()
+# 
+# gl2_files <- list.files(gl2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
+# gln_files <- list.files(gln_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
+# 
+# loop_ind <- loop_ind_f(sample(append(gl2_files, gln_files)), no_cores)
+# plyr::l_ply(loop_ind, function(gl_fs) { plyr::l_ply(gl_fs, function(gl_f) { try({
+#   nD <- grepl("/nD/", gl_f)
+#   
+#   tfs <- as.data.frame(data.table::fread(gl_f, data.table=FALSE))
+#   y_f <- gsub("results", "data", gsub("GigaSOM_labels","y",gs_f))
+#   y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
+#   cpops <- colnames(y)
+#   
+#   ft_ <- NULL
+#   if (nD) {
+#     tx <- as.matrix(data.table::fread(gsub("GigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
+#   } else {
+#     x_f <- gsub("results", "data", gsub("GigaSOM_labels","x",gl_f))
+#     tx <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
+#     ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_labels","data/2D/filters",gs_f))))
+#   }
+#   
+#   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
+#   names(colours) <- cpops
+#   
+#   png(gsub(".csv.gz",".png",gsub("labels","plots",gl_f)),width=800,height=450)
+#   par(mfrow=c(1,2))
+#   
+#   plot_dens(tx, main="actual")
+#   for (cpop in cpops) {
+#     if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
+#     if (nD) points(tx[y[,cpop]==1,,drop=FALSE], cex=.1, col=colours[cpop])
+#   }
+#   legend("topright", legend=cpops, col=colours, 
+#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+#   
+#   clust_vec <- rep(NA, nrow(x))
+#   for (cpop in cpops) 
+#     clust_vec[tfs[,cpop]] <- cpop
+#   cols <- colours[clust_vec]
+#   plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
+#        cex=.1, main="clustered", col=cols)
+#   legend("topright", legend=cpops, col=colours, 
+#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+#   
+#   graphics.off()
+# }) }) }, .parallel=TRUE)
+# time_output(start)
 
 
 

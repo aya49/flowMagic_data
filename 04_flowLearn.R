@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 4#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -27,9 +27,9 @@ ks <- 1:10 # number of training samples
 ## START ####
 start <- Sys.time()
 
-# res <- plyr::llply(thres_dirs, function(thres_dir_) { 
+res <- plyr::llply(thres_dirs[c(12,4,5,6)], function(thres_dir_) {
 # CD16.FITCACD56_CD3+Tcells_, CD34SSCA_Livecells_, CD38CD27_CD19+Bcells_, CD38CD138_CD19+Bcells_
-for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
+# for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -196,7 +196,7 @@ for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
     write.table(scoredf_fname_, file=gzfile(paste0(scores_dir_,"/",k,".csv.gz")), sep=",", row.names=FALSE, col.names=TRUE)
   }
   time_output(start1, "scored")
-}#, .parallel=TRUE)
+}, .parallel=TRUE)
 time_output(start)
 
 
@@ -244,57 +244,57 @@ flPlot <- function(x2, marknames, ft, fto, main) {
 }
 
 
-## PLOT ####
-start <- Sys.time()
-
-res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
-  # for (thres_dir_ in thres_dirs) { try({
-  # if (file.exists(paste0(scores_dir,"/",ks[length(ks)],".csv.gz")))
-  #   next
-  
-  thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
-  scat <- thres_dir_s[length(thres_dir_s)]
-  dset <- thres_dir_s[length(thres_dir_s)-1]
-  
-  start1 <- Sys.time()
-  print(paste0(dset," > ", scat))
-  
-  t2_files <- list.files(thres_dir_, full.names=TRUE)
-  fnames <- sapply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
-  
-  # get x, thresholds
-  ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
-  x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
-  x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
-                    data.table::fread, data.table=FALSE)
-  names(x2s) <- names(ftos) <- fnames
-  marknames <- names(ftos[[1]])
-  
-  time_output(start1, "loaded files")
-  
-  
-  ## plot ####
-  ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
-  
-  # load prediced thresholds
-  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
-  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
-    get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
-  names(fts) <- names(ftos[[1]])
-  
-  pl_dir <- gsub("thresholds","plots",fl_dir)
-  dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
-  for (fname in fnames) 
-    for (ki in ks_) {
-      x2 <- x2s[[fname]]
-      fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-      png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
-      flPlot(x2, marknames, ft, fto, main=paste0("data: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
-      graphics.off()
-    }
-  time_output(start1, "plotted")
-}) }, .parallel=TRUE)
-time_output(start)
+# ## PLOT ####
+# start <- Sys.time()
+# 
+# plyr::l_ply(thres_dirs, function(thres_dir_) { try ({
+#   # for (thres_dir_ in thres_dirs) { try({
+#   # if (file.exists(paste0(scores_dir,"/",ks[length(ks)],".csv.gz")))
+#   #   next
+#   
+#   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
+#   scat <- thres_dir_s[length(thres_dir_s)]
+#   dset <- thres_dir_s[length(thres_dir_s)-1]
+#   
+#   start1 <- Sys.time()
+#   print(paste0(dset," > ", scat))
+#   
+#   t2_files <- list.files(thres_dir_, full.names=TRUE)
+#   fnames <- sapply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
+#   
+#   # get x, thresholds
+#   ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
+#   x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
+#   x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
+#                     data.table::fread, data.table=FALSE)
+#   names(x2s) <- names(ftos) <- fnames
+#   marknames <- names(ftos[[1]])
+#   
+#   time_output(start1, "loaded files")
+#   
+#   
+#   ## plot ####
+#   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
+#   
+#   # load prediced thresholds
+#   fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
+#   fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
+#     get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
+#   names(fts) <- names(ftos[[1]])
+#   
+#   pl_dir <- gsub("thresholds","plots",fl_dir)
+#   dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
+#   for (fname in fnames) 
+#     for (ki in ks_) {
+#       x2 <- x2s[[fname]]
+#       fto <- ftos[[fname]]
+#       ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+#       png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
+#       flPlot(x2, marknames, ft, fto, main=paste0("data: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+#       graphics.off()
+#     }
+#   time_output(start1, "plotted")
+# }) }, .parallel=TRUE)
+# time_output(start)
 
 
