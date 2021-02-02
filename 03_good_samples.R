@@ -95,4 +95,3 @@ plyr::l_ply(x2_dir_s, function(x2_dir) {
   time_output(start1, "kmed-ed")
 }, .parallel=TRUE)
 time_output(start)
-

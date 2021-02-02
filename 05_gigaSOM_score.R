@@ -14,6 +14,8 @@ source(paste0(root,"/src/RUNME.R"))
 ## input ####
 gs2_dir <- paste0(root,"/results/2D/GigaSOM_clusters"); 
 gsn_dir <- paste0(root,"/results/nD/GigaSOM_clusters"); 
+gl2_dir <- paste0(root,"/results/2D/GigaSOM_labels"); 
+gln_dir <- paste0(root,"/results/nD/GigaSOM_labels"); 
 
 
 ## load inputs ####
@@ -26,6 +28,7 @@ plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
   dir.create(gsub("_clusters","",gsub("results","scores",x)), 
              recursive=TRUE, showWarnings=FALSE)
   dir.create(gsub("_clusters","_plots",x), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("_clusters","_labels",x), recursive=TRUE, showWarnings=FALSE)
 })
 
 
@@ -34,6 +37,7 @@ clust_score <- function(cpop_combos, clusttf, actualtf, cpops, dset, scat, fname
   purrr::map(cpop_combos, function(cpop_combo) {
     # for each cell population
     purrr::map_dfr(seq_len(length(cpops)), function(cpopi) {
+      if (cpopi>length(cpop_combo)) return(NULL)
       cpop <- cpops[cpopi]
       tfactual <- actualtf[[cpopi]]
       tfpred <- Reduce('|',clusttf[cpop_combo[[cpopi]]])
@@ -89,7 +93,8 @@ cpop_combos_all_2D <- lapply(2:4, function(cpopn)
 names(cpop_combos_all_2D) <- as.character(2:4)
 
 # loop_ind <- loop_ind_f(sample(append(gs2_files, gsn_files)), no_cores)
-plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) { 
+# plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
+for (gs_dir_ in append(gsn_dirs, gs2_dirs)) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
@@ -105,16 +110,24 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     nD <- TRUE
     
     predicted <- as.data.frame(data.table::fread(gs_files[1], data.table=FALSE))
-    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","x",gs_files[1]))
+    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_files[1]))
     y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
-    cpopsn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
+    cpops <- colnames(y)
+    cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
     clustn <- max(predicted)
     
     # get cpop combos
     cpop_combos <- get_cpop_combos(clustn, cpopn)
   }
+  cat("\n",dset,">",scat)
 
-  plyr::l_ply(gs_files, function(gs_f) { try({
+  loop_ind <- loop_ind_f(gs_files, no_cores)
+  plyr::l_ply(loop_ind, function(gs_fs) {
+  plyr::l_ply(gs_fs, function(gs_f) {
+    # if (file.exists(gsub("_clusters","_labels",gs_f)))
+    #   if (file.size(gsub("_clusters","_labels",gs_f))>0)
+    #     return(NULL)
+    
     score_file <- gsub("results", "scores", gsub("_clusters","",gs_f))
     
     predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1]
@@ -126,19 +139,19 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     
     fname <- gsub(".csv.gz","",gs_f_[length(gs_f_)])
     cpops <- colnames(y)
-    cpopsn <- length(cpops)
+    cpopn <- length(cpops)
     clustn <- max(predicted)
     
     clusttf <- plyr::llply(seq_len(clustn), function(x) predicted==x)
-    actualtf <- plyr::llply(seq_len(cpopsn), function(x) y[,x]==1)
+    actualtf <- plyr::llply(seq_len(cpopn), function(x) y[,x]==1)
     names(actualtf) <- cpops
     
     # get cluster combinations
-    if (!nD) cpop_combos <- cpop_combos_all_2D[[as.character(cpopsn)]]
+    if (!nD) cpop_combos <- cpop_combos_all_2D[[as.character(cpopn)]]
 
     # for each cpop combo
-    if (!nD & "other"%in%cpops & cpopsn>2) 
-      cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopsn-1)]])
+    if (!nD & "other"%in%cpops & cpopn>2) 
+      cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopn-1)]])
     scoredf_cpop_combos <- clust_score(
       cpop_combos, clusttf, actualtf, cpops, dset, scat, fname)
 
@@ -150,45 +163,78 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     
     write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
     
-    
-    ## plot! ####
-    tx <- x
-    ft_ <- NULL
-    if (nD) {
-      tx <- as.matrix(data.table::fread(gsub("GigaSOM_clusters","Rtsne",gs_f), data.table=FALSE))
-    } else {
-      ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_clusters","data/2D/filters",gs_f))))
-    }
+    cpops_ <- cpops
+    if (length(cpop_combos[[best_combo]])<length(cpops))
+      cpops <- cpops[!cpops%in%"other"]
     tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi) 
       Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
-    names(tfs) <- cpops
-    
-    colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
-    names(colours) <- cpops
-    
-    png(gsub(".csv.gz",".png",gsub("clusters","plots",gs_f)),width=800,height=450)
-    par(mfrow=c(1,2))
-    
-    plot_dens(tx, main="actual")
-    for (cpop in cpops) {
-      if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
-      if (nD) points(tx[actualtf[[cpop]],,drop=FALSE], cex=.1, col=colours[cpop])
+    if (length(tfs)==1) {
+      tfs <- matrix(tfs, ncol=1)
+    } else {
+      tfs <- Reduce(cbind, tfs)
     }
-    legend("topright", legend=cpops, col=colours, 
-           lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-    
-    clust_vec <- rep(NA, length(predicted))
-    for (cpop in cpops) 
-      clust_vec[tfs[[cpop]]] <- cpop
-    cols <- colours[clust_vec]
-    plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
-         cex=.1, main="clustered", col=cols)
-    legend("topright", legend=cpops, col=colours, 
-           lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-    
-    graphics.off()
-  }) })
-}, .parallel=TRUE)
+    colnames(tfs) <- cpops
+    if (length(cpops_)>length(cpops)) {
+      tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
+      colnames(tfs)[ncol(tfs)] <- "other"
+    }
+    write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
+                sep=',', row.names=FALSE, col.names=TRUE)
+  }) }, .parallel=TRUE)
+  time_output(start1)
+}
+time_output(start)
+
+
+## plot! ####
+start <- Sys.time()
+
+gl2_files <- list.files(gl2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
+gln_files <- list.files(gln_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
+
+loop_ind <- loop_ind_f(sample(append(gl2_files, gln_files)), no_cores)
+plyr::l_ply(loop_ind, function(gl_fs) { plyr::l_ply(gl_fs, function(gl_f) { try({
+  nD <- grepl("/nD/", gl_f)
+  
+  tfs <- as.data.frame(data.table::fread(gl_f, data.table=FALSE))
+  y_f <- gsub("results", "data", gsub("GigaSOM_labels","y",gs_f))
+  y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
+  cpops <- colnames(y)
+  
+  ft_ <- NULL
+  if (nD) {
+    tx <- as.matrix(data.table::fread(gsub("GigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
+  } else {
+    x_f <- gsub("results", "data", gsub("GigaSOM_labels","x",gl_f))
+    tx <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
+    ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_labels","data/2D/filters",gs_f))))
+  }
+  
+  colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
+  names(colours) <- cpops
+  
+  png(gsub(".csv.gz",".png",gsub("labels","plots",gl_f)),width=800,height=450)
+  par(mfrow=c(1,2))
+  
+  plot_dens(tx, main="actual")
+  for (cpop in cpops) {
+    if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
+    if (nD) points(tx[y[,cpop]==1,,drop=FALSE], cex=.1, col=colours[cpop])
+  }
+  legend("topright", legend=cpops, col=colours, 
+         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+  
+  clust_vec <- rep(NA, nrow(x))
+  for (cpop in cpops) 
+    clust_vec[tfs[,cpop]] <- cpop
+  cols <- colours[clust_vec]
+  plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
+       cex=.1, main="clustered", col=cols)
+  legend("topright", legend=cpops, col=colours, 
+         lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
+  
+  graphics.off()
+}) }) }, .parallel=TRUE)
 time_output(start)
 
 

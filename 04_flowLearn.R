@@ -24,6 +24,182 @@ dfn <- 512 # number of density features for flowlearn
 ks <- 1:10 # number of training samples
 
 
+## START ####
+start <- Sys.time()
+
+# res <- plyr::llply(thres_dirs, function(thres_dir_) { 
+# CD16.FITCACD56_CD3+Tcells_, CD34SSCA_Livecells_, CD38CD27_CD19+Bcells_, CD38CD138_CD19+Bcells_
+for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
+  thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
+  scat <- thres_dir_s[length(thres_dir_s)]
+  dset <- thres_dir_s[length(thres_dir_s)-1]
+  
+  x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
+  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
+  scores_dir_ <- gsub("results/2D/flowLearn_thresholds", "scores/2D/flowLearn",fl_dir)
+  if (dir.exists(scores_dir_)) next
+  
+  start1 <- Sys.time()
+  print(paste0(dset," > ", scat))
+  
+  t2_files <- list.files(thres_dir_, full.names=TRUE)
+  fnames <- sapply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
+
+  # get x, thresholds
+  ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
+  x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
+                    data.table::fread, data.table=FALSE)
+  y2_diri <- gsub("/x/","/y/",x2_diri)
+  y2s <- purrr::map(paste0(y2_diri,"/",fnames,".csv.gz"), 
+                    data.table::fread, data.table=FALSE)
+  names(y2s) <- names(x2s) <- names(ftos) <- fnames
+  marknames <- names(ftos[[1]])
+  
+  time_output(start1, "loaded files")
+  
+  
+  ## predict ####
+  
+  # for each threshold, predict for all files
+  protoIdxs <- NULL
+  for (markname in marknames) {
+    # make a density data object for flowLearn
+    densdat <- new('DensityData')
+    for (fname in fnames) {
+      if (is.na(ftos[[fname]][markname])) next 
+      df <- flowLearn::flEstimateDensity(x2s[[fname]][,markname], dfn)
+      densdat <- flowLearn::flAdd(
+        densdat, fname, "cpop", 1, df$x, df$y, NaN, ftos[[fname]][markname])
+    }
+
+    # for each number of training data, predict threshold
+    if (is.null(protoIdxs))
+      protoIdxs <- plyr::llply(ks, function(k) 
+        which(rownames(densdat@data)%in%flowLearn::flSelectPrototypes(densdat, k)))
+
+    dt_dir <- paste0(fl_dir,"/",markname)
+    dir.create(dt_dir, showWarnings=FALSE, recursive=TRUE)
+    for (ki in seq_len(length(ks))) {
+      k <- ks[ki]
+      if (k>=nrow(densdat@data)) break
+      protoIdx <- protoIdxs[[ki]]
+      
+      ddp <- flowLearn::flPredictThresholds(densdat, protoIdx)
+      
+      ddpt <- ddp@data$gate.high
+      ddpt[rownames(densdat@data)%in%protoIdx] <- NA
+      names(ddpt) <- densdat@data$fcs
+      
+      save(ddpt, file=paste0(dt_dir,"/",k,".Rdata"))
+    }
+  }
+  time_output(start1, "predicted thresholds")
+  
+  
+  ## score ####
+  cpops <- colnames(y2s[[1]])
+  tempmark <- rep(NA, length(marknames))
+  names(tempmark) <- marknames
+  
+  # get how thresholds work with cpops
+  mn_tfs <- plyr::llply(cpops, function(cpop) {
+    cpopx <- x2s[[1]][y2s[[1]][,cpop]==1,,drop=FALSE]
+    cxn <- nrow(cpopx)
+    cpopx <- cpopx[sample(seq_len(cxn), min(cxn, 300)),,drop=FALSE]
+    
+    mn_tf <- tempmark
+    for (mn in marknames)
+      if (ftos[[1]][mn] <= min(cpopx[,mn])) {
+        mn_tf[mn] <- 1 # lower threshold
+      } else if (ftos[[1]][mn] >= max(cpopx[,mn])) {
+        mn_tf[mn] <- 0 # higher threshold
+      }
+    return(mn_tf)
+  })
+  names(mn_tfs) <- cpops
+  
+  # get actual cell populations not from y but from thresholds, just to be safe
+  cpop_fname_actual <- plyr::llply(cpops, function(cpop) {
+    # for each fcs file
+    fname_actual <- plyr::llply(fnames, function(fname) {
+      x2 <- x2s[[fname]]
+      fto <- ftos[[fname]]
+      mn_tf <- mn_tfs[[cpop]]
+      
+      tfactual <- rep(TRUE, nrow(x2))
+      na_other <- cpop=="other"
+      for (mn in marknames) {
+        if (is.na(mn_tf[mn]) | is.na(fto[mn])) next
+        if (mn_tf[mn]==1) {
+          tfactual <- tfactual & fto[mn]<=x2[,mn]
+        } else if (mn_tf[mn]==0) {
+          tfactual <- tfactual & fto[mn]>x2[,mn]
+        }
+        na_other <- FALSE
+      }
+      if (na_other) return(NA)
+      return(tfactual)
+    })
+    names(fname_actual) <- fnames
+    return(fname_actual)
+  })
+  names(cpop_fname_actual) <- cpops
+  if (cpops[length(cpops)]=="other")
+    for (fi in seq_len(length(cpop_fname_actual$other)))
+      if (is.na(cpop_fname_actual$other[[fi]])) 
+        cpop_fname_actual$other[[fi]] <- 
+          !Reduce("|",lapply(cpops[!cpops%in%"other"], function(ci)
+            cpop_fname_actual[[ci]][[fi]]))
+    
+  
+  # for each number of train data used; cell population
+  ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
+  
+  # load prediced thresholds
+  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
+  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
+    get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
+  names(fts) <- names(ftos[[1]])
+  
+  fl <- length(fnames)
+  for (ki in seq_len(length(ks_))) for (cpop in cpops) {
+    k <- ks_[ki]
+    mn_tf <- mn_tfs[[cpop]]
+    # for each fcs file
+    scoredf_fname_ <- purrr::map_dfr(fnames, function(fname) {
+      # print(fname)
+      x2 <- x2s[[fname]]
+      fto <- ftos[[fname]]
+      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+      ftna <- is.na(ft)
+      ft[ftna] <- fto[ftna]
+
+      tfpred <- rep(TRUE, nrow(x2))
+      for (mn in marknames) {
+        if (is.na(mn_tf[mn])) next
+        if (mn_tf[mn]==1) {
+          if (!is.na(ft[mn])) tfpred <- tfpred & ft[mn]<=x2[,mn]
+        } else if (mn_tf[mn]==0) {
+          if (!is.na(ft[mn])) tfpred <- tfpred & ft[mn]>x2[,mn]
+        }
+      }
+      tfactual <- cpop_fname_actual[[cpop]][[fname]]
+      
+      cbind(data.frame(
+        method="flowLearn",
+        data_set=dset, scatter_plot=scat, cell_population=cpop, 
+        train_samples=k, fcs=fname, 
+        train=any(is.na(fts[[fname]]))
+      ), f1score(tfactual, tfpred))
+    })
+    dir.create(scores_dir_, recursive=TRUE, showWarnings=FALSE)
+    write.table(scoredf_fname_, file=gzfile(paste0(scores_dir_,"/",k,".csv.gz")), sep=",", row.names=FALSE, col.names=TRUE)
+  }
+  time_output(start1, "scored")
+}#, .parallel=TRUE)
+time_output(start)
+
+
 ## plot function: scatterplot + densities ####
 flPlot <- function(x2, marknames, ft, fto, main) {
   layout(matrix(c(2,2,1,4,4,3,4,4,3), 3,3, byrow = TRUE))
@@ -68,13 +244,13 @@ flPlot <- function(x2, marknames, ft, fto, main) {
 }
 
 
-## START ####
+## PLOT ####
 start <- Sys.time()
 
-# res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
-for (thres_dir_ in thres_dirs) { try({
-  if (file.exists(paste0(scores_dir,"/",ks[length(ks)],".csv.gz")))
-    next
+res <- plyr::llply(thres_dirs, function(thres_dir_) { try ({
+  # for (thres_dir_ in thres_dirs) { try({
+  # if (file.exists(paste0(scores_dir,"/",ks[length(ks)],".csv.gz")))
+  #   next
   
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
@@ -84,67 +260,28 @@ for (thres_dir_ in thres_dirs) { try({
   print(paste0(dset," > ", scat))
   
   t2_files <- list.files(thres_dir_, full.names=TRUE)
-  fnames <- plyr::laply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
-
+  fnames <- sapply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
+  
   # get x, thresholds
-  x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
   ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
+  x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
   x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
                     data.table::fread, data.table=FALSE)
-  y2s <- purrr::map(paste0(gsub("/x/","/y/",x2_diri),"/",fnames,".csv.gz"), 
-                    data.table::fread, data.table=FALSE)
-  names(y2s) <- names(x2s) <- names(ftos) <- fnames
+  names(x2s) <- names(ftos) <- fnames
   marknames <- names(ftos[[1]])
   
   time_output(start1, "loaded files")
-  
-  
-  ## predict ####
-  
-  # for each threshold, predict for all files
-  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
-  protoIdxs <- NULL
-  for (markname in marknames) {
-    # make a density data object for flowLearn
-    densdat <- new('DensityData')
-    for (fname in fnames) {
-      if (is.na(ftos[[fname]][markname])) next 
-      df <- flowLearn::flEstimateDensity(x2s[[fname]][,markname], dfn)
-      densdat <- flowLearn::flAdd(
-        densdat, fname, "cpop", 1, df$x, df$y, NaN, ftos[[fname]][markname])
-    }
-
-    # for each number of training data, predict threshold
-    if (is.null(protoIdxs)) {
-      protoIdxs <- plyr::llply(ks, function(k) 
-        flowLearn::flSelectPrototypes(densdat, k))
-      names(protoIdxs) <- as.character(ks)
-    }
-    for (k in ks) {
-      if (k>=nrow(densdat@data)) break
-      protoIdx <- protoIdxs[[as.character(k)]]
-      ddp <- flowLearn::flPredictThresholds(densdat, protoIdx)
-      
-      ddpt <- ddp@data$gate.high
-      ddpt[rownames(densdat@data)%in%protoIdx] <- NA
-      names(ddpt) <- densdat@data$fcs
-      
-      dt_dir <- paste0(fl_dir,"/",markname)
-      dir.create(dt_dir, showWarnings=FALSE)
-      save(ddpt, file=paste0(dt_dir,"/",k,".Rdata"))
-    }
-  }
-  time_output(start1, "predicted thresholds")
   
   
   ## plot ####
   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
   # load prediced thresholds
+  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
   fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
     get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
   names(fts) <- names(ftos[[1]])
-
+  
   pl_dir <- gsub("thresholds","plots",fl_dir)
   dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
   for (fname in fnames) 
@@ -157,94 +294,7 @@ for (thres_dir_ in thres_dirs) { try({
       graphics.off()
     }
   time_output(start1, "plotted")
-  
-  
-  ## score ####
-  cpops <- colnames(y2s[[1]])
-  tempmark <- rep(NA, length(marknames))
-  names(tempmark) <- marknames
-  
-  # get how thresholds work with cpops
-  mn_tfs <- plyr::llply(cpops, function(cpop) {
-    cpopx <- x2s[[1]][y2s[[1]][,cpop]==1,,drop=FALSE]
-    cxn <- nrow(cpopx)
-    cpopx <- cpopx[sample(seq_len(cxn), min(cxn, 300)),,drop=FALSE]
-    
-    mn_tf <- tempmark
-    for (mn in marknames)
-      if (ftos[[1]][mn] <= min(cpopx[,mn])) {
-        mn_tf[mn] <- 1 # lower threshold
-      } else if (ftos[[1]][mn] >= max(cpopx[,mn])) {
-        mn_tf[mn] <- 0 # higher threshold
-      }
-    return(mn_tf)
-  })
-  names(mn_tfs) <- cpops
-  
-  # get actual cell populations not from y but from thresholds, just to be safe
-  cpop_fname_actual <- plyr::llply(cpops, function(cpop) {
-    # for each fcs file
-    fname_actual <- plyr::llply(fnames, function(fname) {
-      x2 <- x2s[[fname]]
-      fto <- ftos[[fname]]
-      mn_tf <- mn_tfs[[cpop]]
-      
-      tfactual <- rep(TRUE, nrow(x2))
-      for (mn in marknames) {
-        if (is.na(mn_tf[mn]) | is.na(fto[mn])) next
-        if (mn_tf[mn]==1) {
-          tfactual <- tfactual & fto[mn]<=x2[,mn]
-        } else if (mn_tf[mn]==0) {
-          tfactual <- tfactual & fto[mn]>x2[,mn]
-        }
-      }
-      return(tfactual)
-    })
-    names(fname_actual) <- fnames
-    return(fname_actual)
-  })
-  names(cpop_fname_actual) <- cpops
-  
-  # for each number of train data used; cell population
-  fl <- length(fnames)
-  for (ki in seq_len(length(ks_))) for (cpop in cpops) {
-    k <- ks_[ki]
-    mn_tf <- mn_tfs[[cpop]]
-    # for each fcs file
-    scoredf_fname_ <- purrr::map_dfr(fnames, function(fname) {
-      # print(fname)
-      x2 <- x2s[[fname]]
-      fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-      ftna <- is.na(ft)
-      ft[ftna] <- fto[ftna]
-
-      tfpred <- rep(TRUE, nrow(x2))
-      for (mn in marknames) {
-        if (is.na(mn_tf[mn])) next
-        if (mn_tf[mn]==1) {
-          if (!is.na(ft[mn])) tfpred <- tfpred & ft[mn]<=x2[,mn]
-        } else if (mn_tf[mn]==0) {
-          if (!is.na(ft[mn])) tfpred <- tfpred & ft[mn]>x2[,mn]
-        }
-      }
-      tfactual <- cpop_fname_actual[[cpop]][[fname]]
-      
-      cbind(data.frame(
-        method="flowLearn",
-        data_set=dset, scatter_plot=scat, cell_population=cpop, 
-        train_samples=k, fcs=fname, 
-        train=any(is.na(fts[[fname]]))
-      ), f1score(tfactual, tfpred))
-    })
-    scores_dir <- paste0(gsub("results/2D/flowLearn_thresholds", "scores/2D/flowLearn",fl_dir),"/",cpop)
-    dir.create(scores_dir, recursive=TRUE, showWarnings=FALSE)
-    write.table(scoredf_fname_, file=gzfile(paste0(scores_dir,"/",k,".csv.gz")), sep=",", row.names=FALSE, col.names=TRUE)
-  }
-  time_output(start1, "scored")
-}) }#, .parallel=TRUE)
+}) }, .parallel=TRUE)
 time_output(start)
-
-
 
 

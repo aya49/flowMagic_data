@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 12#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 # root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
@@ -17,7 +17,7 @@ x2_folds <- list_leaf_dirs(x2_dir)
 x2_folds_ <- gsub("/data/","/results/",x2_folds)
 plyr::l_ply(gsub("/x/","/scatterplots/",x2_folds), dir.create, recursive=TRUE, showWarnings=FALSE)
 plyr::l_ply(
-  paste0("/",c("x_2Ddensity","x_2Dscatter","y_2Dncells","y_vector","y_2D"),"/"), 
+  paste0("/",c("x_2Ddensity","x_2Dscatter","x_2Ddiscrete","y_2Dncells","y_vector","y_2D"),"/"), 
   function(x) plyr::l_ply(gsub("/x/",x,x2_folds_), dir.create, recursive=TRUE, showWarnings=FALSE))
 
 
@@ -37,9 +37,9 @@ fe <- which(!unlist(plyr::llply(gsub("/data/2D/x","/results/2D/y_2D",x2_files), 
 
 start <- Sys.time()
 
-cat("out of",length(x2_files),"\n")
+cat("out of",length(fe),"\n")
 loop_ind <- loop_ind_f(sample(fe), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
+res <- plyr::llply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
 # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   cat(i," ")
   x2_file <- x2_files[i]
@@ -64,7 +64,9 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
   x2discrete[,2] <- ceiling(dimsize[2]*(x2[,2]-yr[1])/(yr[2]-yr[1]))
   x2discrete[x2discrete>400] <- 400
   x2discrete_ <- as.matrix(x2discrete[!duplicated(x2discrete),,drop=FALSE])
-
+  write.table(x2discrete, file=gzfile(gsub("/data/2D/x","/results/2D/x_2Ddiscrete",x2_file)), 
+              col.names=FALSE, row.names=FALSE, sep=",")
+  
   # grid, reverse dimensions when plotting please!
   plotsc <- matrix(0, nrow=dimsize[1], ncol=dimsize[2])
   
@@ -96,7 +98,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
               col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
-}) }) })
+}) }) }, .parallel=TRUE)
 time_output(start)
 
 
@@ -107,6 +109,8 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
   plot_no <- ceiling(length(x2_files)/(wi*hi))
   
   # dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
+  lpf <- paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",plot_no,".png")
+  if (file.exists(lpf)) if (file.size(lpf)>0) return(NULL)
   
   xi <- 1
   for (i in seq_len(plot_no)) {

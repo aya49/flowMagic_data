@@ -11,11 +11,13 @@ source("src/helpers.R")
 if (!"flowLearn"%in%rownames(installed.packages()))
   devtools::install_github("mlux86/flowLearn")
 libr(c(
-  "plyr", "purrr", "furrr", "doMC", #"rslurm",
-  "data.table", "stringr",
-  "flowCore", "flowDensity", "flowLearn",
-  "RColorBrewer",
-  "Rfast"
+  "plyr", "purrr", "furrr", "doMC", #"rslurm", # parallelization
+  "data.table", "stringr", # generic functions
+  "flowCore", "flowDensity", "flowLearn", # for 00_data + flowCore for plot_dens function
+  "RColorBrewer", # for plotting scaterplots
+  "Rfast", # for calculating distance in good_samples
+  "kmed",  # for calculating kmed in good_samples
+  "combinat" # for calculating possible combos in scoring gigasom
 ))
 
 

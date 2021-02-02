@@ -263,7 +263,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   clr_[lymph1.flowD@index%in%gran.flowD@index,1] <- 1
   clr_[clr_[,1]==0,2] <- 1
   
-  filt_ <- list(gran.flowD@index)
+  filt_ <- list(gran.flowD@filter)
   names(filt_) <- colnames(clr_)[1]
   
   gthres[[scat]] <- gate_ <- gti[c("CD5.gate","Ly6C.gate1")]
@@ -831,7 +831,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
     temp, channels=c(12,7), 
     position=c(F,NA), gates=c(gti["CD11b.gate.high"], NA))
   
-  scat <- "10_CD11bmhcii_cDC"
+  scat <- "10_CD11bmhcii_cDC_"
   suppressWarnings({
     flowDensity::plotDens(
       cDC.flowD@flow.frame, channels=c(12,7), 
@@ -926,7 +926,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   csv_ <- csv_[bcell_rows,,drop=FALSE]
   clr_ <- clr_[bcell_rows,,drop=FALSE]
   
-  filt_ <- list(BcellB1.flowD@index, BcellB2.flowD@index)
+  filt_ <- list(BcellB1.flowD@filter, BcellB2.flowD@filter)
   names(filt_) <- colnames(clr_)[1:2]
   
   if (saveandrm) {
@@ -1035,7 +1035,7 @@ res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   csv_ <- csv_[bcellb2_rows,,drop=FALSE]
   clr_ <- clr_[bcellb2_rows,,drop=FALSE]
   
-  filt_ <- list(preB.flowD@index, MZB.flowD@index, folB.flowD@filter)
+  filt_ <- list(preB.flowD@filter, MZB.flowD@filter, folB.flowD@filter)
   names(filt_) <- colnames(clr_)[1:3]
   
   if (saveandrm) {

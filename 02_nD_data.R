@@ -26,20 +26,20 @@ xn_files <- list.files(xn_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz
 start <- Sys.time()
 
 loop_ind <- loop_ind_f(sample(xn_files), no_cores)
-# res <- plyr::llply(loop_ind, function(xn_fs) { plyr::l_ply(xn_fs, function(xn_f) {
-for (xn_f in loop_ind[[1]]) {
+plyr::l_ply(loop_ind, function(xn_fs) { plyr::l_ply(rev(xn_fs), function(xn_f) {
+# for (xn_f in loop_ind[[1]]) {
+  tx_file <- gs_xr(xn_f)
+  if (file.exists(tx_file)) if (file.size(tx_file)>0) next
+  
   xn <- data.table::fread(xn_f, data.table=FALSE)
   tx <- Rtsne::Rtsne(xn[!duplicated(xn),,drop=FALSE])$Y
-  tx_file <- gs_xr(xn_f)
-  if (file.exists(tx_file)) return(NULL)
-  
-  tx_dir <- stringr::str_split(tx_file,"/")[[1]]
-  tx_dir <- paste0(tx_dir[-length(tx_dir)],collapse="/")
   colnames(tx) <- c("tsne 1", "tsne 2")
   write.table(tx, file=gzfile(tx_file), sep=",", row.names=FALSE, col.names=TRUE)
-}
-# }) }, .parallel=TRUE)
+# }
+}) }, .parallel=TRUE)
 time_output(start)
+
+## i did 1:13, not 14:15
 
 
 

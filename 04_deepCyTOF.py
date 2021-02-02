@@ -72,7 +72,7 @@ keepProb          - The keep probability for each single cell to be used as
 
 isCalibrate = False
 denoise = False
-loadModel = False
+loadModel = True
 
 hiddenLayersSizes = [12, 6, 3]
 activation = 'softplus'
@@ -95,6 +95,7 @@ data_path_nD = 'data/nD/x'
 data_dirs_nD = os.listdir(data_path_nD)
 for i in range(len(data_dirs_nD)):
   data_dirs_nD[i] = data_path_nD + "/" + data_dirs_nD[i]
+data_dirs_nD.sort()
 
 #2D data folders
 data_path_2D = 'data/2D/x'
@@ -105,8 +106,9 @@ for i in range(len(data_dirs_2D1)):
   fold_ = os.listdir(fold)
   for fold_j in fold_:
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
+data_dirs_2D.sort() # 0:12 HIPCbcell, 12:25 HIPCmyeloid, 25:35 pregnancy, 35:(12) sangerP2
 
-data_dirs = data_dirs_nD # data_dirs[0:20] data_dirs[20:33] data_dirs[33:38] data_dirs[38:]
+data_dirs = data_dirs_2D[47:] + data_dirs_nD
 for data_dir in data_dirs: ###################################################
   # data_dir = data_dirs[0]
   # data_dir = "src/MultiCenter_16sample"
@@ -118,14 +120,14 @@ for data_dir in data_dirs: ###################################################
   actual = pd.read_csv(actual_paths[0].replace("/x/", "/y/"))
   
   # parameters
-  dataIndex = np.array(os.listdir(data_dir))
+  dataIndex = np.sort(np.array(os.listdir(data_dir)))
   testIndex = dataIndex
   trainNum = 10  # number of train samples
   if "/nD/" in data_dir:
     trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
     trainIndex = dataIndex[trainIndex]
   else:
-    pam_dir = data_dir.replace("data/2D/x","results/2D/xtrain_2Ddensity_euclidean_pam")
+    pam_dir = data_dir.replace("data/2D/x","results/2D/x_2Ddensity_euclidean_rankkmed")
     trainIndex = np.array(os.listdir(pam_dir + "/" + str(trainNum)))
   relevantMarkers = np.asarray(range(len(data.columns)))
   mode = 'CSV.GZ'
@@ -192,14 +194,14 @@ for data_dir in data_dirs: ###################################################
   mmd_before = np.zeros(testIndex.size)
   mmd_after = np.zeros(testIndex.size)
   
+  new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
+  Path(new_fold).mkdir(parents=True, exist_ok=True)
   for i in np.arange(testIndex.size): #################################################
     # i = 9
     # Load the source.
-    new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
-    Path(new_fold).mkdir(parents=True, exist_ok=True)
     fname = new_fold + "/" + str(testIndex[i]).replace(".gz","")
     # if os.path.isfile(fname):
-    #   next
+    #   continue
     
     sourceIndex = testIndex[i]
     source = dh.loadDeepCyTOFData(data_dir, sourceIndex, relevantMarkers, mode)
@@ -221,6 +223,7 @@ for data_dir in data_dirs: ###################################################
     print(end - start)
     
     np.savetxt(fname, predLabel, delimiter=',', fmt='%i')
+    
     '''
     sourceInds = np.random.randint(low=0, high=source.X.shape[0], size=1000)
     targetInds = np.random.randint(low=0, high=target.X.shape[0], size=1000)
@@ -234,6 +237,7 @@ for data_dir in data_dirs: ###################################################
     # f.close()
     
     print('MMD before: ', str(mmd_before[i]))
+    
     if isCalibrate:
       if loadModel:
         calibMMDNet = mmd.loadModel(denoiseTarget, denoiseSource,
@@ -264,6 +268,12 @@ for data_dir in data_dirs: ###################################################
     '''
     source = None
     denoiseSource = None
+  
+  testIndex_ = [x.replace(".csv.gz","") for x in testIndex]
+  F1_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_F1/")
+  Path(F1_fold).mkdir(parents=True, exist_ok=True)
+  np.savetxt(F1_fold + "/F1.csv", F1, delimiter=',', fmt='%f')
+  np.savetxt(F1_fold + "/fnames.csv", np.array(testIndex), delimiter=',', fmt='%s')
 # end for loop
 '''
 Output the overall results.
