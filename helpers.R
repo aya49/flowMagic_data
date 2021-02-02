@@ -82,12 +82,14 @@ loop_ind_f <- function(x, n) {
 
 
 #' @title Loads libraries
-libr = function(pkgs) {
-  if (length(setdiff(pkgs, rownames(installed.packages()))) > 0) 
-    install.packages(setdiff(pkgs, rownames(installed.packages())), verbose=F)
-  if (length(setdiff(pkgs, rownames(installed.packages()))) > 0) {
-    if (!requireNamespace("BiocManager", quietly=T)) install.packages("BiocManager")
-    BiocManager::install(setdiff(pkgs, rownames(installed.packages())), ask=F)
+libr = function(pkgs, install=TRUE) {
+  if (install) {
+    if (length(setdiff(pkgs, rownames(installed.packages()))) > 0) 
+      install.packages(setdiff(pkgs, rownames(installed.packages())), verbose=F)
+    if (length(setdiff(pkgs, rownames(installed.packages()))) > 0) {
+      if (!requireNamespace("BiocManager", quietly=T)) install.packages("BiocManager")
+      BiocManager::install(setdiff(pkgs, rownames(installed.packages())), ask=F)
+    }
   }
   sapply(pkgs, require, character.only=T)
 }
