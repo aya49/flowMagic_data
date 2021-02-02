@@ -54,6 +54,7 @@ clust_score <- function(cpop_combos, clusttf, actualtf, cpops, dset, scat, fname
 
 
 ## cpop combo function ####
+# all combination of clusters vs cpops (i.e. which clusters are in which cpops)
 get_cpop_combos <- function(clustn, cpopn) {
   maxcl <- clustn - cpopn + 1
   maxcll <- lapply(seq_len(cpopn), function(x) seq_len(maxcl))
@@ -87,6 +88,8 @@ get_cpop_combos <- function(clustn, cpopn) {
 ## START ####
 start <- Sys.time()
 
+overwrite=FALSE
+
 clustn <- 4
 cpop_combos_all_2D <- lapply(2:4, function(cpopn) 
   get_cpop_combos(clustn, cpopn) )
@@ -109,15 +112,22 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
     dset <- scat
     nD <- TRUE
     
-    predicted <- as.data.frame(data.table::fread(gs_files[1], data.table=FALSE))
-    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_files[1]))
-    y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
-    cpops <- colnames(y)
-    cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
-    clustn <- max(predicted)
-    
-    # get cpop combos
-    cpop_combos <- get_cpop_combos(clustn, cpopn)
+    # make cpop_combos
+    cc_file <- paste0(gsub("_clusters","_combos",gs_dir_),".Rdata")
+    if (overwrite | !file.exists(cc_file)) {
+      predicted <- as.data.frame(data.table::fread(gs_files[1], data.table=FALSE))
+      y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_files[1]))
+      y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
+      cpops <- colnames(y)
+      cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
+      clustn <- max(predicted)
+      
+      # get cpop combos
+      cpop_combos <- get_cpop_combos(clustn, cpopn)
+      dir.create(folder_name(cc_file), recursive=TRUE, showWarnings=FALSE)
+      save(cpop_combos, file=cc_file)
+    }
+    cpop_combos <- get(load(cc_file))
   }
   cat("\n",dset,">",scat)
 
