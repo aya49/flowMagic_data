@@ -22,7 +22,7 @@ dcn_files <- list.files(dcn_dir, recursive=TRUE, full.names=TRUE, pattern=".csv"
 
 
 ## output ####
-plyr::l_ply(append(dc2_files, dcn_files), function(x) {
+plyr::l_ply(append(list_leaf_dirs(dc2_dir), list_leaf_dirs(dcn_dir)), function(x) {
   dir.create(gsub("_labels","",gsub("results","scores",x)), 
              recursive=TRUE, showWarnings=FALSE)
   dir.create(gsub("_labels","_plots",x), recursive=TRUE, showWarnings=FALSE)
