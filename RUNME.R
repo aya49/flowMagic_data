@@ -14,7 +14,7 @@ libr(c(
   "plyr", "purrr", "furrr", "doMC", #"rslurm", # parallelization
   "data.table", "stringr", # generic functions
   "flowCore", "flowDensity", "flowLearn", # for 00_data + flowCore for plot_dens function
-  "RColorBrewer", # for plotting scaterplots
+  "RColorBrewer", "ggplot2",# for plotting scaterplots
   "Rfast", # for calculating distance in good_samples
   "kmed",  # for calculating kmed in good_samples
   "combinat" # for calculating possible combos in scoring gigasom

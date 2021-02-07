@@ -21,25 +21,33 @@ plyr::l_ply(gs_xr(xn_dirs), dir.create, recursive=TRUE, showWarnings=FALSE)
 ## load inputs ####
 xn_files <- list.files(xn_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz")
 
+xn_files <- xn_files[sapply(xn_files, function(x) {
+  if (file.exists(gs_xr(x))) if (file.size(gs_xr(x))>0) return(FALSE)
+  return(TRUE)
+})]
+
 
 ## START ####
 start <- Sys.time()
 
-loop_ind <- loop_ind_f(sample(xn_files), no_cores)
-plyr::l_ply(loop_ind, function(xn_fs) { plyr::l_ply(rev(xn_fs), function(xn_f) {
-# for (xn_f in loop_ind[[1]]) {
-  tx_file <- gs_xr(xn_f)
-  if (file.exists(tx_file)) if (file.size(tx_file)>0) next
+# loop_ind <- loop_ind_f(sample(fe), no_cores)
+# plyr::l_ply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) {
+fe <- seq_len(length(xn_files))
+for (i in fe) {
+  start1 <- Sys.time()
+  xn_f <- xn_files[i]
   
   xn <- data.table::fread(xn_f, data.table=FALSE)
   tx <- Rtsne::Rtsne(xn[!duplicated(xn),,drop=FALSE])$Y
   colnames(tx) <- c("tsne 1", "tsne 2")
-  write.table(tx, file=gzfile(tx_file), sep=",", row.names=FALSE, col.names=TRUE)
-# }
-}) }, .parallel=TRUE)
+  write.table(tx, file=gzfile(gs_xr(xn_f)), sep=",", row.names=FALSE, col.names=TRUE)
+  
+  time_output(start1, xn_f)
+}
+# }) }, .parallel=TRUE)
 time_output(start)
 
-## i did 1:13, not 14:15
+
 
 
 

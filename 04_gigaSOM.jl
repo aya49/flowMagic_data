@@ -30,6 +30,13 @@ for dataset in datasets
   scats = readdir("data/2D/x/$dataset")
   for scat in scats
     csvfiles = Glob.glob("*.csv.gz","data/2D/x/$dataset/$scat")
+    wd = 2
+    ht = 2
+    clr = DataFrame(load(File(format"CSV", replace(csvfiles[1],"/x/"=>"/y/"))))
+    if (ncol(clr)>4)
+      ht = 3
+    end
+    
     for csvfile in csvfiles
       fname = replace(csvfile,"data/2D/x"=>"results/2D/GigaSOM_clusters")
       if isfile(fname)
@@ -40,8 +47,8 @@ for dataset in datasets
       # clr = DataFrame(load(File(format"CSV", replace(csvfile,"/x/"=>"/y/"))))
       # ncpop = ncol(clr)
       # ncpop = names(clr)[end]=="other" ? ncpop-1 : ncpop
-
-      som = GigaSOM.initGigaSOM(exprs, 2, 2)    # 4 clusters! at most 4 clusters in a scatterplot
+      
+      som = GigaSOM.initGigaSOM(exprs, wd, ht)    # 4 clusters! at most 4 clusters in a scatterplot
       som = GigaSOM.trainGigaSOM(som, exprs)      # SOM training
       clusters = GigaSOM.mapToGigaSOM(som, exprs) # extraction of per-cell cluster IDs
       # e = GigaSOM.embedGigaSOM(som, exprs)        # EmbedSOM projection to 2D

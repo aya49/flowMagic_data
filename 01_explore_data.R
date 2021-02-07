@@ -23,7 +23,7 @@ for (x_dir in x_dirs) {
   cat("\n\n", x_dir)
   
   x_lengths <- sapply(x_files, function(x) length(count.fields(x,skip=1)))
-  ys <- sapply(x_files, function(x) data.table::fread(gsub("/x/","/y/",x)))
+  ys <- lapply(x_files, function(x) data.table::fread(gsub("/x/","/y/",x)))
 
   if (nrow(ys[[1]])!=x_lengths[1])
     cat("\n- diff num cells")
@@ -33,6 +33,15 @@ for (x_dir in x_dirs) {
   cat("\n- mean number of cells:", mean(x_lengths))
   cat("\n- number of cell pops:", ncol(ys[[1]]), "(",paste0(colnames(ys[[1]]), collapse=", "),")")
 }
+
+for (x_dir in x_dirs) {
+  x_files <- sample(list.files(x_dir, full.names=TRUE, ".csv.gz"),1)
+  y <- data.table::fread(gsub("/x/","/y/",x_files))
+  
+  cat("\n\n", x_dir)
+  cat("\n- number of cell pops:", ncol(y))
+}
+
 
 
 

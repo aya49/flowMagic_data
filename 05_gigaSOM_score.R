@@ -86,18 +86,18 @@ get_cpop_combos <- function(clustn, cpopn) {
 
 
 ## START ####
-start <- Sys.time()
-
-overwrite=FALSE
-
 clustn <- 4
 cpop_combos_all_2D <- lapply(2:4, function(cpopn) 
   get_cpop_combos(clustn, cpopn) )
 names(cpop_combos_all_2D) <- as.character(2:4)
 
+start <- Sys.time()
+
+overwrite=TRUE
+
 # loop_ind <- loop_ind_f(sample(append(gs2_files, gsn_files)), no_cores)
-# plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
-for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
+# plyr::l_ply(gsn_dirs, function(gs_dir_) {
+for (gs_dir_ in gs2_dirs) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
@@ -132,8 +132,8 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
   cat("\n",dset,">",scat)
 
   loop_ind <- loop_ind_f(gs_files, no_cores)
-  plyr::l_ply(loop_ind, function(gs_fs) {
-  plyr::l_ply(gs_fs, function(gs_f) {
+  # plyr::l_ply(loop_ind, function(gs_fs) { plyr::l_ply(gs_fs, function(gs_f) {
+    for (gs_f in gs_files) {
     # if (file.exists(gsub("_clusters","_labels",gs_f)))
     #   if (file.size(gsub("_clusters","_labels",gs_f))>0)
     #     return(NULL)
@@ -158,10 +158,11 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
     
     # get cluster combinations
     if (!nD) cpop_combos <- cpop_combos_all_2D[[as.character(cpopn)]]
-
-    # for each cpop combo
     if (!nD & "other"%in%cpops & cpopn>2) 
       cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopn-1)]])
+
+    # for each cpop combo
+    if (!nD & clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
     scoredf_cpop_combos <- clust_score(
       cpop_combos, clusttf, actualtf, cpops, dset, scat, fname)
 
@@ -190,9 +191,9 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) {
     }
     write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
                 sep=',', row.names=FALSE, col.names=TRUE)
-  }) }, .parallel=TRUE)
+  }#) }, .parallel=TRUE)
   time_output(start1)
-}
+}#, .parallel=TRUE)
 time_output(start)
 
 
