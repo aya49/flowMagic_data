@@ -40,7 +40,7 @@ start <- Sys.time()
 
 cat("out of",length(fe),"\n")
 loop_ind <- loop_ind_f(sample(fe), no_cores)
-res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
+plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
 # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
   cat(i," ")
   x2_file <- x2_files[i]
@@ -100,7 +100,7 @@ res <- furrr::future_map(loop_ind, function(ii) { purrr::map(ii, function(i) { t
               col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
-}) }) })
+}) }) }, .parallel=TRUE)
 time_output(start)
 
 
