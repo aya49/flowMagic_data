@@ -18,7 +18,7 @@ libr(c(
   "Rfast", # for calculating distance in good_samples
   "kmed",  # for calculating kmed in good_samples
   "combinat" # for calculating possible combos in scoring gigasom
-))
+), FALSE)
 
 
 ## parallelization ####
