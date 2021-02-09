@@ -60,10 +60,11 @@ l_ply(loop_ind, function(dc_files) { plyr::l_ply(dc_files, function(dc_file) {
   best <- plyr::ldply(seq_len(ncol(actual)), function(cpopi) { 
     cbind(data.frame(
       method="deepCyTOF",
-      data_set=dset, scatter_plot=scat, cell_population=cpops[cpopi], 
-      train_samples=10, fcs=fname, 
+      dataset=dset, scatterplot=NA, cpop=cpops[cpopi], 
+      train_no=10, fcs=fname, 
       train=NA
     ), f1score(actual[,cpopi]==1, predicted==cpopi))
+    
   })
   write.table(best, file=gzfile(score_file), 
               sep=",", row.names=FALSE, col.names=TRUE)

@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 14#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -33,7 +33,7 @@ plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
 
 
 ## scoring function ####
-clust_score <- function(cpop_combos, clusttf, actualtf, cpops, dset, scat, fname) {
+clust_score <- function(cpop_combos, clusttf, actualtf) {
   purrr::map(cpop_combos, function(cpop_combo) {
     # for each cell population
     purrr::map_dfr(seq_len(length(cpops)), function(cpopi) {
@@ -42,12 +42,7 @@ clust_score <- function(cpop_combos, clusttf, actualtf, cpops, dset, scat, fname
       tfactual <- actualtf[[cpopi]]
       tfpred <- Reduce('|',clusttf[cpop_combo[[cpopi]]])
       
-      cbind(data.frame(
-        method="gigaSOM",
-        data_set=dset, scatter_plot=scat, cell_population=cpop, 
-        train_samples=NA, fcs=fname, 
-        train=NA
-      ), f1score(tfactual, tfpred))
+      f1score(tfactual, tfpred)
     })
   })
 }
@@ -93,11 +88,12 @@ names(cpop_combos_all_2D) <- as.character(2:4)
 
 start <- Sys.time()
 
-overwrite=TRUE
+overwrite <- TRUE
+par_scat <- TRUE# parallelize by scatterplot, not by file
 
-# loop_ind <- loop_ind_f(sample(append(gs2_files, gsn_files)), no_cores)
-# plyr::l_ply(gsn_dirs, function(gs_dir_) {
-for (gs_dir_ in gs2_dirs) {
+# loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
+plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
+# for (gs_dir_ in gs2_dirs) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
@@ -132,8 +128,8 @@ for (gs_dir_ in gs2_dirs) {
   cat("\n",dset,">",scat)
 
   loop_ind <- loop_ind_f(gs_files, no_cores)
-  # plyr::l_ply(loop_ind, function(gs_fs) { plyr::l_ply(gs_fs, function(gs_f) {
-    for (gs_f in gs_files) {
+  bests <- plyr::ldply(loop_ind, function(x) plyr::ldply(x, function(gs_f) {
+    # for (gs_f in gs_files) {
     # if (file.exists(gsub("_clusters","_labels",gs_f)))
     #   if (file.size(gsub("_clusters","_labels",gs_f))>0)
     #     return(NULL)
@@ -163,16 +159,16 @@ for (gs_dir_ in gs2_dirs) {
 
     # for each cpop combo
     if (!nD & clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
-    scoredf_cpop_combos <- clust_score(
-      cpop_combos, clusttf, actualtf, cpops, dset, scat, fname)
+    scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf)
 
     # get best cpop combo
     meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
     best_combo <- which.max(meanf1s)
     best <- scoredf_cpop_combos[[best_combo]]
-    best <- best[best$cell_population!="other",,drop=FALSE]
+    best <- cbind(cpops[seq_len(nrow(best))], best)
+    best <- best[best[,1]!="other",,drop=FALSE]
     
-    write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
+    # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
     
     cpops_ <- cpops
     if (length(cpop_combos[[best_combo]])<length(cpops))
@@ -189,11 +185,19 @@ for (gs_dir_ in gs2_dirs) {
       tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
       colnames(tfs)[ncol(tfs)] <- "other"
     }
-    write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
-                sep=',', row.names=FALSE, col.names=TRUE)
-  }#) }, .parallel=TRUE)
+    # write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
+    #             sep=',', row.names=FALSE, col.names=TRUE)
+    save(tfs, file=gsub(".csv.gz",".Rdata",gsub("_clusters","_labels",gs_f)))
+    
+    return(best)
+  }), .parallel=!par_scat)
+  bests <- bests[,colnames(bests)!=".id"]
+  bests <- cbind("gigaSOM", dset, scat, bests[,1], 0, 
+                 gsub(".csv.gz","",sapply(gs_files, file_name)), FALSE, bests[,-1])
+  colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
+  save(bests, file=paste0(gsub("_clusters","_labels",folder_name(gs_f)),".Rdata"))
   time_output(start1)
-}#, .parallel=TRUE)
+}, .parallel=par_file)
 time_output(start)
 
 
@@ -206,12 +210,12 @@ time_output(start)
 # loop_ind <- loop_ind_f(sample(append(gl2_files, gln_files)), no_cores)
 # plyr::l_ply(loop_ind, function(gl_fs) { plyr::l_ply(gl_fs, function(gl_f) { try({
 #   nD <- grepl("/nD/", gl_f)
-#   
+# 
 #   tfs <- as.data.frame(data.table::fread(gl_f, data.table=FALSE))
 #   y_f <- gsub("results", "data", gsub("GigaSOM_labels","y",gs_f))
 #   y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
 #   cpops <- colnames(y)
-#   
+# 
 #   ft_ <- NULL
 #   if (nD) {
 #     tx <- as.matrix(data.table::fread(gsub("GigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
@@ -220,30 +224,30 @@ time_output(start)
 #     tx <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
 #     ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_labels","data/2D/filters",gs_f))))
 #   }
-#   
+# 
 #   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
 #   names(colours) <- cpops
-#   
+# 
 #   png(gsub(".csv.gz",".png",gsub("labels","plots",gl_f)),width=800,height=450)
 #   par(mfrow=c(1,2))
-#   
+# 
 #   plot_dens(tx, main="actual")
 #   for (cpop in cpops) {
 #     if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
 #     if (nD) points(tx[y[,cpop]==1,,drop=FALSE], cex=.1, col=colours[cpop])
 #   }
-#   legend("topright", legend=cpops, col=colours, 
+#   legend("topright", legend=cpops, col=colours,
 #          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-#   
+# 
 #   clust_vec <- rep(NA, nrow(x))
-#   for (cpop in cpops) 
+#   for (cpop in cpops)
 #     clust_vec[tfs[,cpop]] <- cpop
 #   cols <- colours[clust_vec]
-#   plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2], 
+#   plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2],
 #        cex=.1, main="clustered", col=cols)
-#   legend("topright", legend=cpops, col=colours, 
+#   legend("topright", legend=cpops, col=colours,
 #          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-#   
+# 
 #   graphics.off()
 # }) }) }, .parallel=TRUE)
 # time_output(start)

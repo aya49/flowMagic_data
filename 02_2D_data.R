@@ -29,8 +29,6 @@ x2_files <- list.files(x2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz
 dimsize <- c(400,400) # dimension of 2D outputs
 overwrite <- FALSE
 
-wi <- 10; hi <- 6 # number of plots per png
-
 
 ## START ####
 # fe <- which(!unlist(plyr::llply(gsub("/data/2D/x","/results/2D/y_2D",x2_files), file.exists)))
@@ -104,40 +102,3 @@ plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
 time_output(start)
 
 
-## plotting ####
-start <- Sys.time()
-res <- furrr::future_map(x2_folds, function(x2_fold) {
-  x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
-  plot_no <- ceiling(length(x2_files)/(wi*hi))
-  
-  # dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
-  lpf <- paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",plot_no,".png")
-  if (file.exists(lpf)) if (file.size(lpf)>0) return(NULL)
-  
-  xi <- 1
-  for (i in seq_len(plot_no)) {
-    png(file=paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",i,".png"),
-        width=wi*350, height=hi*350)
-    par(mfcol=c(hi,wi))
-    
-    for (pi in seq_len(wi*hi)) {
-      x2_file <- x2_files[xi]
-      if (!file.exists(x2_file)) break
-      
-      x2 <- data.table::fread(x2_file)
-      f2 <- get(load(gsub("/x/","/filters/",gsub(".csv.gz",".Rdata",x2_file))))
-      
-      f2l <- length(f2)
-      plot_dens(x2, main=file_name(x2_file))
-      colours <- RColorBrewer::brewer.pal(f2l, "Dark2")[seq_len(f2l)]
-      for (f2i in seq_len(f2l))
-        lines(f2[[f2i]], lwd=2, col=colours[f2i])
-      legend("topright", legend=names(f2), col=colours, 
-             lty=rep(1,f2l), lwd=rep(2,f2l))
-      
-      xi <- xi+1
-    }
-    graphics.off()
-  }
-})
-time_output(start)
