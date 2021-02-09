@@ -92,7 +92,7 @@ overwrite <- TRUE
 par_scat <- TRUE# parallelize by scatterplot, not by file
 
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
-plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
+res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
 # for (gs_dir_ in gs2_dirs) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
@@ -187,7 +187,7 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     }
     # write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
     #             sep=',', row.names=FALSE, col.names=TRUE)
-    save(tfs, file=gsub(".csv.gz",".Rdata",gsub("_clusters","_labels",gs_f)))
+    save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     
     return(best)
   }), .parallel=!par_scat)
@@ -195,9 +195,9 @@ plyr::l_ply(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   bests <- cbind("gigaSOM", dset, scat, bests[,1], 0, 
                  gsub(".csv.gz","",sapply(gs_files, file_name)), FALSE, bests[,-1])
   colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
-  save(bests, file=paste0(gsub("_clusters","_labels",folder_name(gs_f)),".Rdata"))
+  save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
   time_output(start1)
-}, .parallel=par_file)
+})
 time_output(start)
 
 

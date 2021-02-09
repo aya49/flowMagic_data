@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 19#parallel::detectCores() - 5
+no_cores <- 28#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -78,7 +78,7 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 start <- Sys.time()
 par_scat <- TRUE
 
-plyr::l_ply(thres_dirs, function(thres_dir_) {
+res <- furrr::future_map(thres_dirs, function(thres_dir_) {
 # CD16.FITCACD56_CD3+Tcells_, CD34SSCA_Livecells_, CD38CD27_CD19+Bcells_, CD38CD138_CD19+Bcells_
 # for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
@@ -272,7 +272,7 @@ plyr::l_ply(thres_dirs, function(thres_dir_) {
     }
   time_output(start1, "plotted")
   
-}, .parallel=par_scat)
+})
 time_output(start)
 
 
