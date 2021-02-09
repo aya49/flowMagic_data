@@ -185,9 +185,9 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
       tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
       colnames(tfs)[ncol(tfs)] <- "other"
     }
-    # write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)), 
-    #             sep=',', row.names=FALSE, col.names=TRUE)
-    save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
+    write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
+                sep=',', row.names=FALSE, col.names=TRUE)
+    # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     
     return(best)
   }), .parallel=!par_scat)
@@ -195,7 +195,9 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   bests <- cbind("gigaSOM", dset, scat, bests[,1], 0, 
                  gsub(".csv.gz","",sapply(gs_files, file_name)), FALSE, bests[,-1])
   colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
-  save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
+  # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
+  write.table(bests, file=gzfile(gsub("results","scores",gsub("_clusters","",gs_dir_)),".csv.gz"), 
+              sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1)
 })
 time_output(start)

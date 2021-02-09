@@ -52,7 +52,7 @@ l_ply(loop_ind, function(dc_files) { plyr::l_ply(dc_files, function(dc_file) {
   path_stuff <- stringr::str_split(dc_file,"/")[[1]]
   di <- which(path_stuff=="deepCyTOF_labels")
   dset <- path_stuff[di+1]
-  scat <- ifelse(nD,path_stuff[di+2],NA)
+  scat <- ifelse(!nD,path_stuff[di+2],NA)
   fname <- gsub(".csv","",path_stuff[length(path_stuff)])
   
   
@@ -60,7 +60,7 @@ l_ply(loop_ind, function(dc_files) { plyr::l_ply(dc_files, function(dc_file) {
   best <- plyr::ldply(seq_len(ncol(actual)), function(cpopi) { 
     cbind(data.frame(
       method="deepCyTOF",
-      dataset=dset, scatterplot=NA, cpop=cpops[cpopi], 
+      dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
       train_no=10, fcs=fname, 
       train=NA
     ), f1score(actual[,cpopi]==1, predicted==cpopi))

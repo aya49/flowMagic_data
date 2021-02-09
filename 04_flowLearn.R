@@ -78,7 +78,7 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 start <- Sys.time()
 par_scat <- TRUE
 
-res <- furrr::future_map(thres_dirs, function(thres_dir_) {
+res <- plyr::llply(thres_dirs, function(thres_dir_) {
 # CD16.FITCACD56_CD3+Tcells_, CD34SSCA_Livecells_, CD38CD27_CD19+Bcells_, CD38CD138_CD19+Bcells_
 # for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
@@ -87,7 +87,7 @@ res <- furrr::future_map(thres_dirs, function(thres_dir_) {
   
   x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
   fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
-  scores_dir_ <- paste0(gsub("results/2D/flowLearn_thresholds", "scores/2D/flowLearn",fl_dir),".Rdata")
+  scores_dir_ <- paste0(gsub("results/2D/flowLearn_thresholds", "scores/2D/flowLearn",fl_dir),".csv.gz")
   # if (file.exists(scores_dir_)) return(NULL)
   
   start1 <- Sys.time()
@@ -245,7 +245,9 @@ res <- furrr::future_map(thres_dirs, function(thres_dir_) {
   })
   scoredf_k_cpop <- cbind("flowLearn", dset, scat, testpars, scoredf_k_cpop)
   colnames(scoredf_k_cpop)[c(1:3)] <- c("method", "dataset", "scatterplot")
-  save(scoredf_k_cpop, file=scores_dir_)
+  # save(scoredf_k_cpop, file=scores_dir_)
+  write.table(scoredf_k_cpop, file=gzfile(scores_dir_), 
+              sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
 
   
@@ -272,7 +274,7 @@ res <- furrr::future_map(thres_dirs, function(thres_dir_) {
     }
   time_output(start1, "plotted")
   
-})
+}, .parallel=par_scat)
 time_output(start)
 
 

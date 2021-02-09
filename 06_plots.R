@@ -17,8 +17,6 @@ scn_dir <- paste0(root,"/scores/nD")
 
 x2_folds <- list_leaf_dirs(x2_dir)
 
-wi <- 10; hi <- 6 # number of plots per png
-
 
 
 ## load scores ####
@@ -109,6 +107,8 @@ ggplot2::ggsave(filename=paste0(root,"/scores/nD.png"), plot=gg, dpi=600, width=
 
 
 ## plotting ####
+wi <- 20; hi <- 4 # number of plots per png
+
 start <- Sys.time()
 res <- furrr::future_map(x2_folds, function(x2_fold) {
   x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
