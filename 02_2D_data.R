@@ -14,11 +14,10 @@ source(paste0(root,"/src/RUNME.R"))
 
 ## output ####
 x2_folds <- list_leaf_dirs(x2_dir)
-x2_folds_ <- gsub("/data/","/results/",x2_folds)
-plyr::l_ply(gsub("/x/","/scatterplots/",x2_folds), dir.create, recursive=TRUE, showWarnings=FALSE)
-plyr::l_ply(
-  paste0("/",c("x_2Ddensity","x_2Dscatter","x_2Ddiscrete","y_2Dncells","y_vector","y_2D"),"/"), 
-  function(x) plyr::l_ply(gsub("/x/",x,x2_folds_), dir.create, recursive=TRUE, showWarnings=FALSE))
+x2_folds_ <- gsub("/raw/","/data/",x2_folds)
+folds <- c("x_2Ddensity","x_2Dscatter","x_2Ddiscrete","y_2Dncells","y_vector","y_2D")
+plyr::l_ply(folds, function(y) plyr::l_ply(
+  gs_xr(x2_folds,y), dir.create, recursive=TRUE, showWarnings=FALSE))
 
 
 ## load inputs ####
@@ -48,11 +47,11 @@ plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
   y2 <- data.table::fread(gsub("/x/","/y/",x2_file), data.table=FALSE)
   
   # save a vector version of y
-  y2i_file <- gsub("/data/2D/x","/results/2D/y_vector",x2_file)
   y2i <- apply(y2, 1, function(x) which(x==1)[1])
-  # if ("other"%in%colnames(y2))
-  #   y2i[y2i==which(colnames(y2)=="other")] <- 0
-  # write.table(y2i, file=gzfile(y2i_file), col.names=FALSE, row.names=FALSE, sep=",")
+  if ("other"%in%colnames(y2))
+    y2i[y2i==which(colnames(y2)=="other")] <- 0
+  write.table(y2i, file=gzfile(gs_xr(x2_file,"y_vector")), 
+              col.names=FALSE, row.names=FALSE, sep=",")
   
   
   # discretize x
@@ -64,7 +63,7 @@ plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
   x2discrete[x2discrete>400] <- 400
   x2discrete[x2discrete<1] <- 1
   x2discrete_ <- as.matrix(x2discrete[!duplicated(x2discrete),,drop=FALSE])
-  write.table(x2discrete, file=gzfile(gsub("/data/2D/x","/results/2D/x_2Ddiscrete",x2_file)), 
+  write.table(x2discrete, file=gzfile(gs_xr(x2_file,"x_2Ddiscrete")), 
               col.names=FALSE, row.names=FALSE, sep=",")
   
   # grid, reverse dimensions when plotting please!
@@ -72,20 +71,21 @@ plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
   
   # scatterplot
   plotsc[x2discrete_] <- 1
-  write.table(plotsc, file=gzfile(gsub("/data/2D/x","/results/2D/x_2Dscatter",x2_file)),
+  write.table(plotsc, file=gzfile(gs_xr(x2_file,"x_2Dscatter")),
               col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotsc, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
 
-  # # density
-  # dens2 = KernSmooth::bkde2D(
-  #   x2, gridsize=c(dimsize[2],dimsize[1]),
-  #   bandwidth=c(max(x2[,1])-min(x2[,1]), max(x2[,2])-min(x2[,2]))/30)$fhat # bandwidth in each coordinate
-  # write.table(dens2, file=gzfile(gsub("/data/2D/x","/results/2D/x_2Ddensity",x2_file)), col.names=FALSE, row.names=FALSE, sep=",")
-  # # gplots::heatmap.2(dens2, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+  # density
+  dens2 = KernSmooth::bkde2D(
+    x2, gridsize=c(dimsize[2],dimsize[1]),
+    bandwidth=c(max(x2[,1])-min(x2[,1]), max(x2[,2])-min(x2[,2]))/30)$fhat # bandwidth in each coordinate
+  write.table(dens2, file=gzfile(gs_xr(x2_file,"x_2Ddensity")), 
+              col.names=FALSE, row.names=FALSE, sep=",")
+  # gplots::heatmap.2(dens2, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   
   # answer: number of cells in each pixel
   plotgn <- table(x2discrete)
-  write.table(plotgn, file=gzfile(gsub("/data/2D/x","/results/2D/y_2Dncells",x2_file)),
+  write.table(plotgn, file=gzfile(gs_xr(x2_file,"y_2Dncells")),
               col.names=FALSE, row.names=FALSE, sep=",")
   
   # answer: label of each pixel
@@ -94,7 +94,7 @@ plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
     getmode(y2i[x2discrete[,1]==x[1] & x2discrete[,2]==x[2]]) )
   for (yi in unique(x2discrete_y))
     plotgs[x2discrete_[x2discrete_y==yi,,drop=FALSE]] <- yi
-  write.table(plotgs, file=gzfile(gsub("/data/2D/x","/results/2D/y_2D",x2_file)), 
+  write.table(plotgs, file=gzfile(gs_xr(x2_file,"y_2D")), 
               col.names=FALSE, row.names=FALSE, sep=",")
   # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
   

@@ -27,14 +27,27 @@ doMC::registerDoMC(no_cores) # for plyr::llply
 future::plan(future::multisession) # for furrr::future_map
 
 ## folder_names ####
+raw_dir <- paste0(root, "/raw")
 data_dir <- paste0(root, "/data")
 results_dir <- paste0(root, "/results")
 scores_dir <- paste0(root, "/scores")
+# plots_dir <- paste0(root, "/plots")
 
-xn_dir <- paste0(data_dir,"/nD/x")
-yn_dir <- paste0(data_dir,"/nD/y")
-plotn_dir <- paste0(data_dir,"/nD/scatterplots")
-x2_dir <- paste0(data_dir,"/2D/x")
-y2_dir <- paste0(data_dir,"/2D/y")
-thres_dir <- paste0(data_dir,"/2D/thresholds")
-filt_dir <- paste0(data_dir,"/2D/filters")
+xn_dir <- paste0(raw_dir,"/nD/x")
+yn_dir <- paste0(raw_dir,"/nD/y")
+plotn_dir <- paste0(raw_dir,"/nD/scatterplots")
+x2_dir <- paste0(raw_dir,"/2D/x")
+y2_dir <- paste0(raw_dir,"/2D/y")
+thres_dir <- paste0(raw_dir,"/2D/thresholds")
+filt_dir <- paste0(raw_dir,"/2D/filters")
+
+# replace folder name
+gs_xr <- function(flnm,f3,f1="data",single=TRUE) {
+  xd <- stringr::str_extract(flnm,"[2n]D")
+  fld <- stringr::str_extract(flnm,"[a-zA-Z]+/[2n]D/[a-zA-Z]+")
+  if (single)
+    return(gsub(fld[1],paste0(f1,"/",xd[1],"/",f3),flnm))
+  return(sapply(seq_len(length(fld)), function(i)
+    gsub(fld[i],paste0(f1,"/",xd[i],"/",f3),flnm[i])))
+} 
+

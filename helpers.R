@@ -18,6 +18,8 @@ folder_name <- function(full_path) {
 ## output: all leaf directories in path
 list_leaf_dirs <- function(full_path) {
   a <- list.dirs(full_path, recursive=TRUE)
+  if (length(a)==0) return(a)
+  if (length(a)==length(list.dirs(full_path, recursive=FALSE))) return(a[-1])
   a[sapply(a, function(x) sum(grepl(gsub("[)]","[)]",gsub("[(]","[(]",gsub("[-]","[-]",gsub("[_]","[_]",gsub("[+]","[+]",x))))),a))==1)]
 }
 

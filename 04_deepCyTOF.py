@@ -91,14 +91,14 @@ Make your choice here - an integer from 0 to 4.
 ## load data set folders for nD and 2D data sets
 
 # nD data folders
-data_path_nD = 'data/nD/x'
+data_path_nD = 'raw/nD/x'
 data_dirs_nD = os.listdir(data_path_nD)
 for i in range(len(data_dirs_nD)):
   data_dirs_nD[i] = data_path_nD + "/" + data_dirs_nD[i]
-data_dirs_nD.sort()
+data_dirs_nD.sort() # if sort doesn't work, run it on its own
 
 #2D data folders
-data_path_2D = 'data/2D/x'
+data_path_2D = 'raw/2D/x'
 data_dirs_2D1 = os.listdir(data_path_2D)
 data_dirs_2D = []
 for i in range(len(data_dirs_2D1)):
@@ -108,7 +108,7 @@ for i in range(len(data_dirs_2D1)):
     data_dirs_2D = data_dirs_2D + [fold + "/" + fold_j]
 data_dirs_2D.sort() # 0:12 HIPCbcell, 12:25 HIPCmyeloid, 25:35 pregnancy, 35:(12) sangerP2
 
-data_dirs = data_dirs_2D[47:] + data_dirs_nD
+data_dirs = data_dirs_2D + data_dirs_nD
 for data_dir in data_dirs: ###################################################
   # data_dir = data_dirs[0]
   # data_dir = "src/MultiCenter_16sample"
@@ -127,7 +127,7 @@ for data_dir in data_dirs: ###################################################
     trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
     trainIndex = dataIndex[trainIndex]
   else:
-    pam_dir = data_dir.replace("data/2D/x","results/2D/x_2Ddensity_euclidean_rankkmed")
+    pam_dir = data_dir.replace("raw/2D/x","data/2D/x_2Ddensity_euclidean_rankkmed")
     trainIndex = np.array(os.listdir(pam_dir + "/" + str(trainNum)))
   relevantMarkers = np.asarray(range(len(data.columns)))
   mode = 'CSV.GZ'
@@ -161,7 +161,7 @@ for data_dir in data_dirs: ###################################################
   Train the de-noising auto encoder.
   '''
   print('Train the de-noising auto encoder.')
-  res_dir = data_dir.replace("data/","results/").replace("/x/","/deepCyTOF_models/")
+  res_dir = data_dir.replace("raw/","results/").replace("/x/","/deepCyTOF_models/")
   Path(res_dir).mkdir(parents=True, exist_ok=True)
   DAE = dae.trainDAE(target, data_dir, refSampleInd, trainIndex,
                      relevantMarkers, mode, keepProb, denoise,
@@ -173,7 +173,7 @@ for data_dir in data_dirs: ###################################################
   '''
   denoiseTarget, preprocessor = dh.standard_scale(denoiseTarget, preprocessor=None)
   
-  res_dir = data_dir.replace("data/", "results/").replace("/x/", "/deepCyTOF_models/")
+  res_dir = data_dir.replace("raw/", "results/").replace("/x/", "/deepCyTOF_models/")
   Path(res_dir).mkdir(parents=True, exist_ok=True)
   if loadModel:
     from keras.models import load_model
@@ -194,7 +194,7 @@ for data_dir in data_dirs: ###################################################
   mmd_before = np.zeros(testIndex.size)
   mmd_after = np.zeros(testIndex.size)
   
-  new_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_labels/")
+  new_fold = data_dir.replace("raw","results").replace("/x/","/deepCyTOF_labels/")
   Path(new_fold).mkdir(parents=True, exist_ok=True)
   for i in np.arange(testIndex.size): #################################################
     # i = 9
@@ -270,7 +270,7 @@ for data_dir in data_dirs: ###################################################
     denoiseSource = None
   
   testIndex_ = [x.replace(".csv.gz","") for x in testIndex]
-  F1_fold = data_dir.replace("data","results").replace("/x/","/deepCyTOF_F1/")
+  F1_fold = data_dir.replace("raw","results").replace("/x/","/deepCyTOF_F1/")
   Path(F1_fold).mkdir(parents=True, exist_ok=True)
   np.savetxt(F1_fold + "/F1.csv", F1, delimiter=',', fmt='%f')
   np.savetxt(F1_fold + "/fnames.csv", np.array(testIndex), delimiter=',', fmt='%s')

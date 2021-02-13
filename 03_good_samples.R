@@ -14,19 +14,17 @@ source(paste0(root,"/src/RUNME.R"))
 
 ## input ####
 ingrid <- "x_2Ddensity"
-x2_dir_ <- paste0(root,"/results/2D/",ingrid); 
+x2_dir_ <- paste0(root,"/data/2D/",ingrid); 
 
 
 ## output ####
 distn <- "euclidean"
 clustn <- "rankkmed"
 x2_dir_s <- list_leaf_dirs(x2_dir_)
-plyr::l_ply(unique(laply(x2_dir_s, folder_name)), function(x) {
-  clus_dir <- gsub(paste0("2D/",ingrid),paste0("2D/",ingrid,"_",distn,"_",clustn),x)
-  dist_dir <- gsub(paste0("2D/",ingrid),paste0("2D/",ingrid,"_",distn),x)
-  dir.create(clus_dir, recursive=TRUE, showWarnings=FALSE)
-  dir.create(dist_dir, recursive=TRUE, showWarnings=FALSE)
-})
+plyr::l_ply(unique(laply(x2_dir_s, folder_name)), function(x)
+  plyr::l_ply(append(gs_xr(x,paste0(ingrid,"_",distn,"_",clustn)),
+                     gs_xr(x,paste0(ingrid,"_",distn))), 
+              dir.create, recursive=TRUE, showWarnings=FALSE) )
 
 
 ks <- 1:10
@@ -39,7 +37,7 @@ start <- Sys.time()
 # loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 plyr::l_ply(x2_dir_s, function(x2_dir) {
   x2_fs <- list.files(x2_dir, full.names=TRUE, pattern=".csv.gz")
-  dist_dir <- paste0(gsub(".csv.gz","",gsub(paste0("2D/",ingrid),paste0("2D/",ingrid,"_",distn), x2_dir)),".Rdata")
+  dist_dir <- gsub(".csv.gz",".Rdata",gs_xr(x2_dir,paste0(ingrid,"_",distn)))
 
   start1 <- Sys.time()
   

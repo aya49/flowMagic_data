@@ -5,120 +5,83 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 11#parallel::detectCores() - 5
+no_cores <- 14#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
 ## input ####
-dc2_dir <- paste0(root,"/results/2D/deepCyTOF_labels"); 
-dcn_dir <- paste0(root,"/results/nD/deepCyTOF_labels"); 
+dc2_dir <- paste0(results_dir,"/2D/deepCyTOF_labels"); 
+dcn_dir <- paste0(results_dir,"/nD/deepCyTOF_labels"); 
 
 
 ## load inputs ####
+dc2_dirs <- list_leaf_dirs(dc2_dir)
+dcn_dirs <- list_leaf_dirs(dcn_dir)
 dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 dcn_files <- list.files(dcn_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
 
 ## output ####
-plyr::l_ply(append(list_leaf_dirs(dc2_dir), list_leaf_dirs(dcn_dir)), function(x) {
-  dir.create(gsub("_labels","",gsub("results","scores",x)), 
-             recursive=TRUE, showWarnings=FALSE)
-  dir.create(gsub("_labels","_plots",x), recursive=TRUE, showWarnings=FALSE)
-})
+gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
+# plyr::l_ply(append(list_leaf_dirs(dc2_dir),list_leaf_dirs(dcn_dir)), function(x)
+#   dir.create(gs_xr_(x,"deepCyTOF_labels"), recursive=TRUE, showWarnings=FALSE) )
 
 
 # get train samples
-trs <- gsub(".csv.gz","",list.files(paste0(results_dir, "/x_2Ddensity_euclidean_rankkmed/10")))
+trs <- gs_xr(dc2_dir,"x_2Ddensity_euclidean_rankkmed")
 
 
 ## START ####
 start <- Sys.time()
 
-loop_ind <- loop_ind_f(sample(append(dcn_files, dc2_files)), no_cores)
-l_ply(loop_ind, function(dc_files) { plyr::l_ply(dc_files, function(dc_file) {
-  score_file <- paste0(gsub("results/", "scores/", gsub("_labels","",dc_file)),".gz")
-  # if (file.exists(score_file)) if (file.size(score_file)>0) return(NULL)
+for (dc_dir_ in append(dc2_dirs,dcn_dirs)) {
+  start1 <- Sys.time()
+  print(dc_dir_)
   
-  predicted <- read.csv(dc_file, header=FALSE)[,1]
-  actual <- data.table::fread(paste0(gsub("/deepCyTOF_labels","/y",gsub(
-    "/results/","/data/",dc_file)),".gz"), data.table=FALSE)
-  cpops <- colnames(actual)
+  dc_files <- list.files(dc_dir_, full.names=TRUE)
   
-  # get meta data
-  # pus <- sort(unique(predicted)) # unique labels
-  nD <- grepl("/nD/", dc_file)
-  path_stuff <- stringr::str_split(dc_file,"/")[[1]]
-  di <- which(path_stuff=="deepCyTOF_labels")
-  dset <- path_stuff[di+1]
-  scat <- ifelse(!nD,path_stuff[di+2],NA)
-  fname <- gsub(".csv","",path_stuff[length(path_stuff)])
+  nD <- grepl("/nD/",dc_dir_)
+  if (!nD) {
+    tr_fnames <- gsub(".csv.gz","",list.files(paste0(gs_xr(dc_dir_,"x_2Ddensity_euclidean_rankkmed"),"/10")))
+  } else {
+    tr_fnames <- gsub(".csv","",sapply(dc_files[round(seq(from=2, to=length(dc_files), length=10))], file_name))
+  }
   
-  
-  ## score each cpop ####
-  best <- plyr::ldply(seq_len(ncol(actual)), function(cpopi) { 
-    cbind(data.frame(
-      method="deepCyTOF",
-      dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
-      train_no=10, fcs=fname, 
-      train=NA
-    ), f1score(actual[,cpopi]==1, predicted==cpopi))
+  li <- loop_ind_f(dc_files, no_cores)
+  bests <- plyr::ldply(li, function(dc_fs) plyr::ldply(dc_fs, function(dc_f) {
+    predicted <- read.csv(dc_f, header=FALSE)[,1]
+    actual <- data.table::fread(paste0(gs_xr(dc_f,"y","raw"),".gz"), data.table=FALSE)
+    cpops <- colnames(actual)
     
-  })
-  write.table(best, file=gzfile(score_file), 
+    # get meta data
+    # pus <- sort(unique(predicted)) # unique labels
+    nD <- grepl("/nD/", dc_f)
+    path_stuff <- stringr::str_split(dc_f,"/")[[1]]
+    di <- which(path_stuff=="deepCyTOF_labels")
+    dset <- path_stuff[di+1]
+    scat <- ifelse(!nD,path_stuff[di+2],NA)
+    fname <- gsub(".csv","",path_stuff[length(path_stuff)])
+    
+    ## score each cpop ####
+    plyr::ldply(seq_len(ncol(actual)), function(cpopi) { 
+      cbind(data.frame(
+        method="deepCyTOF",
+        dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
+        train_no=10, fcs=fname, 
+        train=fname%in%tr_fnames
+      ), f1score(actual[,cpopi]==1, predicted==cpopi))
+    })
+  }), .parallel=TRUE)
+  bests <- bests[,colnames(bests)!=".id"]
+  score_file <- paste0(gs_xr_(dc_dir_,"deepCyTOF"),".csv.gz")
+  dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
+  write.table(bests, file=gzfile(score_file), 
               sep=",", row.names=FALSE, col.names=TRUE)
-}) }, .parallel=TRUE)
+  time_output(start1)
+}
 time_output(start)
 
 
-# ## PLOT ####
-# start <- Sys.time()
-# 
-# # loop_ind <- loop_ind_f(dc2_files, no_cores)
-# l_ply(append(dcn_files, dc2_files), function(dc_file) { try({
-#   predicted <- read.csv(dc_file)[,1]
-#   actual <- data.table::fread(paste0(gsub("/deepCyTOF_labels","/y",gsub(
-#     "/results/","/data/",dc_file)),".gz"), data.table=FALSE)
-#   cpops <- colnames(actual)
-#   
-#   nD <- grepl("/nD/", dc_file)
-# 
-#   ft_ <- NULL
-#   if (nD) {
-#     tx <- data.table::fread(paste0(gsub(
-#       "/deepCyTOF_labels","/Rtsne",dc_file),".gz"), data.table=FALSE)
-#   } else {
-#     tx <- data.table::fread(paste0(gsub("results","data",gsub(
-#       "/deepCyTOF_labels","/x",dc_file)),".gz"), data.table=FALSE)
-#     ft_ <- get(load(gsub(".csv",".Rdata",gsub("results/2D/deepCyTOF_labels","data/2D/filters",dc_file))))
-#   }
-#   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
-#   names(colours) <- cpops
-#   
-#   png(gsub(".csv",".png",gsub("labels","plots",dc_file)),width=800,height=450)
-#   par(mfrow=c(1,2))
-#   
-#   plot_dens(tx, main="actual")
-#   for (cpopi in seq_len(length(cpops))) {
-#     cpop <- cpops[cpopi]
-#     if (!nD & cpop%in%names(ft_)) lines(ft_[[cpop]], lwd=2, col=colours[cpop])
-#     if (nD & cpopi%in%predicted) 
-#       points(tx[predicted==cpopi,,drop=FALSE], cex=.1, col=colours[cpop])
-#   }
-#   legend("topright", legend=cpops, col=colours, 
-#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-#   
-#   clust_vec <- rep(NA, length(predicted))
-#   for (cpopi in seq_len(length(cpops)))
-#     clust_vec[predicted==cpopi] <- cpops[cpopi]
-#   cols <- colours[clust_vec]
-#   plot(tx, xlab=colnames(tx)[1], ylab=colnames(tx)[2],
-#        cex=.1, col=cols, main="classified")
-#   legend("topright", legend=cpops, col=colours, 
-#          lty=rep(1,length(cpop)), lwd=rep(2,length(cpop)))
-#   
-#   graphics.off()
-# }) }, .parallel=TRUE)
-# time_output(start)
 

@@ -1,39 +1,37 @@
 # date created: 2020-01-04
 # author: alice yue
-# input: GigaSOM output
+# input: gigaSOM output
 # output: score matrix (f1)
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 14#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
 
 ## input ####
-gs2_dir <- paste0(root,"/results/2D/GigaSOM_clusters"); 
-gsn_dir <- paste0(root,"/results/nD/GigaSOM_clusters"); 
-gl2_dir <- paste0(root,"/results/2D/GigaSOM_labels"); 
-gln_dir <- paste0(root,"/results/nD/GigaSOM_labels"); 
+gs2_dir <- paste0(root,"/results/2D/gigaSOM_clusters"); 
+gsn_dir <- paste0(root,"/results/nD/gigaSOM_clusters"); 
+gl2_dir <- paste0(root,"/results/2D/gigaSOM_labels"); 
+gln_dir <- paste0(root,"/results/nD/gigaSOM_labels"); 
 
 
 ## load inputs ####
 gs2_dirs <- list_leaf_dirs(gs2_dir)
-gsn_dirs <- list_leaf_dirs(gsn_dir)
+gsn_dirs <- list.dirs(gsn_dir)[-1]
 
 
 ## output ####
 plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
-  dir.create(gsub("_clusters","",gsub("results","scores",x)), 
-             recursive=TRUE, showWarnings=FALSE)
   dir.create(gsub("_clusters","_plots",x), recursive=TRUE, showWarnings=FALSE)
   dir.create(gsub("_clusters","_labels",x), recursive=TRUE, showWarnings=FALSE)
 })
 
 
 ## scoring function ####
-clust_score <- function(cpop_combos, clusttf, actualtf) {
+clust_score <- function(cpop_combos, clusttf, actualtf, cpops) {
   purrr::map(cpop_combos, function(cpop_combo) {
     # for each cell population
     purrr::map_dfr(seq_len(length(cpops)), function(cpopi) {
@@ -89,11 +87,13 @@ names(cpop_combos_all_2D) <- as.character(2:4)
 start <- Sys.time()
 
 overwrite <- TRUE
-par_scat <- TRUE# parallelize by scatterplot, not by file
+# par_scat <- FALSE # parallelize by scatterplot, not by file
 
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
-res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
-# for (gs_dir_ in gs2_dirs) {
+# 5 2D is an issue
+# 
+# res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
+for (gs_dir_ in gsn_dirs) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
@@ -103,17 +103,16 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   dset <- gs_f_[length(gs_f_)-1]
   
   nD <- FALSE
-  if (dset=="GigaSOM_clusters") {
-    scat <- NA
+  if (dset=="gigaSOM_clusters") {
     dset <- scat
+    scat <- NA
     nD <- TRUE
     
     # make cpop_combos
     cc_file <- paste0(gsub("_clusters","_combos",gs_dir_),".Rdata")
     if (overwrite | !file.exists(cc_file)) {
-      predicted <- as.data.frame(data.table::fread(gs_files[1], data.table=FALSE))
-      y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_files[1]))
-      y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
+      predicted <- data.table::fread(gs_files[1], data.table=FALSE)
+      y <- data.table::fread(gs_xr(gs_files[1],"y","raw"), data.table=FALSE)
       cpops <- colnames(y)
       cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
       clustn <- max(predicted)
@@ -125,7 +124,7 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     }
     cpop_combos <- get(load(cc_file))
   }
-  cat("\n",dset,">",scat)
+  time_output(start1, paste("made combos: ",dset,">",scat))
 
   loop_ind <- loop_ind_f(gs_files, no_cores)
   bests <- plyr::ldply(loop_ind, function(x) plyr::ldply(x, function(gs_f) {
@@ -137,10 +136,10 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
     score_file <- gsub("results", "scores", gsub("_clusters","",gs_f))
     
     predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1]
-    y_f <- gsub("results", "data", gsub("GigaSOM_clusters","y",gs_f))
+    y_f <- gsub("results", "data", gsub("gigaSOM_clusters","y",gs_f))
     y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
     if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
-    x_f <- gsub("results", "data", gsub("GigaSOM_clusters","x",gs_f))
+    x_f <- gsub("results", "data", gsub("gigaSOM_clusters","x",gs_f))
     x <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
     
     fname <- gsub(".csv.gz","",gs_f_[length(gs_f_)])
@@ -159,13 +158,13 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
 
     # for each cpop combo
     if (!nD & clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
-    scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf)
+    scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf, cpops)
 
     # get best cpop combo
     meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
     best_combo <- which.max(meanf1s)
     best <- scoredf_cpop_combos[[best_combo]]
-    best <- cbind(cpops[seq_len(nrow(best))], best)
+    best <- cbind(cpops[seq_len(nrow(best))], gsub(".csv.gz","",file_name(gs_f), best))
     best <- best[best[,1]!="other",,drop=FALSE]
     
     # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
@@ -193,13 +192,15 @@ res <- furrr::future_map(append(gsn_dirs, gs2_dirs), function(gs_dir_) {
   }), .parallel=!par_scat)
   bests <- bests[,colnames(bests)!=".id"]
   bests <- cbind("gigaSOM", dset, scat, bests[,1], 0, 
-                 gsub(".csv.gz","",sapply(gs_files, file_name)), FALSE, bests[,-1])
+                 bests[,2], FALSE, bests[,-c(1,2)])
   colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
   # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
-  write.table(bests, file=gzfile(gsub("results","scores",gsub("_clusters","",gs_dir_)),".csv.gz"), 
+  dir.create(folder_name(bests), recursive=TRUE, showWarnings=FALSE)
+  write.table(bests, file=gzfile(paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".csv.gz")), 
               sep=",", row.names=FALSE, col.names=TRUE)
-  time_output(start1)
-})
+  time_output(start1, "scored")
+# }) }, .parallel=par_scat)
+}
 time_output(start)
 
 
@@ -214,17 +215,17 @@ time_output(start)
 #   nD <- grepl("/nD/", gl_f)
 # 
 #   tfs <- as.data.frame(data.table::fread(gl_f, data.table=FALSE))
-#   y_f <- gsub("results", "data", gsub("GigaSOM_labels","y",gs_f))
+#   y_f <- gsub("results", "data", gsub("gigaSOM_labels","y",gs_f))
 #   y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
 #   cpops <- colnames(y)
 # 
 #   ft_ <- NULL
 #   if (nD) {
-#     tx <- as.matrix(data.table::fread(gsub("GigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
+#     tx <- as.matrix(data.table::fread(gsub("gigaSOM_labels","Rtsne",gs_f), data.table=FALSE))
 #   } else {
-#     x_f <- gsub("results", "data", gsub("GigaSOM_labels","x",gl_f))
+#     x_f <- gsub("results", "data", gsub("gigaSOM_labels","x",gl_f))
 #     tx <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
-#     ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/GigaSOM_labels","data/2D/filters",gs_f))))
+#     ft_ <- get(load(gsub(".csv.gz",".Rdata",gsub("results/2D/gigaSOM_labels","data/2D/filters",gs_f))))
 #   }
 # 
 #   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]

@@ -16,7 +16,7 @@ sc2_dir <- paste0(root,"/scores/2D")
 scn_dir <- paste0(root,"/scores/nD")
 
 x2_folds <- list_leaf_dirs(x2_dir)
-
+gs_xr_ <- function(x,y) gs_xr(x,y,"results") 
 
 
 ## load scores ####
@@ -107,34 +107,43 @@ ggplot2::ggsave(filename=paste0(root,"/scores/nD.png"), plot=gg, dpi=600, width=
 
 
 ## plotting ####
-wi <- 20; hi <- 4 # number of plots per png
+wi <- 15; hi <- 15 # number of plots per png
+size <- 400
 
 start <- Sys.time()
-res <- furrr::future_map(x2_folds, function(x2_fold) {
+res <- plyr::llply(x2_folds, function(x2_fold) {
   x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
   plot_no <- ceiling(length(x2_files)/(wi*hi))
   
-  # dir.create(gsub("2D/x","2D/scatterplots",x2_fold), recursive=TRUE, showWarnings=FALSE)
-  lpf <- paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",plot_no,".png")
-  if (file.exists(lpf)) if (file.size(lpf)>0) return(NULL)
+  x2s <- plyr::llply(x2_files, data.table::fread, data.table=FALSE)
+  f2s <- plyr::llply(gsub("/x/","/filters/",gsub(".csv.gz",".Rdata",x2_files)), 
+                     function(x) get(load(x)))
+  names(x2s) <- names(f2s) <- fnames <- 
+    gsub(".csv.gz", "", sapply(x2_files, file_name))
+  xl <- length(x2s)
   
+  cpops <- names(f2s[[1]])
+  colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
+  names(colours) <- cpops
+
+  # original
+  lpf_fold <- gs_xr_(x2_fold,"allfilesplots_original")
+  dir.create(lpf_fold, recursive=TRUE, showWarnings=FALSE)
+  lpf <- paste0(lpf_fold,"/",plot_no,".png")
   xi <- 1
   for (i in seq_len(plot_no)) {
-    png(file=paste0(gsub("2D/x","2D/scatterplots",x2_fold),"/",i,".png"),
-        width=wi*350, height=hi*350)
+    png(file=paste0(lpf_fold,"/",i,".png"), width=wi*size, height=hi*size)
     par(mfcol=c(hi,wi))
     
     for (pi in seq_len(wi*hi)) {
-      x2_file <- x2_files[xi]
-      if (!file.exists(x2_file)) break
+      if (xi>xl) break
       
-      x2 <- data.table::fread(x2_file)
-      f2 <- get(load(gsub("/x/","/filters/",gsub(".csv.gz",".Rdata",x2_file))))
+      x2 <- x2s[[xi]]
+      f2 <- f2s[[xi]]
       
       f2l <- length(f2)
-      plot_dens(x2, main=file_name(x2_file))
-      colours <- RColorBrewer::brewer.pal(f2l, "Dark2")[seq_len(f2l)]
-      for (f2i in seq_len(f2l))
+      plot_dens(x2, main=fnames[xi])
+      for (f2i in names(f2l))
         lines(f2[[f2i]], lwd=2, col=colours[f2i])
       legend("topright", legend=names(f2), col=colours, 
              lty=rep(1,f2l), lwd=rep(2,f2l))
@@ -143,6 +152,132 @@ res <- furrr::future_map(x2_folds, function(x2_fold) {
     }
     graphics.off()
   }
+  
+  # gigaSOM
+  lpf_fold <- gs_xr_(x2_fold,"allfilesplots_gigaSOM")
+  dir.create(lpf_fold, recursive=TRUE, showWarnings=FALSE)
+  lpf <- paste0(lpf_fold,"/",plot_no,".png")
+  xi <- 1
+  for (i in seq_len(plot_no)) {
+    png(file=paste0(lpf_fold,"/",i,".png"), width=wi*size, height=hi*size)
+    par(mfcol=c(hi,wi))
+    
+    for (pi in seq_len(wi*hi)) {
+      if (xi>xl) break
+      
+      x2 <- x2s[[xi]]
+      f2 <- f2s[[xi]]
+      
+      lfile <- gs_xr_(x2_files[xi],"gigaSOM_labels")
+      if (!file.exists(lfile)) {
+        f2l <- length(f2)
+        plot_dens(x2, main=fnames[xi])
+        for (f2i in names(f2l))
+          lines(f2[[f2i]], lwd=2, col=colours[f2i])
+        legend("topright", legend=names(f2), col=colours, 
+               lty=rep(1,f2l), lwd=rep(2,f2l))
+      } else {
+        gsl <- data.table::fread(lfile, data.table=FALSE)
+        colours_ <- rep(NA,nrow(x2))
+        for (gsi in colnames(gsl))
+          colours_[gsl[,gsi]] <- gsi
+        
+        f2l <- length(f2)
+        plot(x2, main=fnames[xi], col=colours[colours_], cex=.1)
+        for (f2i in names(f2l))
+          lines(f2[[f2i]], lwd=2, col="black")
+        legend("topright", legend=names(f2), col=colours, 
+               lty=rep(1,f2l), lwd=rep(2,f2l))
+      }
+      
+      xi <- xi+1
+    }
+    graphics.off()
+  }
+  
+  # deepCyTOF
+  lpf_fold <- gs_xr_(x2_fold,"allfilesplots_deepCyTOF")
+  dir.create(lpf_fold, recursive=TRUE, showWarnings=FALSE)
+  lpf <- paste0(lpf_fold,"/",plot_no,".png")
+  xi <- 1
+  for (i in seq_len(plot_no)) {
+    png(file=paste0(lpf_fold,"/",i,".png"), width=wi*size, height=hi*size)
+    par(mfcol=c(hi,wi))
+    
+    for (pi in seq_len(wi*hi)) {
+      if (xi>xl) break
+      
+      x2 <- x2s[[xi]]
+      f2 <- f2s[[xi]]
+      
+      lfile <- gsub(".gz","",gs_xr_(x2_files[xi],"deepCyTOF_labels"))
+      if (!file.exists(lfile)) {
+        f2l <- length(f2)
+        plot_dens(x2, main=fnames[xi])
+        for (f2i in names(f2l))
+          lines(f2[[f2i]], lwd=2, col=colours[f2i])
+        legend("topright", legend=names(f2), col=colours, 
+               lty=rep(1,f2l), lwd=rep(2,f2l))
+      } else {
+        gsl <- data.table::fread(lfile, data.table=FALSE)
+        colours_ <- rep(NA,nrow(x2))
+        for (gsi in unique(gsl[gsl>0]))
+          colours_[gsl==gsi] <- cpops[gsi]
+        
+        f2l <- length(f2)
+        plot(x2, main=fnames[xi], col=colours[colours_], cex=.1)
+        for (f2i in names(f2l))
+          lines(f2[[f2i]], lwd=2, col="black")
+        legend("topright", legend=names(f2), col=colours, 
+               lty=rep(1,f2l), lwd=rep(2,f2l))
+      }
+      
+      xi <- xi+1
+    }
+    graphics.off()
+  }
+  
+  # flowLearn
+  lpf_fold <- gs_xr_(x2_fold,"allfilesplots_flowLearn")
+  if (!dir.exists(lpf_fold)) next
+  for (k in list.dirs(gsub("allfilesplots_flowLearn","flowLearn_y",lpf_fold), 
+                      full.names=FALSE)[-1]) {
+    lpf_fold <- gs_xr_(x2_fold,paste0("allfilesplots_flowLearn_",k))
+    dir.create(lpf_fold, recursive=TRUE, showWarnings=FALSE)
+    lpf <- paste0(lpf_fold,"/",plot_no,".png")
+    xi <- 1
+    for (i in seq_len(plot_no)) {
+      png(file=paste0(lpf_fold,"/",i,".png"), width=wi*size, height=hi*size)
+      par(mfcol=c(hi,wi))
+      
+      for (pi in seq_len(wi*hi)) {
+        if (xi>xl) break
+        
+        x2 <- x2s[[xi]]
+        f2 <- f2s[[xi]]
+        
+        lfile <- gsub(".csv.gz",paste0("_",k,".png"),
+                      gs_xr_(x2_files[xi],"flowLearn_plots"))
+        if (!file.exists(lfile)) {
+          f2l <- length(f2)
+          plot_dens(x2, main=fnames[xi])
+          for (f2i in names(f2l))
+            lines(f2[[f2i]], lwd=2, col=colours[f2i])
+          legend("topright", legend=names(f2), col=colours, 
+                 lty=rep(1,f2l), lwd=rep(2,f2l))
+        } else {
+          gsl <- png::readPNG(lfile)
+          par(mar=rep(0,4), xpd=NA)
+          plot(1:10, ty="n", axes=0)
+          rasterImage(gsl,1,1,10,10)
+        }
+        
+        xi <- xi+1
+      }
+      graphics.off()
+    }
+  }
+  
 })
 time_output(start)
 

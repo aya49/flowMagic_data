@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 28#parallel::detectCores() - 5
+no_cores <- 11#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -13,9 +13,9 @@ source(paste0(root,"/src/RUNME.R"))
 
 ## output ####
 thres_dirs <- list_leaf_dirs(thres_dir)
-plyr::l_ply(c(
-  gsub("data/2D/thresholds","results/2D/flowLearn_plots",thres_dirs), 
-  gsub("data/2D/thresholds","results/2D/flowLearn_thresholds",thres_dirs)), 
+gs_xr_ <- function(x,y) gs_xr(x,y,"results") 
+plyr::l_ply(append(gs_xr_(thres_dirs,"flowLearn_plots"),
+                   gs_xr_(thres_dirs,"flowLearn_thresholds")), 
   dir.create, recursive=TRUE, showWarnings=FALSE)
 
 
@@ -78,16 +78,16 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 start <- Sys.time()
 par_scat <- TRUE
 
-res <- plyr::llply(thres_dirs, function(thres_dir_) {
-# CD16.FITCACD56_CD3+Tcells_, CD34SSCA_Livecells_, CD38CD27_CD19+Bcells_, CD38CD138_CD19+Bcells_
-# for (thres_dir_ in thres_dirs[c(12,4,5,6)]) {
+# res <- plyr::llply(thres_dirs, function(thres_dir_) {
+# CD66CD14_Livecells_
+for (thres_dir_ in thres_dirs[26]) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
   
   x2_diri <- paste0(x2_dir,"/",dset,"/",scat)
-  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
-  scores_dir_ <- paste0(gsub("results/2D/flowLearn_thresholds", "scores/2D/flowLearn",fl_dir),".csv.gz")
+  fl_dir <- gs_xr_(x2_diri, "flowLearn_thresholds")
+  scores_dir_ <- paste0(gs_xr(fl_dir, "flowLearn","scores"),".csv.gz")
   # if (file.exists(scores_dir_)) return(NULL)
   
   start1 <- Sys.time()
@@ -212,21 +212,26 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) {
   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
   # load prediced thresholds
-  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
+  fl_dir <- gs_xr_(x2_diri,"flowLearn_thresholds")
   fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
     get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
   names(fts) <- names(ftos[[1]])
   
+  # get predicted cell population T/F's
   testpars <- expand.grid(cpops, seq_len(length(ks_)), fnames, stringsAsFactors=FALSE)
   colnames(testpars) <- c("cpop", "train_no", "fcs")
-  scoredf_k_cpop <- ldply(seq_len(nrow(testpars)), function(i) {
-    k <- testpars[i,"train_no"]
+  
+  fts_ <- plyr::llply(seq_len(nrow(testpars)), function(i) {
+    ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames; ft
+  })
+  tfpreds <- plyr::llply(seq_len(nrow(testpars)), function(i) {
+    ki <- testpars[i,"train_no"]
     cpop <- testpars[i,"cpop"]
     fname <- testpars[i,"fcs"]
 
+    ft <- fts_[[i]]
     x2 <- x2s[[fname]]
     fto <- ftos[[fname]]
-    ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
     ftna <- is.na(ft)
     ft[ftna] <- fto[ftna]
     
@@ -239,13 +244,32 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) {
         if (!is.na(ft[mn])) tfpred <- tfpred & ft[mn]>x2[,mn]
       }
     }
-    tfactual <- cpop_fname_actual[[cpop]][[fname]]
-    
-    cbind(data.frame(train=is.na(ft)), f1score(tfactual, tfpred))
+    return(tfpred)
+  })
+  for (ki in seq_len(length(ks_))) {
+    fly_dir <- paste0(gsub("thresholds","y",fl_dir),"/",ks_[ki])
+    dir.create(fly_dir, recursive=TRUE, showWarnings=FALSE)
+    for (fname in fnames) {
+      tpi <- testpars[,"fcs"]==fname & testpars[,"train_no"]==ki
+      tpm <- Reduce(cbind,tfpreds[tpi])
+      if (is.na(dim(tpm))) tpm <- matrix(tpm, ncol=1)
+      colnames(tpm) <- testpars[tpi,"cpop"]
+      write.table(tpm, file=gzfile(paste0(fly_dir,"/",fname,".csv.gz")), 
+                  sep=",", row.names=FALSE, col.names=TRUE)
+    }
+  }
+  time_output(start1, "saved clrs")
+  
+  scoredf_k_cpop <- plyr::ldply(seq_len(nrow(testpars)), function(i) {
+    ft <- fts_[[i]]
+    tfactual <- cpop_fname_actual[[testpars[i,"cpop"]]][[testpars[i,"fcs"]]]
+    cbind(data.frame(train=is.na(ft)), f1score(tfactual, tfpreds[[i]]))
   })
   scoredf_k_cpop <- cbind("flowLearn", dset, scat, testpars, scoredf_k_cpop)
   colnames(scoredf_k_cpop)[c(1:3)] <- c("method", "dataset", "scatterplot")
   # save(scoredf_k_cpop, file=scores_dir_)
+  scoredf_k_cpop$train_no <- ks[scoredf_k_cpop$train_no]
+  dir.create(folder_name(scores_dir_), recursive=TRUE, showWarnings=FALSE)
   write.table(scoredf_k_cpop, file=gzfile(scores_dir_), 
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
@@ -254,27 +278,19 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) {
   ## plot ####
   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
-  # load prediced thresholds
-  fl_dir <- gsub("/data/2D/x","/results/2D/flowLearn_thresholds",x2_diri)
-  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k)
-    get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
-  names(fts) <- names(ftos[[1]])
-  
   pl_dir <- gsub("thresholds","plots",fl_dir)
   dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
-  for (fname in fnames)
-    for (ki in ks_) {
-      x2 <- x2s[[fname]]
-      fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-      filt <- filt2s[[fname]]
-      png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
-      flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
-      graphics.off()
-    }
+  for (fname in fnames) for (ki in ks_) {
+    x2 <- x2s[[fname]]
+    fto <- ftos[[fname]]
+    ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+    filt <- filt2s[[fname]]
+    png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
+    flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+    graphics.off()
+  }
   time_output(start1, "plotted")
-  
-}, .parallel=par_scat)
+}#, .parallel=par_scat)
 time_output(start)
 
 

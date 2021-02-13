@@ -25,11 +25,11 @@ global_logger(ConsoleLogger(stderr, Logging.Debug))
 cd("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data")
 # cd("/home/ayue/projects/flowMagic_data")
 
-datasets = readdir("data/2D/x")
+datasets = readdir("raw/2D/x")
 for dataset in datasets
-  scats = readdir("data/2D/x/$dataset")
+  scats = readdir("raw/2D/x/$dataset")
   for scat in scats
-    csvfiles = Glob.glob("*.csv.gz","data/2D/x/$dataset/$scat")
+    csvfiles = Glob.glob("*.csv.gz","raw/2D/x/$dataset/$scat")
     wd = 2
     ht = 2
     clr = DataFrame(load(File(format"CSV", replace(csvfiles[1],"/x/"=>"/y/"))))
@@ -38,7 +38,7 @@ for dataset in datasets
     end
     
     for csvfile in csvfiles
-      fname = replace(csvfile,"data/2D/x"=>"results/2D/GigaSOM_clusters")
+      fname = replace(csvfile,"raw/2D/x"=>"results/2D/GigaSOM_clusters")
       if isfile(fname)
         continue
       end
@@ -58,11 +58,11 @@ for dataset in datasets
   end
 end
 
-datasets = readdir("data/nD/x")
+datasets = readdir("raw/nD/x")
 for dataset in datasets
-  csvfiles = Glob.glob("*.csv.gz","data/nD/x/$dataset")
+  csvfiles = Glob.glob("*.csv.gz","raw/nD/x/$dataset")
   for csvfile in csvfiles
-    fname = replace(csvfile,"data/nD/x"=>"results/nD/GigaSOM_clusters")
+    fname = replace(csvfile,"raw/nD/x"=>"results/nD/gigaSOM_clusters")
     if isfile(fname)
       continue
     end
