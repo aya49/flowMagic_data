@@ -44,7 +44,7 @@ filt_dir <- paste0(raw_dir,"/2D/filters")
 # replace folder name
 gs_xr <- function(flnm,f3,f1="data",single=TRUE) {
   xd <- stringr::str_extract(flnm,"[2n]D")
-  fld <- stringr::str_extract(flnm,"[a-zA-Z]+/[2n]D/[a-zA-Z]+")
+  fld <- stringr::str_extract(flnm,"[a-zA-Z_]+/[2n]D/[a-zA-Z_+-]+")
   if (single)
     return(gsub(fld[1],paste0(f1,"/",xd[1],"/",f3),flnm))
   return(sapply(seq_len(length(fld)), function(i)

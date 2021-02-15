@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 12#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -25,7 +25,6 @@ gsn_dirs <- list.dirs(gsn_dir)[-1]
 
 ## output ####
 plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
-  dir.create(gsub("_clusters","_plots",x), recursive=TRUE, showWarnings=FALSE)
   dir.create(gsub("_clusters","_labels",x), recursive=TRUE, showWarnings=FALSE)
 })
 
@@ -45,14 +44,64 @@ clust_score <- function(cpop_combos, clusttf, actualtf, cpops) {
   })
 }
 
+# this is from FlowSOM, it matches clusters to cpops 1 to 1
+# i gave up on doing all combinations for nD data sets so i'll just use this
+# for the sake of completeness
+f1_score <- function (realClusters, predictedClusters, silent=FALSE) {
+  if (sum(predictedClusters) == 0) 
+    return(0)
+  a <- table(realClusters, predictedClusters)
+  p <- t(apply(a, 1, function(x) x/colSums(a)))
+  r <- apply(a, 2, function(x) x/rowSums(a))
+  f <- 2 * r * p/(r + p)
+  f[is.na(f)] <- 0
+  fw <- apply(f, 1, which.max)
+  f <- apply(f, 1, max)
+  p <- sapply(seq_len(nrow(p)), function(i) p[i,fw[i]])
+  r <- sapply(seq_len(nrow(r)), function(i) r[i,fw[i]])
+  
+  rct <- as.vector(table(realClusters))
+  pct <- as.vector(table(predictedClusters)[fw])
+
+  return(data.frame(
+    precision=p, recall=r, f1=f, 
+    true_proportion=rct/length(realClusters), 
+    predicted_proportion=pct/length(predictedClusters), 
+    true_size=rct, predicted_size=pct))
+}
 
 ## cpop combo function ####
 # all combination of clusters vs cpops (i.e. which clusters are in which cpops)
 get_cpop_combos <- function(clustn, cpopn) {
   maxcl <- clustn - cpopn + 1
-  maxcll <- lapply(seq_len(cpopn), function(x) seq_len(maxcl))
-  cpop_size <- expand.grid(maxcll) 
-  cpop_size <- cpop_size[rowSums(cpop_size)==clustn,,drop=FALSE]
+  maxcll <- unlist(lapply(seq_len(maxcl), function(mxi) {
+    a <- rep(mxi, min(cpopn, floor(clustn/mxi)))
+    
+    aother <- rep(1,max(0,cpopn-length(a)))
+    if ((sum(a)+sum(aother)) == clustn) return(a)
+    if ((sum(a)+sum(aother)) > clustn) {
+      for(ai in seq_len(length(a))) {
+        a[ai] <- 1
+        if ((sum(a)+sum(aother)) <= clustn) return(a[-seq_len(ai)])
+      }
+    }
+    for(ai in seq_len(length(a))) {
+      a[ai] <- maxcl
+      if ((sum(a)+sum(aother)) >=clustn) return(a[-seq_len(ai)])
+    }
+  }))
+  cpop_size <- combinat::combn(maxcll,cpopn)
+  if (is.null(dim(cpop_size))) {
+    cpop_size <- matrix(cpop_size, nrow=1)
+  } else {
+    cpop_size <- t(cpop_size[,colSums(cpop_size)==clustn,drop=FALSE])
+    cpop_size <- unique(cpop_size)
+    cpop_size <- Reduce(rbind,unlist(lapply(seq_len(nrow(cpop_size)), function(x) {
+      a <- combinat::permn(cpop_size[x,])
+      a[!duplicated(a)]
+    }), recursive=FALSE))
+    cpop_size <- cpop_size[!duplicated(cpop_size),,drop=FALSE]
+  }
   
   # all permutations of clusters
   cpop_order <- combinat::permn(seq_len(clustn))
@@ -86,14 +135,14 @@ names(cpop_combos_all_2D) <- as.character(2:4)
 
 start <- Sys.time()
 
-overwrite <- TRUE
-# par_scat <- FALSE # parallelize by scatterplot, not by file
+# overwrite <- FALSE
+par_scat <- FALSE # parallelize by scatterplot, not by file
 
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
 # 5 2D is an issue
-# 
+# SANGER nD!
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
-for (gs_dir_ in gsn_dirs) {
+for (gs_dir_ in append(gsn_dirs,gs2_dirs)) {
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
   
@@ -108,23 +157,23 @@ for (gs_dir_ in gsn_dirs) {
     scat <- NA
     nD <- TRUE
     
-    # make cpop_combos
-    cc_file <- paste0(gsub("_clusters","_combos",gs_dir_),".Rdata")
-    if (overwrite | !file.exists(cc_file)) {
-      predicted <- data.table::fread(gs_files[1], data.table=FALSE)
-      y <- data.table::fread(gs_xr(gs_files[1],"y","raw"), data.table=FALSE)
-      cpops <- colnames(y)
-      cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
-      clustn <- max(predicted)
-      
-      # get cpop combos
-      cpop_combos <- get_cpop_combos(clustn, cpopn)
-      dir.create(folder_name(cc_file), recursive=TRUE, showWarnings=FALSE)
-      save(cpop_combos, file=cc_file)
-    }
-    cpop_combos <- get(load(cc_file))
+    # # make cpop_combos
+    # cc_file <- paste0(gsub("_clusters","_combos",gs_dir_),".Rdata")
+    # if (overwrite | !file.exists(cc_file)) {
+    #   predicted <- data.table::fread(gs_files[1], data.table=FALSE)
+    #   y <- data.table::fread(gs_xr(gs_files[1],"y","raw"), data.table=FALSE)
+    #   cpops <- colnames(y)
+    #   cpopn <- ifelse("other"%in%cpops, ncol(y)-1, ncol(y))
+    #   clustn <- max(predicted)
+    #   
+    #   # get cpop combos
+    #   cpop_combos <- get_cpop_combos(clustn, cpopn)
+    #   dir.create(folder_name(cc_file), recursive=TRUE, showWarnings=FALSE)
+    #   save(cpop_combos, file=cc_file)
+    # }
+    # cpop_combos <- get(load(cc_file))
   }
-  time_output(start1, paste("made combos: ",dset,">",scat))
+  cat(dset,">",scat)
 
   loop_ind <- loop_ind_f(gs_files, no_cores)
   bests <- plyr::ldply(loop_ind, function(x) plyr::ldply(x, function(gs_f) {
@@ -136,11 +185,9 @@ for (gs_dir_ in gsn_dirs) {
     score_file <- gsub("results", "scores", gsub("_clusters","",gs_f))
     
     predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1]
-    y_f <- gsub("results", "data", gsub("gigaSOM_clusters","y",gs_f))
-    y <- as.data.frame(data.table::fread(y_f, data.table=FALSE))
-    if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
-    x_f <- gsub("results", "data", gsub("gigaSOM_clusters","x",gs_f))
-    x <- as.data.frame(data.table::fread(x_f, data.table=FALSE))
+    y <- as.data.frame(data.table::fread(gs_xr(gs_f,"y","raw"), data.table=FALSE))
+    # if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
+    x <- as.data.frame(data.table::fread(gs_xr(gs_f,"x","raw"), data.table=FALSE))
     
     fname <- gsub(".csv.gz","",gs_f_[length(gs_f_)])
     cpops <- colnames(y)
@@ -152,21 +199,35 @@ for (gs_dir_ in gsn_dirs) {
     names(actualtf) <- cpops
     
     # get cluster combinations
-    if (!nD) cpop_combos <- cpop_combos_all_2D[[as.character(cpopn)]]
-    if (!nD & "other"%in%cpops & cpopn>2) 
-      cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopn-1)]])
+    if (nD) {
+      # i give up for nD! using original F1 measure function so cluster and cpops are 1 to 1
+      actuall <- rep(NA, nrow(y))
+      for (ci in seq_len(ncol(y))) 
+        actuall[y[,ci]==1] <- ci
+      
+      best <- f1_score(actuall, predicted)
+      best <- data.frame(
+        method="gigaSOM", dataset=dset, scatterplot=scat, 
+        cpop=cpops[seq_len(nrow(best))], train_no=0, 
+        fcs=gsub(".csv.gz","",file_name(gs_f)), train=FALSE, 
+        best)
+      best <- best[best$cpop!="other",,drop=FALSE]
+    } else {
+      cpop_combos <- cpop_combos_all_2D[[as.character(cpopn)]]
+      if ("other"%in%cpops & cpopn>2) 
+        cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopn-1)]])
+      if (clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
 
     # for each cpop combo
-    if (!nD & clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
     scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf, cpops)
 
     # get best cpop combo
     meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
     best_combo <- which.max(meanf1s)
     best <- scoredf_cpop_combos[[best_combo]]
-    best <- cbind(cpops[seq_len(nrow(best))], gsub(".csv.gz","",file_name(gs_f), best))
+    best <- data.frame(method="gigaSOM", dataset=dset, scatterplot=scat, cpop=cpops[seq_len(nrow(best))], train_no=0, fcs=gsub(".csv.gz","",file_name(gs_f)), train=FALSE, best)
     best <- best[best[,1]!="other",,drop=FALSE]
-    
+
     # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
     
     cpops_ <- cpops
@@ -187,7 +248,7 @@ for (gs_dir_ in gsn_dirs) {
     write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
                 sep=',', row.names=FALSE, col.names=TRUE)
     # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
-    
+    }
     return(best)
   }), .parallel=!par_scat)
   bests <- bests[,colnames(bests)!=".id"]
@@ -195,8 +256,8 @@ for (gs_dir_ in gsn_dirs) {
                  bests[,2], FALSE, bests[,-c(1,2)])
   colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
   # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
-  dir.create(folder_name(bests), recursive=TRUE, showWarnings=FALSE)
-  write.table(bests, file=gzfile(paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".csv.gz")), 
+  dir.create(folder_name(gs_xr(gs_dir_,"gigaSOM","scores")), recursive=TRUE, showWarnings=FALSE)
+  write.table(bests, file=gzfile(paste0(gs_xr(gs_dir_,"gigaSOM","scores"),".csv.gz")), 
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
 # }) }, .parallel=par_scat)

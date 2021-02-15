@@ -107,11 +107,15 @@ ggplot2::ggsave(filename=paste0(root,"/scores/nD.png"), plot=gg, dpi=600, width=
 
 
 ## plotting ####
-wi <- 15; hi <- 15 # number of plots per png
+wi <- 10; hi <- 10 # number of plots per png
 size <- 400
 
+# HIPCbcell/FSCASSCA_Singlets
 start <- Sys.time()
-res <- plyr::llply(x2_folds, function(x2_fold) {
+for (x2_fold in x2_folds) {
+  start1 <- Sys.time()
+  print(x2_fold)
+  
   x2_files <- list.files(x2_fold, full.names=TRUE, pattern=".csv.gz")
   plot_no <- ceiling(length(x2_files)/(wi*hi))
   
@@ -121,6 +125,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
   names(x2s) <- names(f2s) <- fnames <- 
     gsub(".csv.gz", "", sapply(x2_files, file_name))
   xl <- length(x2s)
+  time_output(start1,"loaded files")
   
   cpops <- names(f2s[[1]])
   colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
@@ -143,7 +148,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
       
       f2l <- length(f2)
       plot_dens(x2, main=fnames[xi])
-      for (f2i in names(f2l))
+      for (f2i in names(f2))
         lines(f2[[f2i]], lwd=2, col=colours[f2i])
       legend("topright", legend=names(f2), col=colours, 
              lty=rep(1,f2l), lwd=rep(2,f2l))
@@ -152,6 +157,8 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
     }
     graphics.off()
   }
+  time_output(start1,"plotted original")
+  
   
   # gigaSOM
   lpf_fold <- gs_xr_(x2_fold,"allfilesplots_gigaSOM")
@@ -172,7 +179,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
       if (!file.exists(lfile)) {
         f2l <- length(f2)
         plot_dens(x2, main=fnames[xi])
-        for (f2i in names(f2l))
+        for (f2i in names(f2))
           lines(f2[[f2i]], lwd=2, col=colours[f2i])
         legend("topright", legend=names(f2), col=colours, 
                lty=rep(1,f2l), lwd=rep(2,f2l))
@@ -184,8 +191,10 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
         
         f2l <- length(f2)
         plot(x2, main=fnames[xi], col=colours[colours_], cex=.1)
-        for (f2i in names(f2l))
-          lines(f2[[f2i]], lwd=2, col="black")
+        for (f2i in names(f2)) {
+          lines(f2[[f2i]], lwd=2, col=colours[f2i])
+          lines(f2[[f2i]], lwd=2, lty=3, col="black")
+        }
         legend("topright", legend=names(f2), col=colours, 
                lty=rep(1,f2l), lwd=rep(2,f2l))
       }
@@ -194,6 +203,8 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
     }
     graphics.off()
   }
+  time_output(start1,"plotted gigaSOM")
+  
   
   # deepCyTOF
   lpf_fold <- gs_xr_(x2_fold,"allfilesplots_deepCyTOF")
@@ -214,7 +225,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
       if (!file.exists(lfile)) {
         f2l <- length(f2)
         plot_dens(x2, main=fnames[xi])
-        for (f2i in names(f2l))
+        for (f2i in names(f2))
           lines(f2[[f2i]], lwd=2, col=colours[f2i])
         legend("topright", legend=names(f2), col=colours, 
                lty=rep(1,f2l), lwd=rep(2,f2l))
@@ -226,8 +237,10 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
         
         f2l <- length(f2)
         plot(x2, main=fnames[xi], col=colours[colours_], cex=.1)
-        for (f2i in names(f2l))
-          lines(f2[[f2i]], lwd=2, col="black")
+        for (f2i in names(f2)) {
+          lines(f2[[f2i]], lwd=2, col=colours[f2i])
+          lines(f2[[f2i]], lwd=2, lty=3, col="black")
+        }
         legend("topright", legend=names(f2), col=colours, 
                lty=rep(1,f2l), lwd=rep(2,f2l))
       }
@@ -236,6 +249,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
     }
     graphics.off()
   }
+  time_output(start1,"plotted deepCyTOF")
   
   # flowLearn
   lpf_fold <- gs_xr_(x2_fold,"allfilesplots_flowLearn")
@@ -261,7 +275,7 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
         if (!file.exists(lfile)) {
           f2l <- length(f2)
           plot_dens(x2, main=fnames[xi])
-          for (f2i in names(f2l))
+          for (f2i in names(f2))
             lines(f2[[f2i]], lwd=2, col=colours[f2i])
           legend("topright", legend=names(f2), col=colours, 
                  lty=rep(1,f2l), lwd=rep(2,f2l))
@@ -277,8 +291,9 @@ res <- plyr::llply(x2_folds, function(x2_fold) {
       graphics.off()
     }
   }
+  time_output(start1,"plotted flowLearn")
   
-})
+}
 time_output(start)
 
 

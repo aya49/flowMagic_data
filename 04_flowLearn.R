@@ -77,10 +77,13 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 ## START ####
 start <- Sys.time()
 par_scat <- TRUE
+overwrite_thresholds <- FALSE
+overwrite_plot <- FALSE
+
 
 # res <- plyr::llply(thres_dirs, function(thres_dir_) {
 # CD66CD14_Livecells_
-for (thres_dir_ in thres_dirs[26]) {
+for (thres_dir_ in thres_dirs) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -115,8 +118,14 @@ for (thres_dir_ in thres_dirs[26]) {
   ## predict ####
   
   # for each threshold, predict for all files
+  ## TEMP
+  if (overwrite_thresholds) {
   protoIdxs <- NULL
   for (markname in marknames) {
+    dt_dir <- paste0(fl_dir,"/",markname)
+    if (overwrite_thresholds | 
+        !all(sapply(paste0(dt_dir,"/",ks,".Rdata"), file.exists))) next
+    
     # make a density data object for flowLearn
     densdat <- new('DensityData')
     for (fname in fnames) {
@@ -131,7 +140,6 @@ for (thres_dir_ in thres_dirs[26]) {
       protoIdxs <- plyr::llply(ks, function(k) 
         which(rownames(densdat@data)%in%flowLearn::flSelectPrototypes(densdat, k)))
 
-    dt_dir <- paste0(fl_dir,"/",markname)
     dir.create(dt_dir, showWarnings=FALSE, recursive=TRUE)
     for (ki in seq_len(length(ks))) {
       k <- ks[ki]
@@ -148,6 +156,7 @@ for (thres_dir_ in thres_dirs[26]) {
     }
   }
   time_output(start1, "predicted thresholds")
+  }
   
   
   ## score ####
@@ -222,10 +231,11 @@ for (thres_dir_ in thres_dirs[26]) {
   colnames(testpars) <- c("cpop", "train_no", "fcs")
   
   fts_ <- plyr::llply(seq_len(nrow(testpars)), function(i) {
+    ki <- testpars[i,"train_no"]
+    fname <- testpars[i,"fcs"]
     ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames; ft
   })
   tfpreds <- plyr::llply(seq_len(nrow(testpars)), function(i) {
-    ki <- testpars[i,"train_no"]
     cpop <- testpars[i,"cpop"]
     fname <- testpars[i,"fcs"]
 
@@ -281,13 +291,16 @@ for (thres_dir_ in thres_dirs[26]) {
   pl_dir <- gsub("thresholds","plots",fl_dir)
   dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
   for (fname in fnames) for (ki in ks_) {
-    x2 <- x2s[[fname]]
-    fto <- ftos[[fname]]
-    ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-    filt <- filt2s[[fname]]
-    png(paste0(pl_dir,"/",fname,"_",ks_[ki],".png"), width=400, height=400)
-    flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
-    graphics.off()
+    png_name <- paste0(pl_dir,"/",fname,"_",ks_[ki],".png")
+    if (overwrite_plot | !file.exists(png_name)) {
+      x2 <- x2s[[fname]]
+      fto <- ftos[[fname]]
+      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+      filt <- filt2s[[fname]]
+      png(png_name, width=400, height=400)
+      flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+      graphics.off()
+    }
   }
   time_output(start1, "plotted")
 }#, .parallel=par_scat)
