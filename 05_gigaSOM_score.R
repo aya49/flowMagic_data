@@ -142,7 +142,7 @@ start <- Sys.time()
 # 5 2D is an issue
 # SANGER nD!
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
-for (gs_dir_ in append(gs2_dirs,gsn_dirs[4])) {try({
+for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
 
@@ -175,6 +175,14 @@ for (gs_dir_ in append(gs2_dirs,gsn_dirs[4])) {try({
   }
   cat(dset,">",scat)
 
+  # predicteds <- plyr::llply(gs_files, function(gs_f)
+  #     as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1])
+  # ys <- plyr::llply(gs_files, function(gs_f)
+  #     as.data.frame(data.table::fread(gs_xr(gs_f,"y","raw"), data.table=FALSE)))
+  # xs <- plyr::llply(gs_files, function(gs_f) as.data.frame(data.table::fread(gs_xr(gs_f,"x","raw"), data.table=FALSE)))
+  # names(predicteds) <- names(ys) <- names(xs) <- gs_files
+  # time_output(start1, "loaded files")
+
   loop_ind <- loop_ind_f(gs_files, no_cores)
   bests <- plyr::ldply(loop_ind, function(x) plyr::ldply(x, function(gs_f) {
     # for (gs_f in gs_files) {
@@ -184,6 +192,9 @@ for (gs_dir_ in append(gs2_dirs,gsn_dirs[4])) {try({
 
     score_file <- gsub("results", "scores", gsub("_clusters","",gs_f))
 
+    # predicted <- predicteds[[gs_f]]
+    # y <- ys[[gs_f]]
+    # x <- xs[[gs_f]]
     predicted <- as.data.frame(data.table::fread(gs_f, data.table=FALSE))[,1]
     y <- as.data.frame(data.table::fread(gs_xr(gs_f,"y","raw"), data.table=FALSE))
     # if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
@@ -250,7 +261,7 @@ for (gs_dir_ in append(gs2_dirs,gsn_dirs[4])) {try({
     # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     }
     return(best)
-  }), .parallel=TRUE)
+  }), .parallel=FALSE)
   bests <- bests[,colnames(bests)!=".id"]
   bests <- cbind("gigaSOM", dset, scat, bests[,1], 0,
                  bests[,2], FALSE, bests[,-c(1,2)])
