@@ -77,7 +77,7 @@ ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_size.png"), plot=g2f1size, d
 
 # x ordered by scat|cpop
 g2f1size_ <- ggplot2::ggplot(score2D_, ggplot2::aes(
-  x=scatpop, # x
+  x=reorder(scatpop, scatterplot), # x
   y=f1, # y
   fill=mean_true_size
 )) +
@@ -112,7 +112,7 @@ ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_prop.png"), plot=g2f1prop, d
 
 # x ordered by scat|cpop
 g2f1prop_ <- ggplot2::ggplot(score2D_, ggplot2::aes(
-  x=reorder(scatpop, f1), # x
+  x=reorder(scatpop, scatterplot), # x
   y=f1, # y
   fill=mean_true_proportion
 )) +
@@ -156,7 +156,7 @@ ggplot2::ggsave(filename=paste0(root,"/scores/2D_prop.png"), plot=g2propap, dpi=
 
 # x ordered by scat|cpop
 g2propap_ <- ggplot2::ggplot(score2D_ap, ggplot2::aes(
-  x=scatpop, # x
+  x=reorder(scatpop, scatterplot), # x
   y=proportion, # y
   fill=actualvspred
 )) +
