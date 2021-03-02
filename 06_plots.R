@@ -39,68 +39,153 @@ write.csv(scorenD, file=gzfile(paste0(scn_dir,".csv.gz")))
 time_output(start)
 
 
-# ## plot ####
-# score2D <- data.table::fread(paste0(sc2_dir,".csv.gz"))
-# dsets <- unique(score2D$data_set)
-# indices <- lapply(dsets, function(dset) { # dset > scat > cpop > method
-#   dsi <- which(score2D$data_set==dset)
-#   sd <- score2D[dsi,,drop=FALSE]
-#   scats <- unique(sd$scatter_plot)
-#   scis <- lapply(scats, function(scat) {
-#     sci <- dsi[sd$scatter_plot==scat]
-#     sc <- score2D[sci,,drop=FALSE]
-#     cpops <- unique(sc$cell_population)
-#     cpis <- lapply(cpops, function(cpop) {
-#       cpi <- sci[sc$cell_population==cpop]
-#       sp <- score2D[cpi,,drop=FALSE]
-#       mthds <- unique(sp$method)
-#       mtis <- lapply(mthds, function(mthd) cpi[sp$method==mthd] )
-#       names(mtis) <- mthds
-#       return(mtis)
-#     })
-#     names(cpis) <- cpops
-#     return(cpops)
-#   })
-#   names(scis) <- scats
-#   return(scis)
-# })
-# names(indices) <- dsets
+## plot 2D ####
 
-score2D$scatpop <- paste0(score2D$scatter_plot," > ", score2D$cell_population)
-score2D$dsetscat <- paste0(score2D$data_set," > ", score2D$scatter_plot)
+# add scat|cpop and data|scat|cpop columns
+score2D_ <- score2D[!(score2D$method=="flowLearn" & score2D$train_no<10),]
+score2D_$scatpop <- paste0(score2D_$cpop," || ",score2D_$scatterplot)
+score2D_$dscatpop <- paste0(score2D_$dataset, " || ", score2D_$cpop," - ",score2D_$scatterplot)
 
-for (dset in unique(score2D$data_set)) {
-  g2 <- ggplot2::ggplot(score2D[score2D$data_set==dset,], ggplot2::aes(
-    x=reorder(cell_population, f1), # x
-    y=f1, # y
-    fill=method,
-    dodge=method)) +
-    ggplot2::facet_grid(~scatter_plot) + # biggest box
-    ggplot2::geom_boxplot() + #coord_flip() +
-    ggplot2::labs(x="(data set) scatterplot > cell population") +
-    # ggplot2::theme_bw() +
-    ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
-    ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
-    ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust=0.5, hjust=1))
-  ggplot2::ggsave(filename=paste0(root,"/scores/2D_",dset,".png"), plot=g2, dpi=600, width=15, height=18)
-}
+# add mean count/prop/f1 for each scat|cpop
+score2D_ <- score2D_ %>% dplyr::group_by(scatpop)%>%
+  dplyr::mutate(mean_true_size=mean(true_size))
+score2D_ <- score2D_ %>% dplyr::group_by(scatpop)%>%
+  dplyr::mutate(mean_true_proportion=mean(true_proportion))
+score2D_ <- score2D_ %>% dplyr::group_by(scatpop)%>%
+  dplyr::mutate(mean_f1=mean(f1))
 
 
-gg <- ggplot2::ggplot(scorenD, ggplot2::aes(
-  x=reorder(cell_population, f1), # x
+# colour palette for continuous values
+colour_palette <- c('blue','cyan','green','red')
+
+## f1 scores; top=data, left=method, y=f1, x=scat|cpop; colour=mean_true_prop
+g2f1size <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=reorder(scatpop, f1), # x
   y=f1, # y
-  fill=method,
-  dodge=method)) +
-  ggplot2::facet_grid(~data_set, scales="free_x") + # biggest box
-  ggplot2::geom_boxplot() + #coord_flip() +
-  ggplot2::labs(x="(data set) cell population") +
+  fill=mean_true_size
+  )) +
+  ggplot2::scale_colour_gradientn(colours=colour_palette) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
   # ggplot2::theme_bw() +
   ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
   ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
-  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust=0.5, hjust=1))
-ggplot2::ggsave(filename=paste0(root,"/scores/nD.png"), plot=gg, dpi=600, width=15, height=20)
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_size.png"), plot=g2f1size, dpi=600, units="in", width=22, height=10)
+
+# x ordered by scat|cpop
+g2f1size_ <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=scatpop, # x
+  y=f1, # y
+  fill=mean_true_size
+)) +
+  ggplot2::scale_colour_gradientn(colours=colour_palette) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
+  # ggplot2::theme_bw() +
+  ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+  ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_size_.png"), plot=g2f1size_, dpi=600, units="in", width=22, height=10)
 
 
+## f1 scores; top=data, left=method, y=f1, x=scat|cpop; colour=mean_true_prop
+g2f1prop <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=reorder(scatpop, f1), # x
+  y=f1, # y
+  fill=mean_true_proportion
+)) +
+  ggplot2::scale_colour_gradientn(colours=colour_palette) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
+  # ggplot2::theme_bw() +
+  ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+  ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_prop.png"), plot=g2f1prop, dpi=600, units="in", width=22, height=10)
+
+# x ordered by scat|cpop
+g2f1prop_ <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=reorder(scatpop, f1), # x
+  y=f1, # y
+  fill=mean_true_proportion
+)) +
+  ggplot2::scale_colour_gradientn(colours=colour_palette) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
+  # ggplot2::theme_bw() +
+  ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+  ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_f1_prop_.png"), plot=g2f1prop_, dpi=600, units="in", width=22, height=10)
+
+
+## actual vs pred proportions; top=data, left=method, y=f1, x=scat|cpop
+# duplicate number of rows for actual vs predicted
+score2D__ <- score2D___ <- score2D_
+score2D__$proportion <- score2D_$true_proportion
+score2D___$proportion <- score2D_$predicted_proportion
+score2D__$size <- score2D_$true_size
+score2D___$size <- score2D_$predicted_size
+score2D__$actualvspred <- "actual"
+score2D___$actualvspred <- "predicted"
+score2D_ap <- rbind(score2D__,score2D___)
+
+g2propap <- ggplot2::ggplot(score2D_ap, ggplot2::aes(
+  x=reorder(scatpop, f1), # x
+  y=proportion, # y
+  fill=actualvspred
+)) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
+  # ggplot2::theme_bw() +
+  ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+  ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_prop.png"), plot=g2propap, dpi=600, units="in", width=22, height=10)
+
+# x ordered by scat|cpop
+g2propap_ <- ggplot2::ggplot(score2D_ap, ggplot2::aes(
+  x=scatpop, # x
+  y=proportion, # y
+  fill=actualvspred
+)) +
+  ggplot2::facet_grid(method~dataset, scales="free_x") + # biggest box
+  ggplot2::geom_boxplot(outlier.shape=NA) + #coord_flip() +
+  ggplot2::labs(x="(data set) scatterplot > cell population") +
+  # ggplot2::theme_bw() +
+  ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+  ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+  ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_prop_.png"), plot=g2propap_, dpi=600, units="in", width=22, height=10)
+
+
+## f1 vs proportion
+g2_f1prop <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=mean_true_proportion, y=mean_f1)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_grid(method~dataset, scales="free_x")
+  
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_propvsf1.png"), plot=g2_f1prop, dpi=600, units="in", width=10, height=10)
+
+## f1 vs size
+g2_f1size <- ggplot2::ggplot(score2D_, ggplot2::aes(
+  x=mean_true_size, y=mean_f1)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_grid(method~dataset, scales="free_x")
+
+ggplot2::ggsave(filename=paste0(root,"/scores/2D_sizevsf1.png"), plot=g2_f1size, dpi=600, units="in", width=10, height=10)
 
 
 

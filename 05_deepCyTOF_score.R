@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 14#parallel::detectCores() - 5
+no_cores <- 15#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -32,11 +32,13 @@ gs_xr_ <- function(x,y) gs_xr(x,y,"scores")
 # get train samples
 trs <- gs_xr(dc2_dir,"x_2Ddensity_euclidean_rankkmed")
 
+ks <- c(5,10,15,20)
+
 
 ## START ####
 start <- Sys.time()
 
-for (dc_dir_ in append(dc2_dirs,dcn_dirs)) {
+for (dc_dir_ in append(dc2_dirs,dcn_dirs)) for (k in ks) {
   start1 <- Sys.time()
   print(dc_dir_)
   
@@ -44,8 +46,9 @@ for (dc_dir_ in append(dc2_dirs,dcn_dirs)) {
   
   nD <- grepl("/nD/",dc_dir_)
   if (!nD) {
-    tr_fnames <- gsub(".csv.gz","",list.files(paste0(gs_xr(dc_dir_,"x_2Ddensity_euclidean_rankkmed"),"/10")))
+    tr_fnames <- gsub(".csv.gz","",list.files(paste0(gs_xr(dc_dir_,"x_2Ddensity_euclidean_rankkmed"),"/", k)))
   } else {
+    if (k!=ks[1]) next
     tr_fnames <- gsub(".csv","",sapply(dc_files[round(seq(from=2, to=length(dc_files), length=10))], file_name))
   }
   
@@ -69,7 +72,7 @@ for (dc_dir_ in append(dc2_dirs,dcn_dirs)) {
       cbind(data.frame(
         method="deepCyTOF",
         dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
-        train_no=10, fcs=fname, 
+        train_no=k, fcs=fname, 
         train=fname%in%tr_fnames
       ), f1score(actual[,cpopi]==1, predicted==cpopi))
     })

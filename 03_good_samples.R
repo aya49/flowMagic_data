@@ -27,7 +27,7 @@ plyr::l_ply(unique(laply(x2_dir_s, folder_name)), function(x)
               dir.create, recursive=TRUE, showWarnings=FALSE) )
 
 
-ks <- 1:10
+ks <- c(1,5,10,15,20)
 
 
 ## START ####
@@ -37,16 +37,16 @@ start <- Sys.time()
 # loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 plyr::l_ply(x2_dir_s, function(x2_dir) {
   x2_fs <- list.files(x2_dir, full.names=TRUE, pattern=".csv.gz")
-  dist_dir <- gsub(".csv.gz",".Rdata",gs_xr(x2_dir,paste0(ingrid,"_",distn)))
+  dist_dir <- paste0(gsub(ingrid,paste0(ingrid,"_",distn),x2_dir),".Rdata")
 
   start1 <- Sys.time()
   
-  # dexists <- FALSE
-  # if (file.exists(dist_dir)) if (file.size(dist_dir)>0) dexists <- TRUE
-  # if (dexists) {
-  #     d <- get(load(dist_dir))
-  # } else {
-    # load files into matrix
+  dexists <- FALSE
+  if (file.exists(dist_dir)) dexists <- file.size(dist_dir)>0
+  if (dexists) {
+      d <- get(load(dist_dir))
+  } else {
+  # load files into matrix
     all2D <- purrr::map(x2_fs, function(x2_f) {
       a <- data.table::fread(x2_f, data.table=FALSE)
       as.vector(as.matrix(a/max(a)))
@@ -61,9 +61,9 @@ plyr::l_ply(x2_dir_s, function(x2_dir) {
     start1 <- Sys.time()
     d <- Rfast::Dist(all2D, method="euclidean") # "manhattan", "canberra", "binary" or "minkowski"
     save(d, file=dist_dir)
-    rm(all2D)
+    rm(all2D); gc()
     time_output(start1, "calculated distance")
-  # }
+  }
   
   
   # clust

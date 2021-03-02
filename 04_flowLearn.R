@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 11#parallel::detectCores() - 5
+no_cores <- 5#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -16,12 +16,12 @@ thres_dirs <- list_leaf_dirs(thres_dir)
 gs_xr_ <- function(x,y) gs_xr(x,y,"results") 
 plyr::l_ply(append(gs_xr_(thres_dirs,"flowLearn_plots"),
                    gs_xr_(thres_dirs,"flowLearn_thresholds")), 
-  dir.create, recursive=TRUE, showWarnings=FALSE)
+            dir.create, recursive=TRUE, showWarnings=FALSE)
 
 
 ## parameters ####
 dfn <- 512 # number of density features for flowlearn
-ks <- 1:10 # number of training samples
+ks <- c(1,5,10,15,20) # number of training samples
 
 
 ## plot function: scatterplot + densities ####
@@ -81,9 +81,9 @@ overwrite_thresholds <- FALSE
 overwrite_plot <- FALSE
 
 
-# res <- plyr::llply(thres_dirs, function(thres_dir_) {
-# CD66CD14_Livecells_
-for (thres_dir_ in thres_dirs) {
+res <- plyr::llply(thres_dirs, function(thres_dir_) {
+  # CD66CD14_Livecells_
+  # for (thres_dir_ in thres_dirs) {
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -98,7 +98,7 @@ for (thres_dir_ in thres_dirs) {
   
   t2_files <- list.files(thres_dir_, full.names=TRUE)
   fnames <- sapply(t2_files, function(t2_f)  gsub(".Rdata","",file_name(t2_f)))
-
+  
   # get x, thresholds
   ftos <- purrr::map(t2_files, function(t2_file) get(load(t2_file)))
   x2s <- purrr::map(paste0(x2_diri,"/",fnames,".csv.gz"), 
@@ -120,42 +120,42 @@ for (thres_dir_ in thres_dirs) {
   # for each threshold, predict for all files
   ## TEMP
   if (overwrite_thresholds) {
-  protoIdxs <- NULL
-  for (markname in marknames) {
-    dt_dir <- paste0(fl_dir,"/",markname)
-    if (overwrite_thresholds | 
-        !all(sapply(paste0(dt_dir,"/",ks,".Rdata"), file.exists))) next
-    
-    # make a density data object for flowLearn
-    densdat <- new('DensityData')
-    for (fname in fnames) {
-      if (is.na(ftos[[fname]][markname])) next 
-      df <- flowLearn::flEstimateDensity(x2s[[fname]][,markname], dfn)
-      densdat <- flowLearn::flAdd(
-        densdat, fname, "cpop", 1, df$x, df$y, NaN, ftos[[fname]][markname])
+    protoIdxs <- NULL
+    for (markname in marknames) {
+      dt_dir <- paste0(fl_dir,"/",markname)
+      if (overwrite_thresholds | 
+          !all(sapply(paste0(dt_dir,"/",ks,".Rdata"), file.exists))) next
+      
+      # make a density data object for flowLearn
+      densdat <- new('DensityData')
+      for (fname in fnames) {
+        if (is.na(ftos[[fname]][markname])) next 
+        df <- flowLearn::flEstimateDensity(x2s[[fname]][,markname], dfn)
+        densdat <- flowLearn::flAdd(
+          densdat, fname, "cpop", 1, df$x, df$y, NaN, ftos[[fname]][markname])
+      }
+      
+      # for each number of training data, predict threshold
+      if (is.null(protoIdxs))
+        protoIdxs <- plyr::llply(ks, function(k) 
+          which(rownames(densdat@data)%in%flowLearn::flSelectPrototypes(densdat, k)))
+      
+      dir.create(dt_dir, showWarnings=FALSE, recursive=TRUE)
+      for (ki in seq_len(length(ks))) {
+        k <- ks[ki]
+        if (k>=nrow(densdat@data)) break
+        protoIdx <- protoIdxs[[ki]]
+        
+        ddp <- flowLearn::flPredictThresholds(densdat, protoIdx)
+        
+        ddpt <- ddp@data$gate.high
+        ddpt[rownames(densdat@data)%in%protoIdx] <- NA
+        names(ddpt) <- densdat@data$fcs
+        
+        save(ddpt, file=paste0(dt_dir,"/",k,".Rdata"))
+      }
     }
-
-    # for each number of training data, predict threshold
-    if (is.null(protoIdxs))
-      protoIdxs <- plyr::llply(ks, function(k) 
-        which(rownames(densdat@data)%in%flowLearn::flSelectPrototypes(densdat, k)))
-
-    dir.create(dt_dir, showWarnings=FALSE, recursive=TRUE)
-    for (ki in seq_len(length(ks))) {
-      k <- ks[ki]
-      if (k>=nrow(densdat@data)) break
-      protoIdx <- protoIdxs[[ki]]
-      
-      ddp <- flowLearn::flPredictThresholds(densdat, protoIdx)
-      
-      ddpt <- ddp@data$gate.high
-      ddpt[rownames(densdat@data)%in%protoIdx] <- NA
-      names(ddpt) <- densdat@data$fcs
-      
-      save(ddpt, file=paste0(dt_dir,"/",k,".Rdata"))
-    }
-  }
-  time_output(start1, "predicted thresholds")
+    time_output(start1, "predicted thresholds")
   }
   
   
@@ -213,12 +213,13 @@ for (thres_dir_ in thres_dirs) {
     for (fi in seq_len(length(cpop_fname_actual$other)))
       if (is.na(cpop_fname_actual$other[[fi]])) 
         cpop_fname_actual$other[[fi]] <- 
-          !Reduce("|",lapply(cpops[!cpops%in%"other"], function(ci)
-            cpop_fname_actual[[ci]][[fi]]))
-    
+    !Reduce("|",lapply(cpops[!cpops%in%"other"], function(ci)
+      cpop_fname_actual[[ci]][[fi]]))
+  
   
   # for each number of train data used; cell population
-  ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
+  ks_ <- as.numeric(gsub(".Rdata","",list.files(
+    paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
   # load prediced thresholds
   fl_dir <- gs_xr_(x2_diri,"flowLearn_thresholds")
@@ -227,7 +228,8 @@ for (thres_dir_ in thres_dirs) {
   names(fts) <- names(ftos[[1]])
   
   # get predicted cell population T/F's
-  testpars <- expand.grid(cpops, seq_len(length(ks_)), fnames, stringsAsFactors=FALSE)
+  testpars <- expand.grid(cpops, seq_len(length(ks_)), 
+                          fnames, stringsAsFactors=FALSE)
   colnames(testpars) <- c("cpop", "train_no", "fcs")
   
   fts_ <- plyr::llply(seq_len(nrow(testpars)), function(i) {
@@ -238,7 +240,7 @@ for (thres_dir_ in thres_dirs) {
   tfpreds <- plyr::llply(seq_len(nrow(testpars)), function(i) {
     cpop <- testpars[i,"cpop"]
     fname <- testpars[i,"fcs"]
-
+    
     ft <- fts_[[i]]
     x2 <- x2s[[fname]]
     fto <- ftos[[fname]]
@@ -283,7 +285,7 @@ for (thres_dir_ in thres_dirs) {
   write.table(scoredf_k_cpop, file=gzfile(scores_dir_), 
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
-
+  
   
   ## plot ####
   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
@@ -303,7 +305,7 @@ for (thres_dir_ in thres_dirs) {
     }
   }
   time_output(start1, "plotted")
-}#, .parallel=par_scat)
+}, .parallel=par_scat)
 time_output(start)
 
 

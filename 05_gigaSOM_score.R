@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 14#parallel::detectCores() - 5
 # root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -136,13 +136,13 @@ names(cpop_combos_all_2D) <- as.character(2:4)
 start <- Sys.time()
 
 # overwrite <- FALSE
-# par_scat <- FALSE # parallelize by scatterplot, not by file
+par_scat <- FALSE # parallelize by scatterplot, not by file
 
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
 # 5 2D is an issue
 # SANGER nD!
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
-for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
+for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
 
@@ -183,8 +183,10 @@ for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
   # names(predicteds) <- names(ys) <- names(xs) <- gs_files
   # time_output(start1, "loaded files")
 
-  loop_ind <- loop_ind_f(gs_files, no_cores)
-  bests <- plyr::ldply(loop_ind, function(x) plyr::ldply(x, function(gs_f) {
+  loop_ind <- loop_ind_f(seq_len(length(gs_files)), no_cores)
+  bests <- plyr::ldply(loop_ind, function(xii) plyr::ldply(xii, function(xi) {
+    gs_f <- gs_files[xi]
+    # cat("\n", xi, ":",gs_f)
     # for (gs_f in gs_files) {
     # if (file.exists(gsub("_clusters","_labels",gs_f)))
     #   if (file.size(gsub("_clusters","_labels",gs_f))>0)
@@ -199,6 +201,10 @@ for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
     y <- as.data.frame(data.table::fread(gs_xr(gs_f,"y","raw"), data.table=FALSE))
     # if (nD & "other"%in%colnames(y)) y <- y[,colnames(y)!="other",drop=FALSE]
     x <- as.data.frame(data.table::fread(gs_xr(gs_f,"x","raw"), data.table=FALSE))
+    if (nrow(y)!=length(predicted)) {
+      print("SKIPPED")
+      return(NULL)
+    }
 
     fname <- gsub(".csv.gz","",gs_f_[length(gs_f_)])
     cpops <- colnames(y)
@@ -215,7 +221,7 @@ for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
       actuall <- rep(NA, nrow(y))
       for (ci in seq_len(ncol(y)))
         actuall[y[,ci]==1] <- ci
-
+      
       best <- f1_score(actuall, predicted)
       best <- data.frame(
         method="gigaSOM", dataset=dset, scatterplot=scat,
@@ -228,46 +234,48 @@ for (gs_dir_ in append(gs2_dirs[43:47],gsn_dirs[4])) {try({
       if ("other"%in%cpops & cpopn>2)
         cpop_combos <- append(cpop_combos, cpop_combos_all_2D[[as.character(cpopn-1)]])
       if (clustn>4) cpop_combos <- get_cpop_combos(clustn, cpopn)
-
-    # for each cpop combo
-    scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf, cpops)
-
-    # get best cpop combo
-    meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
-    best_combo <- which.max(meanf1s)
-    best <- scoredf_cpop_combos[[best_combo]]
-    best <- data.frame(method="gigaSOM", dataset=dset, scatterplot=scat, cpop=cpops[seq_len(nrow(best))], train_no=0, fcs=gsub(".csv.gz","",file_name(gs_f)), train=FALSE, best)
-    best <- best[best[,1]!="other",,drop=FALSE]
-
-    # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
-
-    cpops_ <- cpops
-    if (length(cpop_combos[[best_combo]])<length(cpops))
-      cpops <- cpops[!cpops%in%"other"]
-    tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi)
-      Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
-    if (length(tfs)==1) {
-      tfs <- matrix(tfs, ncol=1)
-    } else {
-      tfs <- Reduce(cbind, tfs)
-    }
-    colnames(tfs) <- cpops
-    if (length(cpops_)>length(cpops)) {
-      tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
-      colnames(tfs)[ncol(tfs)] <- "other"
-    }
-    write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
-                sep=',', row.names=FALSE, col.names=TRUE)
-    # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
+      
+      # for each cpop combo
+      scoredf_cpop_combos <- clust_score(cpop_combos, clusttf, actualtf, cpops)
+      
+      # get best cpop combo
+      meanf1s <- sapply(scoredf_cpop_combos, function(x) mean(as.numeric(x[,"f1"])))
+      best_combo <- which.max(meanf1s)
+      best <- scoredf_cpop_combos[[best_combo]]
+      best <- data.frame(method="gigaSOM", dataset=dset, scatterplot=scat, cpop=cpops[seq_len(nrow(best))], train_no=0, fcs=gsub(".csv.gz","",file_name(gs_f)), train=FALSE, best)
+      best <- best[best[,1]!="other",,drop=FALSE]
+      
+      # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
+      
+      # cpops_ <- cpops
+      # if (length(cpop_combos[[best_combo]])<length(cpops))
+      #   cpops <- cpops[!cpops%in%"other"]
+      # tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi)
+      #   Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
+      # if (length(tfs)==1) {
+      #   tfs <- matrix(tfs, ncol=1)
+      # } else {
+      #   tfs <- Reduce(cbind, tfs)
+      # }
+      # colnames(tfs) <- cpops
+      # if (length(cpops_)>length(cpops)) {
+      #   tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
+      #   colnames(tfs)[ncol(tfs)] <- "other"
+      # }
+      # write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
+      #             sep=',', row.names=FALSE, col.names=TRUE)
+      # # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     }
     return(best)
-  }), .parallel=FALSE)
+  }), .parallel=!par_scat)
   bests <- bests[,colnames(bests)!=".id"]
-  bests <- cbind("gigaSOM", dset, scat, bests[,1], 0,
-                 bests[,2], FALSE, bests[,-c(1,2)])
-  colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
+  # bests <- cbind("gigaSOM", dset, scat, bests[,1], 0,
+  #                bests[,2], FALSE, bests[,-c(1,2)])
+  # colnames(bests)[c(1:7)] <- c("method","dataset","scatterplot","cpop","train_no","fcs","train")
   # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
-  dir.create(folder_name(gs_xr(gs_dir_,"gigaSOM","scores")), recursive=TRUE, showWarnings=FALSE)
+  dir.create(folder_name(gs_xr(gs_dir_,"gigaSOM","scores")), 
+             recursive=TRUE, showWarnings=FALSE)
+  print(colnames(bests))
   write.table(bests, file=gzfile(paste0(gs_xr(gs_dir_,"gigaSOM","scores"),".csv.gz")),
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
