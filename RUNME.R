@@ -24,7 +24,7 @@ libr(c(
 ## parallelization ####
 no_cores <- ifelse(exists("no_cores"), no_cores, 1)
 doMC::registerDoMC(no_cores) # for plyr::llply
-future::plan(future::multisession) # for furrr::future_map
+# future::plan(future::multisession) # for furrr::future_map
 
 ## folder_names ####
 raw_dir <- paste0(root, "/raw")

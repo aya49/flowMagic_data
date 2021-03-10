@@ -29,20 +29,21 @@ write.csv(score2D, file=gzfile(paste0(sc2_dir,".csv.gz")))
 time_output(start)
 # score2D <- data.table::fread(paste0(sc2_dir,".csv.gz"))
 
-start <- Sys.time()
-scn_files <- list.files(scn_dir, full.names=TRUE, recursive=TRUE, pattern=".csv.gz")
-loop_ind <- loop_ind_f(scn_files, no_cores)
-scorenD <- plyr::ldply(loop_ind, function(scn_fs) {
-  plyr::ldply(scn_fs, data.table::fread, data.table=FALSE)
-}, .parallel=TRUE)
-write.csv(scorenD, file=gzfile(paste0(scn_dir,".csv.gz")))
-time_output(start)
+# start <- Sys.time()
+# scn_files <- list.files(scn_dir, full.names=TRUE, recursive=TRUE, pattern=".csv.gz")
+# loop_ind <- loop_ind_f(scn_files, no_cores)
+# scorenD <- plyr::ldply(loop_ind, function(scn_fs) {
+#   plyr::ldply(scn_fs, data.table::fread, data.table=FALSE)
+# }, .parallel=TRUE)
+# write.csv(scorenD, file=gzfile(paste0(scn_dir,".csv.gz")))
+# time_output(start)
 
 
 ## plot 2D ####
 
 # add scat|cpop and data|scat|cpop columns
-score2D_ <- score2D[!(score2D$method=="flowLearn" & score2D$train_no<10),]
+score2D_ <- score2D[!(score2D$method=="flowLearn" & score2D$train_no!=10),]
+score2D_ <- score2D_[!(score2D$method=="deepCyTOF" & score2D$train_no!=10),]
 score2D_$scatpop <- paste0(score2D_$cpop," || ",score2D_$scatterplot)
 score2D_$dscatpop <- paste0(score2D_$dataset, " || ", score2D_$cpop," - ",score2D_$scatterplot)
 
@@ -56,7 +57,7 @@ score2D_ <- score2D_ %>% dplyr::group_by(scatpop)%>%
 
 
 # colour palette for continuous values
-colour_palette <- c('blue','cyan','green','red')
+colour_palette <- c('blue','cyan','red')
 
 ## f1 scores; top=data, left=method, y=f1, x=scat|cpop; colour=mean_true_prop
 g2f1size <- ggplot2::ggplot(score2D_, ggplot2::aes(
@@ -260,7 +261,7 @@ for (x2_fold in x2_folds) {
       x2 <- x2s[[xi]]
       f2 <- f2s[[xi]]
       
-      lfile <- gs_xr_(x2_files[xi],"gigaSOM_labels")
+      lfile <- gs_xr_(x2_files[xi],"gigaSOM_lbls")
       if (!file.exists(lfile)) {
         f2l <- length(f2)
         plot_dens(x2, main=fnames[xi])
@@ -341,7 +342,7 @@ for (x2_fold in x2_folds) {
   if (!dir.exists(lpf_fold)) next
   for (k in list.dirs(gsub("allfilesplots_flowLearn","flowLearn_y",lpf_fold), 
                       full.names=FALSE)[-1]) {
-    lpf_fold <- gs_xr_(x2_fold,paste0("allfilesplots_flowLearn_",k))
+    lpf_fold <- gs_xr_(x2_fold,paste0("allfilesplots_flowLearn/",k))
     dir.create(lpf_fold, recursive=TRUE, showWarnings=FALSE)
     lpf <- paste0(lpf_fold,"/",plot_no,".png")
     xi <- 1

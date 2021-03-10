@@ -22,12 +22,13 @@ distn <- "euclidean"
 clustn <- "rankkmed"
 x2_dir_s <- list_leaf_dirs(x2_dir_)
 plyr::l_ply(unique(laply(x2_dir_s, folder_name)), function(x)
-  plyr::l_ply(append(gs_xr(x,paste0(ingrid,"_",distn,"_",clustn)),
-                     gs_xr(x,paste0(ingrid,"_",distn))), 
+  plyr::l_ply(append(gsub(ingrid,paste0(ingrid,"_",distn,"_",clustn),x),
+                     gsub(ingrid,paste0(ingrid,"_",distn),x)), 
               dir.create, recursive=TRUE, showWarnings=FALSE) )
 
 
-ks <- c(1,5,10,15,20)
+ks <- c(1:5,10,15,20)
+ks <- c(2:4)
 
 
 ## START ####
@@ -35,9 +36,15 @@ start <- Sys.time()
 
 # load csv
 # loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
-plyr::l_ply(x2_dir_s, function(x2_dir) {
+# plyr::l_ply(x2_dir_s, function(x2_dir) {
+  for (x2_dir in x2_dir_s) {
   x2_fs <- list.files(x2_dir, full.names=TRUE, pattern=".csv.gz")
   dist_dir <- paste0(gsub(ingrid,paste0(ingrid,"_",distn),x2_dir),".Rdata")
+  # if (file.exists(gsub(".Rdata"," .Rdata",dist_dir))) {
+  #   d <- get(load(gsub(".Rdata"," .Rdata",dist_dir)))
+  #   file.remove(gsub(".Rdata"," .Rdata",dist_dir))
+  #   save(d, file=dist_dir)
+  # }
 
   start1 <- Sys.time()
   
@@ -45,6 +52,7 @@ plyr::l_ply(x2_dir_s, function(x2_dir) {
   if (file.exists(dist_dir)) dexists <- file.size(dist_dir)>0
   if (dexists) {
       d <- get(load(dist_dir))
+      fnames <- gsub(".csv.gz","",sapply(x2_fs, file_name))
   } else {
   # load files into matrix
     all2D <- purrr::map(x2_fs, function(x2_f) {
@@ -90,6 +98,6 @@ plyr::l_ply(x2_dir_s, function(x2_dir) {
           row.names=FALSE, col.names=FALSE)
     }
   }
-  time_output(start1, "kmed-ed")
-}, .parallel=TRUE)
+  time_output(start1, paste0(x2_dir," kmed-ed"))
+}#, .parallel=FALSE)
 time_output(start)

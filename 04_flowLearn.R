@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 5#parallel::detectCores() - 5
+no_cores <- 7#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -21,8 +21,7 @@ plyr::l_ply(append(gs_xr_(thres_dirs,"flowLearn_plots"),
 
 ## parameters ####
 dfn <- 512 # number of density features for flowlearn
-ks <- c(1,5,10,15,20) # number of training samples
-
+ks <- c(1:5,10,15,20) # number of training samples
 
 ## plot function: scatterplot + densities ####
 flPlot <- function(x2, marknames, ft, fto, filt, main) {
@@ -77,13 +76,13 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 ## START ####
 start <- Sys.time()
 par_scat <- TRUE
-overwrite_thresholds <- FALSE
-overwrite_plot <- FALSE
+overwrite_thresholds <- TRUE
+overwrite_plot <- TRUE
 
 
-res <- plyr::llply(thres_dirs, function(thres_dir_) {
+res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
   # CD66CD14_Livecells_
-  # for (thres_dir_ in thres_dirs) {
+  # for (thres_dir_ in thres_dirs) { try({
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -291,21 +290,23 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) {
   ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
   
   pl_dir <- gsub("thresholds","plots",fl_dir)
-  dir.create(pl_dir, recursive=TRUE, showWarnings=FALSE)
-  for (fname in fnames) for (ki in ks_) {
-    png_name <- paste0(pl_dir,"/",fname,"_",ks_[ki],".png")
-    if (overwrite_plot | !file.exists(png_name)) {
-      x2 <- x2s[[fname]]
-      fto <- ftos[[fname]]
-      ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-      filt <- filt2s[[fname]]
-      png(png_name, width=400, height=400)
-      flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
-      graphics.off()
+  a <- sapply(paste0(pl_dir,"/",ks_), dir.create, showWarnings=FALSE, recursive=TRUE)
+  for (fname in fnames) {
+    for (ki in ks_) {
+      png_name <- paste0(pl_dir,"/",ks_[ki],"/",fname,".png")
+      if (overwrite_plot | !file.exists(png_name)) {
+        x2 <- x2s[[fname]]
+        fto <- ftos[[fname]]
+        ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
+        filt <- filt2s[[fname]]
+        png(png_name, width=400, height=400)
+        flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+        graphics.off()
+      }
     }
   }
   time_output(start1, "plotted")
-}, .parallel=par_scat)
+})}, .parallel=par_scat)
 time_output(start)
 
 

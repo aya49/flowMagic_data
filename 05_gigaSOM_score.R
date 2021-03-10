@@ -14,8 +14,8 @@ source(paste0(root,"/src/RUNME.R"))
 ## input ####
 gs2_dir <- paste0(root,"/results/2D/gigaSOM_clusters");
 gsn_dir <- paste0(root,"/results/nD/gigaSOM_clusters");
-gl2_dir <- paste0(root,"/results/2D/gigaSOM_labels");
-gln_dir <- paste0(root,"/results/nD/gigaSOM_labels");
+gl2_dir <- paste0(root,"/results/2D/gigaSOM_lbls");
+gln_dir <- paste0(root,"/results/nD/gigaSOM_lbls");
 
 
 ## load inputs ####
@@ -25,7 +25,7 @@ gsn_dirs <- list.dirs(gsn_dir)[-1]
 
 ## output ####
 plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
-  dir.create(gsub("_clusters","_labels",x), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("_clusters","_lbls",x), recursive=TRUE, showWarnings=FALSE)
 })
 
 
@@ -141,6 +141,7 @@ par_scat <- FALSE # parallelize by scatterplot, not by file
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
 # 5 2D is an issue
 # SANGER nD!
+# pregnancy 08_TCRgdCD3_CD4Tcell!
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
 for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
   start1 <- Sys.time()
@@ -247,24 +248,24 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
       
       # write.table(best, file=gzfile(score_file), sep=',', row.names=FALSE, col.names=TRUE)
       
-      # cpops_ <- cpops
-      # if (length(cpop_combos[[best_combo]])<length(cpops))
-      #   cpops <- cpops[!cpops%in%"other"]
-      # tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi)
-      #   Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
-      # if (length(tfs)==1) {
-      #   tfs <- matrix(tfs, ncol=1)
-      # } else {
-      #   tfs <- Reduce(cbind, tfs)
-      # }
-      # colnames(tfs) <- cpops
-      # if (length(cpops_)>length(cpops)) {
-      #   tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
-      #   colnames(tfs)[ncol(tfs)] <- "other"
-      # }
-      # write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
-      #             sep=',', row.names=FALSE, col.names=TRUE)
-      # # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
+      cpops_ <- cpops
+      if (length(cpop_combos[[best_combo]])<length(cpops))
+        cpops <- cpops[!cpops%in%"other"]
+      tfs <- plyr::llply(seq_len(length(cpops)), function(cpopi)
+        Reduce('|',clusttf[cpop_combos[[best_combo]][[cpopi]]]) )
+      if (length(tfs)==1) {
+        tfs <- matrix(tfs, ncol=1)
+      } else {
+        tfs <- Reduce(cbind, tfs)
+      }
+      colnames(tfs) <- cpops
+      if (length(cpops_)>length(cpops)) {
+        tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
+        colnames(tfs)[ncol(tfs)] <- "other"
+      }
+      write.table(tfs, file=gzfile(gsub("_clusters","_lbls",gs_f)),
+                  sep=',', row.names=FALSE, col.names=TRUE)
+      # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     }
     return(best)
   }), .parallel=!par_scat)
