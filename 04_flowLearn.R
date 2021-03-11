@@ -5,8 +5,8 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 7#parallel::detectCores() - 5
-# root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
+no_cores <- 1#parallel::detectCores() - 5
+# root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 
@@ -25,9 +25,12 @@ ks <- c(1:5,10,15,20) # number of training samples
 
 ## plot function: scatterplot + densities ####
 flPlot <- function(x2, marknames, ft, fto, filt, main) {
+  # layout, margins, new plot
   layout(matrix(c(2,2,1,4,4,3,4,4,3), 3,3, byrow = TRUE))
   par(mar=c(1,3,3,3)) # bottom, left, top, right
   plot.new()
+  
+  # top density plot
   par(mar=c(1,4,5,1))
   plot(density(x2[,1]), xlab=NA, xaxt="n", 
        main=main)
@@ -39,9 +42,14 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
   dens <- density(x2[,2])
   densymax <- max(dens$y)
   par(mar=c(4,1,1,1))
+  traintitle <- ifelse((is.na(ft[colnames(x2)[colnames(x2)[1]]]) & 
+                         colnames(x2)[1]%in%names(ft)) &
+    (is.na(ft[colnames(x2)[colnames(x2)[2]]]) & 
+       colnames(x2)[2]%in%names(ft)),
+  " (train sample)","")
   plot(dens$y, dens$x, ylab=NA, yaxt="n",
        type="l", xlab="Density", 
-       main=ifelse((is.na(ft[colnames(x2)[colnames(x2)[1]]]) & colnames(x2)[1]%in%names(ft)) | (is.na(ft[colnames(x2)[colnames(x2)[2]]]) & colnames(x2)[2]%in%names(ft))," (train sample)",""))
+       main=traintitle)
   if (colnames(x2)[1]%in%marknames) {
     abline(h=fto[colnames(x2)[2]], col="red")
     if (!is.na(ft[colnames(x2)[2]])) 
@@ -75,14 +83,14 @@ flPlot <- function(x2, marknames, ft, fto, filt, main) {
 
 ## START ####
 start <- Sys.time()
-par_scat <- TRUE
+par_scat <- FALSE
 overwrite_thresholds <- TRUE
 overwrite_plot <- TRUE
 
 
-res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
+# res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
   # CD66CD14_Livecells_
-  # for (thres_dir_ in thres_dirs) { try({
+  for (thres_dir_ in thres_dirs[-c(1:3)]) { #try({
   thres_dir_s <- stringr::str_split(thres_dir_,"/")[[1]]
   scat <- thres_dir_s[length(thres_dir_s)]
   dset <- thres_dir_s[length(thres_dir_s)-1]
@@ -122,8 +130,8 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
     protoIdxs <- NULL
     for (markname in marknames) {
       dt_dir <- paste0(fl_dir,"/",markname)
-      if (overwrite_thresholds | 
-          !all(sapply(paste0(dt_dir,"/",ks,".Rdata"), file.exists))) next
+      if (!overwrite_thresholds & 
+          all(sapply(paste0(dt_dir,"/",ks,".Rdata"), file.exists))) next
       
       # make a density data object for flowLearn
       densdat <- new('DensityData')
@@ -222,19 +230,24 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
   
   # load prediced thresholds
   fl_dir <- gs_xr_(x2_diri,"flowLearn_thresholds")
-  fts <- lapply(names(ftos[[1]]), function(x) lapply(ks_, function(k) 
-    get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))) ))
+  fts <- lapply(names(ftos[[1]]), function(x) {
+    a <- lapply(ks_, function(k) get(load(paste0(fl_dir,"/",x,"/",k,".Rdata"))))
+    names(a) <- as.character(ks_)
+    a
+  })
   names(fts) <- names(ftos[[1]])
   
   # get predicted cell population T/F's
-  testpars <- expand.grid(cpops, seq_len(length(ks_)), 
-                          fnames, stringsAsFactors=FALSE)
+  testpars <- expand.grid(cpops, ks_, fnames, stringsAsFactors=FALSE)
   colnames(testpars) <- c("cpop", "train_no", "fcs")
   
+  # for each set of parameters @ index i, get threshold
   fts_ <- plyr::llply(seq_len(nrow(testpars)), function(i) {
-    ki <- testpars[i,"train_no"]
+    k <- testpars[i,"train_no"]
     fname <- testpars[i,"fcs"]
-    ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames; ft
+    ft <- sapply(fts, function(x) x[[as.character(k)]][fname])
+    names(ft) <- marknames
+    ft
   })
   tfpreds <- plyr::llply(seq_len(nrow(testpars)), function(i) {
     cpop <- testpars[i,"cpop"]
@@ -257,11 +270,11 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
     }
     return(tfpred)
   })
-  for (ki in seq_len(length(ks_))) {
-    fly_dir <- paste0(gsub("thresholds","y",fl_dir),"/",ks_[ki])
+  for (k in ks_) {
+    fly_dir <- paste0(gsub("thresholds","y",fl_dir),"/",k)
     dir.create(fly_dir, recursive=TRUE, showWarnings=FALSE)
     for (fname in fnames) {
-      tpi <- testpars[,"fcs"]==fname & testpars[,"train_no"]==ki
+      tpi <- testpars[,"fcs"]==fname & testpars[,"train_no"]==k
       tpm <- Reduce(cbind,tfpreds[tpi])
       if (is.na(dim(tpm))) tpm <- matrix(tpm, ncol=1)
       colnames(tpm) <- testpars[tpi,"cpop"]
@@ -279,7 +292,6 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
   scoredf_k_cpop <- cbind("flowLearn", dset, scat, testpars, scoredf_k_cpop)
   colnames(scoredf_k_cpop)[c(1:3)] <- c("method", "dataset", "scatterplot")
   # save(scoredf_k_cpop, file=scores_dir_)
-  scoredf_k_cpop$train_no <- ks[scoredf_k_cpop$train_no]
   dir.create(folder_name(scores_dir_), recursive=TRUE, showWarnings=FALSE)
   write.table(scoredf_k_cpop, file=gzfile(scores_dir_), 
               sep=",", row.names=FALSE, col.names=TRUE)
@@ -287,26 +299,23 @@ res <- plyr::llply(thres_dirs, function(thres_dir_) { try({
   
   
   ## plot ####
-  ks_ <- as.numeric(gsub(".Rdata","",list.files(paste0(fl_dir,"/",names(ftos[[1]])[1]))))
-  
   pl_dir <- gsub("thresholds","plots",fl_dir)
   a <- sapply(paste0(pl_dir,"/",ks_), dir.create, showWarnings=FALSE, recursive=TRUE)
   for (fname in fnames) {
-    for (ki in ks_) {
-      png_name <- paste0(pl_dir,"/",ks_[ki],"/",fname,".png")
-      if (overwrite_plot | !file.exists(png_name)) {
-        x2 <- x2s[[fname]]
-        fto <- ftos[[fname]]
-        ft <- sapply(fts, function(x) x[[ki]][fname]); names(ft) <- marknames
-        filt <- filt2s[[fname]]
-        png(png_name, width=400, height=400)
-        flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
-        graphics.off()
-      }
+    for (k in ks_) {
+      png_name <- paste0(pl_dir,"/",k,"/",fname,".png")
+      if (!overwrite_plot & file.exists(png_name)) next
+      x2 <- x2s[[fname]]
+      fto <- ftos[[fname]]
+      ft <- sapply(fts, function(x) x[[as.character(k)]][fname]); names(ft) <- marknames
+      filt <- filt2s[[fname]]
+      png(png_name, width=400, height=400)
+      flPlot(x2, marknames, ft, fto, filt, main=paste0("data set: ", dset, "\nscatterplot: ",scat, "\n(blue=predicted, red=actual)"))
+      graphics.off()
     }
   }
   time_output(start1, "plotted")
-})}, .parallel=par_scat)
+}#)}#, .parallel=par_scat)
 time_output(start)
 
 

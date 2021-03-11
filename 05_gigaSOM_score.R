@@ -133,17 +133,15 @@ cpop_combos_all_2D <- lapply(2:4, function(cpopn)
   get_cpop_combos(clustn, cpopn) )
 names(cpop_combos_all_2D) <- as.character(2:4)
 
-start <- Sys.time()
 
 # overwrite <- FALSE
 par_scat <- FALSE # parallelize by scatterplot, not by file
+start <- Sys.time()
 
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
-# 5 2D is an issue
-# SANGER nD!
-# pregnancy 08_TCRgdCD3_CD4Tcell!
+# sangerP2 > 09_CD19CD11c_notTcell
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
-for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
+for (gs_dir_ in gs2_dirs) { try({
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
 
@@ -186,6 +184,7 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
 
   loop_ind <- loop_ind_f(seq_len(length(gs_files)), no_cores)
   bests <- plyr::ldply(loop_ind, function(xii) plyr::ldply(xii, function(xi) {
+    # for (xi in 1:length(gs_files)) {
     gs_f <- gs_files[xi]
     # cat("\n", xi, ":",gs_f)
     # for (gs_f in gs_files) {
@@ -276,7 +275,6 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
   # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
   dir.create(folder_name(gs_xr(gs_dir_,"gigaSOM","scores")), 
              recursive=TRUE, showWarnings=FALSE)
-  print(colnames(bests))
   write.table(bests, file=gzfile(paste0(gs_xr(gs_dir_,"gigaSOM","scores"),".csv.gz")),
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
