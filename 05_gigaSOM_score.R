@@ -276,7 +276,6 @@ for (gs_dir_ in append(gs2_dirs, gsn_dirs)) { try({
   # save(bests, file=paste0(gsub("results","scores",gsub("_clusters","",gs_dir_)),".Rdata"))
   dir.create(folder_name(gs_xr(gs_dir_,"gigaSOM","scores")), 
              recursive=TRUE, showWarnings=FALSE)
-  print(colnames(bests))
   write.table(bests, file=gzfile(paste0(gs_xr(gs_dir_,"gigaSOM","scores"),".csv.gz")),
               sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1, "scored")
