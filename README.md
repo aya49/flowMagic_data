@@ -1,4 +1,4 @@
-﻿# flowMagic_data
+# flowMagic_data
 
 ## a few notes on the scripts
 - 00_generate_data_<data set>:
@@ -7,12 +7,14 @@
 
 ## deepCyTOF
 
-in order to get the original code to work with minimal modifications, we used:
+we used the original package versions used in the deepCyTOF paper to run deepCyTOF: 
 - scikit-learn 0.20.0
 - keras 1.2.2
 - TensorFlow 1.0.0
 - numpy 1.19
 
+scripts to run deepCyTOF on current versions of packages are available in the [Util](Util) folder; these scripts end in `_.py`.
+`
 ## folder structure
 
 ```{bash}
