@@ -1,0 +1,10 @@
+
+sacct -a -s failed -S 01:00 -o jobid%20%,state,exitcode > /mnt/f/Brinkman\ group/COVID/data/code/failed_jobs.csv
+
+Rscript get_failed_array_index.R Rscript get_failed_array_index.R JOBID
+sacct | grep mmalekes
+
+sbatch --array="Print of output of the Rscript in terminal" COVID_file_clustering.sbatch  
+
+
+

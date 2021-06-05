@@ -1,0 +1,43 @@
+[README]
+1.0.user_weightin: slurm recipe to create jobs in slurm executing code [1.1]. Each job refers to one csvpart0000 file.
+1.1.weighting_users_code: process all the users and compare their results with the golden standards. Depends on the CCP files (csvpart00000 @ structure_test/user_data_by_ccp), the golden samples list (@ code/support_files/) and the golden sample values (@ structured_test/golden_samples/)
+1.2.separate_users: goes through all the CCP files and separates its gates sorting by data file. This code moves the CCP files to FCS_local3, for storage.
+1.3.average_player_performance: uses the output from code [1.1] and generates the agregate score for each user. This can be adjusted by period, which need to be changed in code.
+
+2.0.COVID_MAIN: runs the full analysis routine, which includes running the [2.1] code and submit the jobs based on [2.2] slurm recipe.
+2.1.list_files_to_analyze.R: checks the output of code [1.2] (@ support_files/) and checks the data files with more than 100 analysis. Checks the analyzed files and creates a list of all the files that will be analyzed.
+2.2.combine_gates: slurm recipe to create the jobs executing code [2.3].
+2.3.python_script_hybrid: main analysis code. Depends on the data files (@ structure_test/data) and the users' files (@ structure_test/users), which are the output of [1.2].
+
+## Testing code section:
+2.2.1.combine_gates: is the same as [2.2], but it is pointing to code [2.3.1], which is being used for testing purposes.
+2.3.1.python_scrupt_hybrid: is the same as [2.3], but it reads the support_files/files_to_analyze_test_data.csv. Which restricts the analysis to the files we want.
+
+3.0.POST_PROCESSING: slurm recipe to create the jobs for code [3.1]
+3.1.pot_processing_biaxial_generation: get the results from the main analysis, code [2.3], and create the next level of data. Depends on exprs data (@ structure_test/exprs/), clrs data (@ structure_test/clr), data (@ structure_test/data) and the results (structure_test/results). The output is saved @ structure_test/to_transfer and should be moved to structure_test/data after being manualy transfered.
+3.2.flowPrep: it is a support code for [3.1].
+
+[TO RUN]:
+
+in terminal:
+Pre-process
+## Go to the folder
+$ cd /mnt/f/Brinkman\ group/COVID/data/code/
+
+## Run weighting users as slurm jobs
+$ sbatch --array=0-X 1.0.user_weighting.sbatch
+## {X} (number of part0000 files)-1
+## This process may take a while, please let this finnish before moving on.
+
+## Run separate users.
+$ python3.6 1.2.separate_users.py
+
+
+Analysis:
+## Run main
+$ sh 2.0.COVID_MAIN.sh
+## this will run all the steps in order.
+
+Post-process
+## Run the post process code as slurm jobs.
+$ sbatch 3.0.POST_PROCESSING.sbatch
