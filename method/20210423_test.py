@@ -1,5 +1,9 @@
 # module load LIB/CUDA/10.2
 
+# !pip install segmentation_models_pytorch
+# !pip install torchviz
+# !MMCV_WITH_OPS=1 pip install mmcv-full==1.2.2 -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html #full version not for windows
+
 import sys
 import os
 import trace

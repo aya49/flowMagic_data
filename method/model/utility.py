@@ -1,5 +1,9 @@
 ## load pretrianed model ####
-def load_pretrained(model, cfg=None, num_classes=1000, in_chans=3, filter_fn=None, strict=True, pos_embed_interp=False, num_patches=576, align_corners=False):
+def load_pretrained(
+    model, cfg=None, num_classes=1000, in_chans=3, 
+    filter_fn=None, strict=True, pos_embed_interp=False, 
+    num_patches=576, align_corners=False):
+    
     if cfg is None:
         cfg = getattr(model, 'default_cfg')
     if cfg is None or 'url' not in cfg or not cfg['url']:
