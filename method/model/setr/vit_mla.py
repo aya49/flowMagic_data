@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from mmseg.models.losses.lovasz_loss as ll
 from mmseg.models.segmentors.base import BaseSegmentor
 
 from .vit_mla_1backbone import VIT_MLA
@@ -10,7 +9,7 @@ from .vit_mla_3auxihead import VIT_MLA_AUXIHead
 
 class EncoderDecoder(BaseSegmentor):
     
-    def __init__(self, opt
+    def __init__(self, opt,
         
         # # VIT_MLA
         # img_size=200, patch_size=10, pos_embed_interp=True, drop_rate=0.,
@@ -31,12 +30,12 @@ class EncoderDecoder(BaseSegmentor):
         super(EncoderDecoder, self).__init__()
         
         self.backbone = VIT_MLA(
-            img_size=opt.img_size, patch_size=opt.patch_size,
-            in_chans=opt.in_chans, embed_dim=opt.embed_dim, depth=opt.depth,
-            num_heads=opt.num_heads, # num_classes=19,
-            mlp_ratio=opt.mlp_ratio, 
-            qkv_bias=opt.qkv_bias, qk_scale=opt.qk_scale,
-            pos_embed_interp=opt.pos_embed_interp, 
+            img_size=opt.dim, patch_size=20,
+            in_chans=3, embed_dim=1024, depth=opt.depth,
+            num_heads=16, # num_classes=19,
+            mlp_ratio=4., 
+            qkv_bias=True, qk_scale=None,
+            pos_embed_interp=False, 
             random_init=opt.mode == 'pretrain'
         )
         
@@ -67,3 +66,6 @@ class EncoderDecoder(BaseSegmentor):
         #     linear_out = self.auxiliary_head(x)
 
         return x
+
+def model_setr(opt):
+    return EncoderDecoder(opt)
