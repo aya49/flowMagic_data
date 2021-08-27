@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 14#parallel::detectCores() - 5
+no_cores <- 4#parallel::detectCores() - 5
 # root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -14,8 +14,8 @@ source(paste0(root,"/src/RUNME.R"))
 ## input ####
 gs2_dir <- paste0(root,"/results/2D/gigaSOM_clusters");
 gsn_dir <- paste0(root,"/results/nD/gigaSOM_clusters");
-gl2_dir <- paste0(root,"/results/2D/gigaSOM_lbls");
-gln_dir <- paste0(root,"/results/nD/gigaSOM_lbls");
+gl2_dir <- paste0(root,"/results/2D/gigaSOM_labels");
+gln_dir <- paste0(root,"/results/nD/gigaSOM_labels");
 
 
 ## load inputs ####
@@ -25,7 +25,7 @@ gsn_dirs <- list.dirs(gsn_dir)[-1]
 
 ## output ####
 plyr::l_ply(append(gs2_dirs, gsn_dirs), function(x) {
-  dir.create(gsub("_clusters","_lbls",x), recursive=TRUE, showWarnings=FALSE)
+  dir.create(gsub("_clusters","_labels",x), recursive=TRUE, showWarnings=FALSE)
 })
 
 
@@ -42,32 +42,6 @@ clust_score <- function(cpop_combos, clusttf, actualtf, cpops) {
       f1score(tfactual, tfpred)
     })
   })
-}
-
-# this is from FlowSOM, it matches clusters to cpops 1 to 1
-# i gave up on doing all combinations for nD data sets so i'll just use this
-# for the sake of completeness
-f1_score <- function (realClusters, predictedClusters, silent=FALSE) {
-  if (sum(predictedClusters) == 0)
-    return(0)
-  a <- table(realClusters, predictedClusters)
-  p <- t(apply(a, 1, function(x) x/colSums(a)))
-  r <- apply(a, 2, function(x) x/rowSums(a))
-  f <- 2 * r * p/(r + p)
-  f[is.na(f)] <- 0
-  fw <- apply(f, 1, which.max)
-  f <- apply(f, 1, max)
-  p <- sapply(seq_len(nrow(p)), function(i) p[i,fw[i]])
-  r <- sapply(seq_len(nrow(r)), function(i) r[i,fw[i]])
-
-  rct <- as.vector(table(realClusters))
-  pct <- as.vector(table(predictedClusters)[fw])
-
-  return(data.frame(
-    precision=p, recall=r, f1=f,
-    true_proportion=rct/length(realClusters),
-    predicted_proportion=pct/length(predictedClusters),
-    true_size=rct, predicted_size=pct))
 }
 
 ## cpop combo function ####
@@ -141,7 +115,7 @@ start <- Sys.time()
 # loop_ind <- loop_ind_f(sample(append(gs2_dirs, gsn_dirs)), no_cores)
 # sangerP2 > 09_CD19CD11c_notTcell
 # res <- plyr::llply(gsn_dirs, function(gs_dir_) { try ({
-for (gs_dir_ in gs2_dirs) { try({
+for (gs_dir_ in gs2_dirs[42:47]) { try({
   start1 <- Sys.time()
   gs_files <- list.files(gs_dir_, full.names=TRUE, pattern=".csv.gz")
 
@@ -262,7 +236,7 @@ for (gs_dir_ in gs2_dirs) { try({
         tfs <- cbind(tfs, rep(FALSE,nrow(tfs)))
         colnames(tfs)[ncol(tfs)] <- "other"
       }
-      write.table(tfs, file=gzfile(gsub("_clusters","_lbls",gs_f)),
+      write.table(tfs, file=gzfile(gsub("_clusters","_labels",gs_f)),
                   sep=',', row.names=FALSE, col.names=TRUE)
       # save(tfs, file=gsub(".csv.gz",".Rdata",gsub("results/_clusters","",gs_f)))
     }

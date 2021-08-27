@@ -5,7 +5,7 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 14#parallel::detectCores() - 5
+no_cores <- 4#parallel::detectCores() - 5
 # root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
@@ -69,8 +69,8 @@ for (dc_dir_ in dc2_dirs) {
     nD <- grepl("/nD/", dc_f)
     path_stuff <- stringr::str_split(dc_f,"/")[[1]]
     di <- which(path_stuff=="deepCyTOF_labels")
-    dset <- path_stuff[di+1]
-    scat <- ifelse(!nD,path_stuff[di+2],NA)
+    dset <- path_stuff[di+2]
+    scat <- ifelse(!nD,path_stuff[di+3],NA)
     fname <- gsub(".csv","",path_stuff[length(path_stuff)])
     
     ## score each cpop ####

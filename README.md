@@ -1,4 +1,6 @@
-# flowMagic_data
+﻿# flowMagic_data
+
+document: https://www.overleaf.com/4958349237rghgfgvdmrxq
 
 ## a few notes on the scripts
 - 00_generate_data_<data set>:
@@ -14,50 +16,77 @@ we used the original package versions used in the deepCyTOF paper to run deepCyT
 - numpy 1.19
 
 scripts to run deepCyTOF on current versions of packages are available in the [Util](Util) folder; these scripts end in `_.py`.
-`
+
 ## folder structure
 
 ```{bash}
+<dsfkm> = <data_set>/<scatterplot>/<FCS name>/<number of training samples used>/<marker>
+* [400 x 400] in/output data for flowMagic
+
 ├─── src   (source code)
-├──+ data   (raw data)
+├──+ raw   (raw data)
 |  ├─+ 2D   (2D scatterplots)
-|  | ├── x/<data_set>/<scatterplot>/<FCS name>.csv.gz   (cell x 2 markers) cleaned transformed FI value matrices
-|  | ├── y/<data_set>/<scatterplot>/<FCS name>.csv.gz   (cell x cell population) 0/1 label matrices
-|  | └── thresholds/<data_set>/<scatterplot>/<FCS name>.Rdata   (list of scatterplots > markers > threshold value)
-|  └─+ nD   (full nD FCS file)
-|    ├── x/<data_set>/<FCS name>.csv.gz   (cell x markers) cleaned transformed FI value matrices
-|    └── y/<data_set>/<FCS name>.csv.gz   (cell x leaf cell population) 0/1 label matrices
-├──+ results
-|  ├─+ 2D   (*input data for flowMagic: 400 x 400)
-|  | ├── deepCyTOF_labels/<data_set>/<scatterplot>/<FCS name>.csv   (cell vector) int cell population labels corresponding to y column (0 means none)
-|  | ├── deepCyTOF_models/<data_set>/<scatterplot>/cellClassifier.h5   (model files)
-|  | ├── flowLearn_thresholds/<data_set>/<scatterplot>/<k>.Rdata   (list of markers for each scatterplot > threshold value)
-|  | ├── flowLearn_plots/<data_set>/<scatterplot>/<k>/<FCS name>(_train).png   ("_train" if the sample is a reference sample for at least 1 threshold)
-|  | ├── GigaSOM_clusters/<data_set>/<scatterplot>/<FCS name>.csv.gz   (cell x 1) int cluster labels (2x2=4 clusters)
-|  | ├── GigaSOM_plots/<data_set>/<scatterplot>/<FCS name>.png   (2 plots, actual convex hull vs clustered)
-|  | ├─* x_2Ddensity/<data_set>/<scatterplot>/<FCS name>.csv.gz   (smoothed 2D Gaussian kernel density)
-|  | ├─* x_2Dscatter/<data_set>/<scatterplot>/<FCS name>.csv.gz   (1/0 whether or not there is a cell on pixel)
-|  | ├─* x_2Dncells/<data_set>/<scatterplot>/<FCS name>.csv.gz   (number of cells in each pixel)
-|  | ├─* y_2D/<data_set>/<scatterplot>/<FCS name>.csv.gz   (string cell population label of each pixel)
-|  | ├── xtrain_2Ddensity_euclidean/<data_set>/<scatterplot>.Rdata   (pair-wise distance object)
-|  | ├── xtrain_2Ddensity_euclidean_pam/<data_set>/<scatterplot>/<k>/<reference FCS name>.csv.gz   (list of FCS sample names in the same cluster)
+|  | ├── x/<dsf>.csv.gz   [cell x 2 markers] (cleaned transformed FI value matrices)
+|  | ├── y/<dsf>.csv.gz   [cell x cell population] (0/1 label matrices)
+|  | ├── filters/<dsf>.Rdata   [list of cell populations > convex hull: points x 2 markers matrix (first == last point)] (used for labelling cell populations on plots)
+|  | └── thresholds/<dsf>.Rdata   [list of scatterplots > markers > threshold numeric value]
+|  ├─+ nD   (full nD FCS file)
+|  | ├── x/<df>.csv.gz   [cell x markers] (cleaned transformed FI value matrices)
+|  | └── y/<df>.csv.gz   [cell x leaf cell population] (0/1 label matrices)
+|  ├─+ scatterplots/<dsf>.png   (flowDensity gating scatterplots)
+|  ├─+ HIPCbcell.pdf   (manual gating hierarchy tree for data set HIPCbcell)
+|  ├─+ HIPCmyeloid.pdf   (manual gating hierarchy tree for data set HIPCmyeloid)
+|  └─+ pregnancy_dates.png   (density kernel estimate for all threshold gates across all samples in the pregnancy data set)
+├──+ data    (preprocessed data)
+|  ├─+ 2D
+|  | ├─* x_2Ddensity/<dsf>.csv.gz   (smoothed 2D Gaussian kernel density)
+|  | ├─* x_2Dscatter/<dsf>.csv.gz   (1/0 whether or not there is a cell on pixel)
+|  | ├─* x_2Dncells/<dsf>.csv.gz   (number of cells in each pixel)
+|  | ├── x_2Ddensity_euclidean/<ds>.Rdata   (pair-wise sample distance object)
+|  | ├── x_2Ddensity_euclidean_rankkmed/<ds>/<k>/<reference FCS name>.csv.gz   (vector of FCS sample names in the said cluster)
+|  | ├─* y_2D/<dsf>.csv.gz   (numeric label matrix; 0 means other)
+|  | ├─* y_2Dncells/<dsf>.csv.gz   (numeric count matrix indicating number of cells on each pixel)
 |  | └── y_vector/<data_set>/<scatterplot>/<FCS name>.csv.gz   (cell vector) string cell population label of each cell, if needed
 |  └─+ nD
-|    ├── deepCyTOF_labels/<data_set>/<FCS name>.csv   (cell x markers) (cell vector) int cell population labels corresponding to y column (0 means none)
-|    ├── deepCyTOF_models/<data_set>/cellClassifier.h5   (model files)
-|    └── GigaSOM_clusters/<data_set>/<FCS name>.csv.gz   (cell x 1) int cluster labels (hxh=g clusters >= actual number of cell populations)
-└──+ scores
-   ├─+ 2D
-   | ├── deepCyTOF/<data_set>/<scatterplot>/<FCS name>.csv.gz (F1 score for all cpops)
-   | ├── flowLearn/<data_set>/<scatterplot>/<k>.csv.gz (F1 scores for all FCS files > all cpops)
-   | ├── GigaSOM/<data_set>/<scatterplot>/<FCS name>.csv.gz (F1 score for all cpops)
-   | ├── 
-   | ├── 
-   | ├── 
-   | ├── 
-   | └── 
-   └─+ nD
-     ├── deepCyTOF/<data_set>/<FCS name>.csv.gz (F1 score for all leaf cpops)
-     ├── 
-     └── 
+|    └── Rtsne/<df>.csv.gz   [cell x 2] (2D Rtsne dimensionality reduced nD FCS files for plotting)
+├──+ results
+|  ├─+ 2D
+|  | ├─+ deepCyTOF_F1/<kds>
+|  | | ├── F1.csv   (vector of cell population count weighted F1 score (calculated by deepCyTOF) for each FCS sample)
+|  | | └── fnames.csv   (FCS names for F1.csv^)
+|  | ├── deepCyTOF_labels/<kdsf>.csv   (cell vector of int cell population labels corresponding to y column; 0 means other/none)
+|  | ├── deepCyTOF_models/<kds>/cellClassifier.h5   (model files)
+|  | ├── flowLearn_labels/<dskf>.csv.gz   [cell x cell population] (TRUE/FALSE cell population label matrices)
+|  | ├── flowLearn_thresholds/<dsmk>.Rdata   (list of markers for each scatterplot > threshold value)
+|  | ├── flowLearn_plots/<dskf>.png   (these plots are compiled in plots/2D/all/flowLearn)
+|  | ├── gigaSOM_clusters/<dsf>.csv.gz   (cell vector of int cluster labels (2x2=4 clusters))
+|  | └── gigaSOM_lbls/<dsf>.csv.gz   [cell x cell population] (TRUE/FALSE cell population label matrices) !!!will change this to labels (not lbls)
+|  └─+ nD
+|    ├─+ deepCyTOF_F1/<d>
+|    | ├── F1.csv   (vector of cell population count weighted F1 score (calculated by deepCyTOF) for each FCS sample)
+|    | └── fnames.csv   (FCS names for F1.csv^)
+|    ├── deepCyTOF_labels/<df>.csv   (cell vector of int cell population labels corresponding to y column (0 means other/none)
+|    ├── deepCyTOF_models/<d>/cellClassifier.h5   (model files)
+|    ├── gigaSOM_clusters/<df>.csv.gz   (cell vector of int cluster labels (hxh=g clusters >= actual number of cell populations))
+|    └── gigaSOM_labels/<df>.csv.gz   [cell x cell population] (TRUE/FALSE cell population label matrices)
+├──+ scores   (F1 score for each cpop and FCS sample)
+|  ├─+ 2D   [. x method, dataset, scatterplot, cpop, train_no, fcs, train, precision, recall, f1, true_proportion, predicted_proportion, true_size, predicted_size]
+|  | ├── deepCyTOF/<kds>.csv.gz
+|  | ├── flowLearn/<ds>.csv.gz
+|  | └── gigaSOM/<ds>.csv.gz
+|  ├─+ nD
+|  | ├── deepCyTOF/<kd>.csv.gz
+|  | ├── flowLearn/<d>.csv.gz
+|  | └── gigaSOM/<d>.csv.gz
+|  ├── 2D.csv.gz   (compiled matrix from 2D folder)
+|  └── nD.csv.gz   (compiled matrix from nD folder)
+└──+ plots
+   ├─+ 2D 
+   | ├─+ all   (compiled scatterplots; coloured points are results, convex hulls are original density gates)
+   | | ├── original/<ds>/<1,2,...>.png
+   | | ├── deepCyTOF/<ds>/<1,2,...>.png
+   | | ├── gigaSOM/<ds>/<1,2,...>.png
+   | | └── flowLearn/<ds>/<1,2,...>.png
+   | └─+ scores    (plots relating to F1 scores etc.)
+   └─+ nD 
 ```
