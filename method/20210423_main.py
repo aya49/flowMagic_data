@@ -54,19 +54,21 @@ logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 ## DATA: datasets x 4 ###########################################
 dss = os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))
 
-# PARAMETER
+# PARAMETER: choose the data set 0-3 we use as the test data set
 dti = 0
 
 ds_tr = dss[-dti]
 ds_mt = dss[dti]
 
-# list of denscat folders
+# train data sets denscats
 flatx = lambda x: [i for row in x for i in row]
 x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
              sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
-             ds in ds_mt])
+             ds in ds_tr])
 random.shuffle(x_dirs_tr)
 val_len = round(len(x_dirs_tr)/10)
+
+# train data sets denscats split into train/val
 x_dirs_tr_tr = x_dirs_tr[val_len:]
 x_dirs_tr_val = x_dirs_tr[:val_len]
 
