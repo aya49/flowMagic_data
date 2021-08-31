@@ -1,5 +1,5 @@
 
-from model.setr.vit_mla import model_setr
+from models.setr.vit_mla import model_setr
 
 model_dict = {
     'setr': model_setr,
