@@ -1,8 +1,8 @@
 import os
 import argparse
 
-from .transform import transform_names
-from .model import model_names
+from transform import transform_names
+from model import model_names
 
 def parse_options():
 
