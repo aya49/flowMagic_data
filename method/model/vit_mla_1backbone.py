@@ -4,7 +4,7 @@ from functools import partial
 import math
 
 # from ..utility import load_pretrained
-from .layers import DropPath, to_2tuple, trunc_normal_
+from layers import DropPath, to_2tuple, trunc_normal_
 
 from mmseg.models.builder import BACKBONES
 
