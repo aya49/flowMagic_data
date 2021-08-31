@@ -3,9 +3,9 @@ import torch.nn as nn
 
 from mmseg.models.segmentors.base import BaseSegmentor
 
-from vit_mla_1backbone import VIT_MLA
-from vit_mla_2head import VIT_MLAHead
-from vit_mla_3auxihead import VIT_MLA_AUXIHead
+from .vit_mla_1backbone import VIT_MLA
+from .vit_mla_2head import VIT_MLAHead
+from .vit_mla_3auxihead import VIT_MLA_AUXIHead
 
 class EncoderDecoder(BaseSegmentor):
     
