@@ -3,8 +3,8 @@ import torch.nn as nn
 from functools import partial
 import math
 
-from ..utility import load_pretrained
-from ..layers import DropPath, to_2tuple, trunc_normal_
+# from ..utility import load_pretrained
+from .layers import DropPath, to_2tuple, trunc_normal_
 
 from mmseg.models.builder import BACKBONES
 
@@ -284,17 +284,17 @@ class VIT_MLA(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
-        if not self.random_init:
-            self.default_cfg = default_cfgs[self.model_name]
+        # if not self.random_init:
+        #     self.default_cfg = default_cfgs[self.model_name]
 
-            if self.model_name in ['vit_small_patch16_224', 'vit_base_patch16_224']:
-                load_pretrained(self, num_classes=self.num_classes, in_chans=self.in_chans, pos_embed_interp=self.pos_embed_interp,
-                                num_patches=self.patch_embed.num_patches, align_corners=self.align_corners, filter_fn=self._conv_filter)
-            else:
-                load_pretrained(self, num_classes=self.num_classes, in_chans=self.in_chans, pos_embed_interp=self.pos_embed_interp,
-                                num_patches=self.patch_embed.num_patches, align_corners=self.align_corners)
-        else:
-            print('Initialize weight randomly')
+        #     if self.model_name in ['vit_small_patch16_224', 'vit_base_patch16_224']:
+        #         load_pretrained(self, num_classes=self.num_classes, in_chans=self.in_chans, pos_embed_interp=self.pos_embed_interp,
+        #                         num_patches=self.patch_embed.num_patches, align_corners=self.align_corners, filter_fn=self._conv_filter)
+        #     else:
+        #         load_pretrained(self, num_classes=self.num_classes, in_chans=self.in_chans, pos_embed_interp=self.pos_embed_interp,
+        #                         num_patches=self.patch_embed.num_patches, align_corners=self.align_corners)
+        # else:
+        #     print('Initialize weight randomly')
 
     @property
     def no_weight_decay(self):
