@@ -9,7 +9,7 @@ import tensorboard_logger as tb_logger
 
 import model.lovasz_losses as ll
 
-from .util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
+from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
 
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training

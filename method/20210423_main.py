@@ -5,7 +5,7 @@
 # !MMCV_WITH_OPS=1 pip install mmcv-full==1.2.2 -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html #full version not for windows
 
 import os
-os.chdir("~/flowMagic_data/src/method")
+os.chdir("/home/aya43/flowMagic_data/src/method")
 
 import sys
 import trace
@@ -62,20 +62,12 @@ dti = 0
 ds_tr = dss[-dti]
 ds_mt = dss[dti]
 
-# train data sets denscats
+# train/metatrain data sets denscats
 flatx = lambda x: [i for row in x for i in row]
 x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
-             sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
-             ds in ds_tr])
-random.shuffle(x_dirs_tr)
-val_len = round(len(x_dirs_tr)/10)
-
-# train data sets denscats split into train/val
-x_dirs_tr_tr = x_dirs_tr[val_len:]
-x_dirs_tr_val = x_dirs_tr[:val_len]
-
-x_dirs_mts = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
-             sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))]
+             sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr])
+x_dirs_mt = flatx([os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
+            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))])
 
 
 
@@ -101,18 +93,15 @@ x_dirs_mts = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for
 ## PRE TRAIN #################################################
 if opt.mode == 'pretrain':
     # create dataloader
-    dataset_tr = Data2D(opt, transform=transform_dict['A'], x_dirs=x_dirs_tr_tr)
+    dataset_tr = Data2D(opt, transform=transform_dict['A'], x_dirs=x_dirs_tr)
     dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
                     shuffle=True, drop_last=True, num_workers=opt.num_workers)
-
-    dataset_val = Data2D(opt, transform=transform_dict['A'], x_dirs=x_dirs_tr_val)
-    dataloader_val = DataLoader(dataset_val)
 
     # initialize model
     model = create_model(opt)
 
     # train
-    train(opt, model, dataloader_tr, dataloader_val) # opt.preload_model = True
+    train(opt, model, dataloader_tr) # opt.preload_model = True
 
 
 # ## DISTILL: work in progress ##################################
