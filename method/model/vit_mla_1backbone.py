@@ -205,7 +205,7 @@ class VIT_MLA_T(nn.Module):
                  drop_path_rate=0., hybrid_backbone=None, norm_layer=partial(nn.LayerNorm, eps=1e-6), norm_cfg=None,
                  pos_embed_interp=False, random_init=False, align_corners=False, mla_channels=256,
                  mla_index=(5, 11, 17, 23), **kwargs):
-        super(VIT_MLA, self).__init__(**kwargs)
+        super(VIT_MLA_T, self).__init__(**kwargs)
         self.model_name = model_name
         self.img_size = img_size
         self.patch_size = patch_size

@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from mmseg.models.segmentors.base import BaseSegmentor
 
-from .vit_mla_1backbone import VIT_MLA
+from .vit_mla_1backbone import VIT_MLA_T
 from .vit_mla_2head import VIT_MLAHead
 from .vit_mla_3auxihead import VIT_MLA_AUXIHead
 
@@ -29,7 +29,7 @@ class EncoderDecoder(BaseSegmentor):
         
         super(EncoderDecoder, self).__init__()
         
-        self.backbone = VIT_MLA(
+        self.backbone = VIT_MLA_T(
             img_size=opt.dim, patch_size=20,
             in_chans=3, embed_dim=1024, depth=opt.depth,
             num_heads=16, num_classes=opt.n_class,
