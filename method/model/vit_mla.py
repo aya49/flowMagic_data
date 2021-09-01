@@ -9,7 +9,7 @@ from .vit_mla_3auxihead import VIT_MLA_AUXIHead
 
 class EncoderDecoder(BaseSegmentor):
     
-    def __init__(self, opt,
+    def __init__(self, opt, init_path=None,
         
         # # VIT_MLA
         # img_size=200, patch_size=10, pos_embed_interp=True, drop_rate=0.,
@@ -32,11 +32,11 @@ class EncoderDecoder(BaseSegmentor):
         self.backbone = VIT_MLA(
             img_size=opt.dim, patch_size=20,
             in_chans=3, embed_dim=1024, depth=opt.depth,
-            num_heads=16, # num_classes=19,
+            num_heads=16, num_classes=opt.n_class,
             mlp_ratio=4., 
             qkv_bias=True, qk_scale=None,
-            pos_embed_interp=False, 
-            random_init=opt.mode == 'pretrain'
+            pos_embed_interp=False 
+            # random_init=opt.mode == 'pretrain'
         )
         
         self.decode_head = VIT_MLAHead(
