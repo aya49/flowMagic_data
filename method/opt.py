@@ -9,7 +9,7 @@ def parse_options():
     parser = argparse.ArgumentParser('argument for training')
 
     # train/test stage
-    parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'metatrain', 'metatest'])
+    parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'meta'])
 
     # model
     parser.add_argument('--model', type=str, default='setr', choices=model_names)
@@ -51,8 +51,8 @@ def parse_options():
     parser.add_argument('--shot_dir', type=str, default='./data/x_2Ddensity_euclidean_rankkmed', help='meta: directory with shot names as filenames')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='meta: number of support samples')
-    parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
-                        help='meta: test batch size')
+    parser.add_argument('--meta_batch_size', type=int, default=1, metavar='meta_batch_size',
+                        help='meta: batch size')
     
     parser.add_argument('-t', '--trial', type=str, default='1', help='experiment id')
 
@@ -82,32 +82,32 @@ def parse_options():
     opt.x_2D = delim_pars(opt.x_2D)
     
     # dirs
-    if 'meta' not in opt.mode:
-        if opt.mode == 'pretrain':
-            opt.model_name = '{}_trans:{}_lr:{}_decay:{}'.format(
-                opt.model, opt.learning_rate, opt.weight_decay, opt.transform)
-        if opt.mode == 'distill':
-            opt.model_t = get_teacher_name(opt.path_t)
-            opt.model_name = 's:{}_t:{}_trans:{}_d:{}_r:{}_a:{}_b:{}'.format(
-                opt.model, opt.model_t, opt.distill, 
-                opt.gamma, opt.alpha, opt.beta, opt.transform)
-        if opt.cosine:
-            opt.model_name = '{}_cosine'.format(opt.model_name)
-        if opt.adam:
-            opt.model_name = '{}_useAdam'.format(opt.model_name)
-        opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
+    opt.model_name = '{}_depth:{}_dim:{}_epoch:{}_trans:{}_lr:{}_decay:{}'.format(
+    opt.model, opt.depth, opt.dim, opt.epochs, opt.learning_rate, opt.weight_decay, opt.transform)
+    # if opt.mode == 'distill':
+    #     opt.model_t = get_teacher_name(opt.path_t)
+    #     opt.model_name = 's:{}_t:{}_trans:{}_d:{}_r:{}_a:{}_b:{}'.format(
+    #         opt.model, opt.model_t, opt.distill, 
+    #         opt.gamma, opt.alpha, opt.beta, opt.transform)
+    if opt.cosine:
+        opt.model_name = '{}_cosine'.format(opt.model_name)
+    if opt.adam:
+        opt.model_name = '{}_useAdam'.format(opt.model_name)
+    opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
 
+    if 'meta' not in opt.mode:
         opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
         os.makedirs(opt.tb_folder, exist_ok=True) # exist_ok only on python 3.2+
     else:
         opt.transform = 'B' # only aug size
-        opt.batch_size = opt.test_batch_size
+        opt.batch_size = opt.meta_batch_size
+
+        opt.model_name_meta = '{}_META_shots:{}'.format(opt.model_name, opt.n_shots)
 
         # shot_dir = ./data/x_2Ddensity_euclidean_rankkmed / pregnancy/07_FoxP3CD25_CD4Tcell / 1-5, 10, 15, 20
         opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots))
         
-    opt.model_dir = os.path.join(opt.model_dir, opt.mode)
-    opt.save_dir = os.path.join(opt.model_dir, opt.model_name)
-    os.makedirs(opt.save_dir, exist_ok=True)
+    opt.save_dir = opt.model_dir
+    os.makedirs(opt.model_dir, exist_ok=True)
 
     return opt

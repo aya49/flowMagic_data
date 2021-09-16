@@ -205,6 +205,22 @@ blscore <- Reduce(rbind, blscore)
 
 write.table(blscore, file=gzfile(paste0(scores_dir,"/2D/pixels_baseline.csv.gz")),
             row.names=FALSE, sep=",")
+
+# f1 scores; top=data, left=method, y=f1, x=scat|cpop; colour=mean_true_prop
+xlab <- "(data set) scatterplot > cell population"
+gtitle <- "scatterplot || cell population VS F1 (data set vs method)\n(colour=prop, fill=count)"
+gtheme <- ggplot2::theme(strip.background=ggplot2::element_rect(fill="black")) + 
+    ggplot2::theme(strip.text=ggplot2::element_text(color="white", face="bold")) +
+    ggplot2::theme(axis.text.x=ggplot2::element_text(angle=90, vjust = 0.5, hjust=1))
+g2f1 <- ggplot2::ggplot(blscore, ggplot2::aes(
+    x=reorder(scatpop, f1), y=f1)) + 
+    ggplot2::geom_boxplot(outlier.shape=NA) + 
+    ggplot2::facet_grid(method~dataset, scales="free_x") + 
+    ggplot2::xlab(xlab) + ggplot2::ggtitle(gtitle) + gtheme
+
+ggplot2::ggsave(filename=paste0(root,"/plots/2D/scores/f1_2D_baseline_200.png"), 
+                plot=g2f1, dpi=600, units="in", width=18, height=8)
+
 time_output(start)
 
 # plyr::l_ply(loop_ind, function(ii) { purrr::map(ii, function(i) { try({
