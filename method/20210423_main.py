@@ -7,7 +7,8 @@
 # for image classification: https://github.com/WangYueFt/rfs
 
 import os
-os.chdir("/home/aya43/flowMagic_data/src/method")
+# os.chdir("/home/aya43/flowMagic_data/src/method")
+os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 import sys
 import trace
