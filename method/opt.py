@@ -17,8 +17,8 @@ def parse_options():
     parser.add_argument('--model_path', type=str,  help='where to save/load model')
     parser.add_argument('--preload_model', action='store_false', 
                         help="preload model to continue training or as final model if file ends in \'_final.pth\')")
-    parser.add_arguemnt('--n_class', type=int, default=5, help='max number of classes')
-    parser.add_arguemnt('--depth', type=int, default=5, help='encoder depth')
+    parser.add_argument('--n_class', type=int, default=5, help='max number of classes')
+    parser.add_argument('--depth', type=int, default=5, help='encoder depth')
     parser.add_argument('--dim', type=int, default=200, help='side length of square image data')
 
     # data
