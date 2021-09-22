@@ -93,7 +93,7 @@ def parse_options():
     #         opt.gamma, opt.alpha, opt.beta, opt.transform)
     if opt.cosine:
         opt.model_name = '{}_cosine'.format(opt.model_name)
-    if opt.adam:
+    if True:
         opt.model_name = '{}_useAdam'.format(opt.model_name)
     opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
 
