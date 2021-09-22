@@ -99,9 +99,9 @@ def parse_options():
     opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
 
     if 'meta' not in opt.mode:
-        opt.model_folder = os.path.join(opt.model_path, opt.model_name)
         print(opt.model_name)
         print(opt.model_path)
+        opt.model_folder = os.path.join(opt.model_path, opt.model_name)
         os.makedirs(opt.model_folder, exist_ok=True) # exist_ok only on python 3.2+
     else:
         opt.transform = 'B' # only aug size
