@@ -36,7 +36,7 @@ def transform_B(x, y, s):
     return x, y
 
 
-transforms_dict = {
+transform_dict = {
     'A': transform_A,
     'B': transform_B
 }
