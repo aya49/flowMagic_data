@@ -4,6 +4,8 @@
 # !pip install torchviz
 # !MMCV_WITH_OPS=1 pip install mmcv-full==1.2.2 -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html #full version not for windows
 
+# for image classification: https://github.com/WangYueFt/rfs
+
 import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
 

@@ -19,7 +19,8 @@ folds <- c(
     "600/x_2Dcontour","600/x_2Dcontour_plot_",
     "600/x_2Ddenscat","x_2Ddenscat_plot_", # "x_2Dscatter", "x_2Ddensity",
     "600/x_2Ddiscrete", 
-    "y_vector_","600/y_2D" #, "y_2Dncells"
+    "y_vector_","600/y_2D", #, "y_2Dncells"
+    "temp_score"
 )
 plyr::l_ply(folds, function(y) plyr::l_ply(
     gs_xr(x2_folds,y), dir.create, recursive=TRUE, showWarnings=FALSE))
@@ -56,7 +57,7 @@ f <- flowCore::read.FCS("/mnt/FCS_local3/backup/Brinkman group/current/Alice/G69
 
 cat("out of",length(fe),"\n")
 loop_ind <- loop_ind_f(sample(fe), no_cores)
-blscore <- plyr::llply(loop_ind, function(ii) purrr::map(ii, function(i) {
+plyr::l_ply(loop_ind, function(ii) purrr::map(ii, function(i) {
     # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
     x2_file <- x2_files[i]
     # if (!overwrite & file.exists(gs_xr(x2_file,"y_2D"))) 
@@ -193,15 +194,16 @@ blscore <- plyr::llply(loop_ind, function(ii) purrr::map(ii, function(i) {
     file_split <- stringr::str_split(x2_file, "/")[[1]]
     fl <- length(file_split)
     cpops <- colnames(y2)[colnames(y2)!="other"]
-    cbind(
+    a <- cbind(
         data.table(method="2Dbaseline", dataset=file_split[fl-2], scatterplot=file_split[fl-1], cpop=cpops, train_no=0, fcs=file_split[fl], train=FALSE),
         f1_score(y2i, y2dp, silent=TRUE))
+    
+    save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
     
 }), .parallel=TRUE)
 time_output(start)
 
-blscore <- unlist(blscore)
-blscore <- Reduce(rbind, blscore)
+blscore <- Reduce(rbind, purrr::map(x2_files[fe], function(x) load(paste0(gs_xr(x,"temp_score"),".Rdata"))))
 
 write.table(blscore, file=gzfile(paste0(scores_dir,"/2D/pixels_baseline_600.csv.gz")),
             row.names=FALSE, sep=",")
