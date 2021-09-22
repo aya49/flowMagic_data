@@ -13,10 +13,14 @@ def parse_options():
     # train/test stage
     parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'meta'])
 
+    # root dir
+    # parser.add_argument('--root_dir', type=str, default='/home/aya43/flowMagic_data', help='root directory')
+    parser.add_argument('--root_dir', type=str, default='/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data', help='root directory')
+
     # model
     parser.add_argument('--model', type=str, default='setr', choices=model_names)
-    parser.add_argument('--model_dir', type=str, default='/home/aya43/flowMagic_data/model', help='model directory')
-    parser.add_argument('--model_path', type=str, default='/home/aya43/flowMagic_data/model', help='where to save/load model')
+    parser.add_argument('--model_dir', type=str, default='model', help='model directory')
+    parser.add_argument('--model_path', type=str, default='model', help='where to save/load model')
     parser.add_argument('--model_folder', type=str, default='', help='model folder; no need to specify')
     parser.add_argument('--preload_model', action='store_false', 
                         help="preload model to continue training or as final model if file ends in \'_final.pth\')")
@@ -26,13 +30,13 @@ def parse_options():
 
     # data
     
-    parser.add_argument('--data_dir', type=str, default='/home/aya43/flowMagic_data/data', help='data directory')
+    parser.add_argument('--data_dir', type=str, default='data', help='data directory')
     parser.add_argument('--x_2D', type=str, default='x_2Ddenscat, x_2Dcontour', help='delimited list of input folder names in data_dir')
-    parser.add_argument('--y_2D', type=str, default='y_2D', help='output folder in data_dir')
+    parser.add_argument('--y_2D', type=str, default='y_2D, x_2Ddiscrete, y_vector_', help='output folder in data_dir')
 
     parser.add_argument('--transform', type=str, default='A', choices=transform_names)
 
-    parser.add_argument('--tb_dir', type=str, default='/home/aya43/flowMagic_data/tensorboard', help='tensorboard directory')
+    parser.add_argument('--tb_dir', type=str, default='tensorboard', help='tensorboard directory')
     
     # optimization
     parser.add_argument('--save_freq', type=int, default=10, help='pretrain: save model every save_freq epochs')
@@ -51,7 +55,7 @@ def parse_options():
     
     # meta train/test
     parser.add_argument('--data_scat', type=str, default='pregnancy/07_FoxP3CD25_CD4Tcell', help='meta: dataset/scatterplot folders')
-    parser.add_argument('--shot_dir', type=str, default='/home/aya43/flowMagic_data/data/x_2Ddensity_euclidean_rankkmed', help='meta: directory with shot names as filenames')
+    parser.add_argument('--shot_dir', type=str, default='data/x_2Ddensity_euclidean_rankkmed', help='meta: directory with shot names as filenames')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='meta: number of support samples')
     parser.add_argument('--meta_batch_size', type=int, default=1, metavar='meta_batch_size',
@@ -83,8 +87,16 @@ def parse_options():
 
     opt.lr_decay_epochs = [int(dpi) for dpi in opt.lr_decay_epochs.split(",")]
     opt.x_2D = opt.x_2D.split(",")
+    opt.y_2D = opt.y_2D.split(",")
     
     # dirs
+    opt.model_dir = os.path.join(opt.root_dir, opt.model_dir)
+    opt.model_path = os.path.join(opt.root_dir, opt.model_path)
+    opt.model_folder = os.path.join(opt.root_dir, opt.model_folder)
+    opt.data_dir = os.path.join(opt.root_dir, opt.data_dir)
+    opt.tb_dir = os.path.join(opt.root_dir, opt.tb_dir)
+    opt.shot_dir = os.path.join(opt.root_dir, opt.shot_dir)
+    
     opt.model_name = '{}_depth:{}_dim:{}_epoch:{}_trans:{}_lr:{}_decay:{}'.format(
     opt.model, opt.depth, opt.dim, opt.epochs, opt.learning_rate, opt.weight_decay, opt.transform)
     # if opt.mode == 'distill':

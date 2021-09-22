@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-
+import pickle
 
 
 # dataset loader class: torch.utils.data.Dataset
@@ -59,8 +59,7 @@ class Data2D(Dataset):
                             x_den in x_dirs])]
         
         
-        y_files = None if opt.mode == 'metatest' else [x_file.replace(opt.x_2D[0], opt.y_2D) for 
-        x_file in x_files[0]]
+        y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files[0]]
 
         if (len(opt.x_2D) > 0):
             for x2i in range(1, len(opt.x_2D)):
@@ -74,6 +73,11 @@ class Data2D(Dataset):
         self.x_2D = opt.x_2D
         self.y_2D = opt.y_2D
 
+        # if self.mode == 'metatest':
+        #     self.ycell = list([])
+        #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]
+        #    self.yvector_files = [x_file.replace(opt.x_2D[0], opt.y_2D[2]) for x_file in x_files[0]]
+
         self.transform = transform
         self.n_class = opt.n_class
 
@@ -82,50 +86,84 @@ class Data2D(Dataset):
         self.x_files = x_files            # list of data set files: x_2D[0]
         self.y_files = y_files            # data set files: y_2D
 
-        # self.preload_data = opt.preload_data or len(x_files) < 200 # *** change
-        # if self.preload_data:
-        #     self.x = list([])
-        #     for i in range(len(x_files)):
-        #         xil = list([])
-        #         for x2i in range(len(x_2D)):
-        #             xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
-        #         xi = torch.cat(xil, dim=0).squeeze_()
-        #         self.x.append(xi)
-        #     
-        #     if not (opt.mode == 'meta' and meta == 'test'):
-        #         self.y = list([])
-        #         for i in range(len(y_files)):
-        #             yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
-        #             yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
-        #             for yc in range(torch.max(index).int()):
-        #                 yi[yc, yi0 == (yc + 1)] = 1
-        #             self.y.append(yi)
+        self.data_dir = opt.data_dir
+
+        # self.preload_data = opt.preload_data # or len(x_files) < 200 # *** change
+        if self.preload_data:
+            self.x = list([])
+            for i in range(len(x_files)):
+                xil = list([])
+                for x2i in range(len(self.x_2D)):
+                    xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
+                xi = torch.cat(xil, dim=0).squeeze_()
+                self.x.append(xi)
+            
+            self.y = list([])
+            for i in range(len(y_files)):
+                yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
+                yi = yi0.unsqueeze(0)
+                self.y.append(yi)
+            
+            # if 'meta' in self.mode:
+            #     self.ydiscrete = list([])
+            #     for i in range(len(self.ydiscrete_files)):
+            #         yi0 = torch.tensor(pd.read_csv(self.ydiscrete_files[i], header=None).values)
+            #         yi = yi0.squeeze()
+            #         self.ydiscrete.append(yi)
+            # 
+            #     self.yvector = list([])
+            #     for i in range(len(self.yvector_files)):
+            #         yi0 = torch.tensor(pd.read_csv(self.yvector_files[i], header=None).values)
+            #         yi = yi0.squeeze()
+            #         self.yvector.append(yi)
+
 
     def __len__(self):
         return len(self.x_files)
     
+    def pickle(self):
+        f = file(os.path.join(self.data_dir, 'data_temp'), 'wb')
+        pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    def unpickle(self):
+        with file(os.path.join(self.data_dir, 'data_temp'), 'rb') as f:
+            return pickle.load(f)
+    
     def __getitem__(self, i):
 
-        # if self.preload_data:
-        #     xi = self.x[i]
-        # else:
-        xil = list([])
-        for x2i in range(len(self.x_2D)):
-            xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
-        xi = torch.cat(xil, dim=0).squeeze_()
+        if self.preload_data:
+            xi = self.x[i]
+            yi = self.y[i]
+            # if 'meta' in self.mode:
+            #     ydi = self.ydiscrete[i]
+            #     yvi = self.yvector[i]
+
+        else:
+            xil = list([])
+            for x2i in range(len(self.x_2D)):
+                xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
+            xi = torch.cat(xil, dim=0).squeeze_()
+            
+            # if self.preload_data:
+            #     yi = self.y[i]
+            # else:
+            yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
+            yi = yi0.unsqueeze(0)
+            # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
+            # for yc in range(torch.max(i).int()):
+            #     yi[yc, yi0 == (yc + 1)] = 1
+
+            # if 'meta' in self.mode:
+            #     ydi0 = torch.tensor(pd.read_csv(self.ydiscrete_files[i], header=None).values)
+            #     ydi = ydi0.squeeze()
+            #
+            #     yvi0 = torch.tensor(pd.read_csv(self.yvector_files[i], header=None).values)
+            #     yvi = yvi0.squeeze()
         
-        if self.mode == 'metatest':
-            return xi, i, self.x_dirs[i]
-        
-        # if self.preload_data:
-        #     yi = self.y[i]
-        # else:
-        yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
-        yi = yi0.unsqueeze(0)
-        # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
-        # for yc in range(torch.max(i).int()):
-        #     yi[yc, yi0 == (yc + 1)] = 1
-        
+        # if 'meta' in self.mode:
+        #     return xi, yi, i, self.x_dirs[i], ydi, yvi
+
         if self.transform != None:
             xi, yi = self.transform(xi, yi, xi.shape[-1])
         yi = yi.squeeze()
