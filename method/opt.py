@@ -1,6 +1,8 @@
 import os
 import argparse
 
+import torch
+
 from transform import transform_names
 from model import model_names
 
@@ -78,8 +80,8 @@ def parse_options():
     opt.gpu = torch.cuda.is_available()
     opt.n_gpu = torch.cuda.device_count()
 
-    opt.lr_decay_epochs = [int(dpi) for dpi in delim_pars(opt.lr_decay_epochs)]
-    opt.x_2D = delim_pars(opt.x_2D)
+    opt.lr_decay_epochs = [int(dpi) for dpi in opt.lr_decay_epochs.split(",")]
+    opt.x_2D = opt.x_2D.split(",")
     
     # dirs
     opt.model_name = '{}_depth:{}_dim:{}_epoch:{}_trans:{}_lr:{}_decay:{}'.format(
