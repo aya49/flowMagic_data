@@ -67,6 +67,7 @@ class Data2D(Dataset):
         
         x_dirs = [os.path.dirname(x_file) for x_file in x_files]
 
+        self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
         self.meta = opt.meta
@@ -145,9 +146,6 @@ class Data2D(Dataset):
                 xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
             xi = torch.cat(xil, dim=0).squeeze_()
             
-            # if self.preload_data:
-            #     yi = self.y[i]
-            # else:
             yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
             yi = yi0.unsqueeze(0)
             # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
