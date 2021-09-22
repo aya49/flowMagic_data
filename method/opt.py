@@ -17,6 +17,7 @@ def parse_options():
     parser.add_argument('--model', type=str, default='setr', choices=model_names)
     parser.add_argument('--model_dir', type=str, default='./model', help='model directory')
     parser.add_argument('--model_path', type=str,  help='where to save/load model')
+    parser.add_argument('--model_folder', type=str, default='', help='model folder; no need to specify')
     parser.add_argument('--preload_model', action='store_false', 
                         help="preload model to continue training or as final model if file ends in \'_final.pth\')")
     parser.add_argument('--n_class', type=int, default=5, help='max number of classes')
@@ -98,8 +99,8 @@ def parse_options():
     opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
 
     if 'meta' not in opt.mode:
-        opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
-        os.makedirs(opt.tb_folder, exist_ok=True) # exist_ok only on python 3.2+
+        opt.model_folder = os.path.join(opt.model_path, opt.model_name)
+        os.makedirs(opt.model_folder, exist_ok=True) # exist_ok only on python 3.2+
     else:
         opt.transform = 'B' # only aug size
         opt.batch_size = opt.meta_batch_size
