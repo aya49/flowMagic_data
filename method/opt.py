@@ -26,13 +26,13 @@ def parse_options():
 
     # data
     
-    parser.add_argument('--data_dir', type=str, default='./data', help='data directory')
+    parser.add_argument('--data_dir', type=str, default='/home/aya43/flowMagic_data/data', help='data directory')
     parser.add_argument('--x_2D', type=str, default='x_2Ddenscat, x_2Dcontour', help='delimited list of input folder names in data_dir')
     parser.add_argument('--y_2D', type=str, default='y_2D', help='output folder in data_dir')
 
     parser.add_argument('--transform', type=str, default='A', choices=transform_names)
 
-    parser.add_argument('--tb_dir', type=str, default='./tensorboard', help='tensorboard directory')
+    parser.add_argument('--tb_dir', type=str, default='/home/aya43/flowMagic_data/tensorboard', help='tensorboard directory')
     
     # optimization
     parser.add_argument('--save_freq', type=int, default=10, help='pretrain: save model every save_freq epochs')
@@ -99,8 +99,6 @@ def parse_options():
     opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
 
     if 'meta' not in opt.mode:
-        print(opt.model_name)
-        print(opt.model_path)
         opt.model_folder = os.path.join(opt.model_path, opt.model_name)
         os.makedirs(opt.model_folder, exist_ok=True) # exist_ok only on python 3.2+
     else:

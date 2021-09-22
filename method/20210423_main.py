@@ -41,6 +41,8 @@ from dataset import Data2D
 from datasampler import ImbalancedDatasetSampler as ids
 from torch.utils.data import DataLoader
 
+import tensorboard_logger as tb_logger
+
 from model import create_model
 
 from train import train
@@ -52,7 +54,7 @@ print(torch.cuda.is_available())
 opt = parse_options()
 
 # tensorboard logger
-logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+# logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
 
 ## DATA: datasets x 4 ###########################################
