@@ -15,8 +15,8 @@ def parse_options():
 
     # model
     parser.add_argument('--model', type=str, default='setr', choices=model_names)
-    parser.add_argument('--model_dir', type=str, default='../../model', help='model directory')
-    parser.add_argument('--model_path', type=str, default='../../model', help='where to save/load model')
+    parser.add_argument('--model_dir', type=str, default='/home/aya43/flowMagic_data/model', help='model directory')
+    parser.add_argument('--model_path', type=str, default='/home/aya43/flowMagic_data/model', help='where to save/load model')
     parser.add_argument('--model_folder', type=str, default='', help='model folder; no need to specify')
     parser.add_argument('--preload_model', action='store_false', 
                         help="preload model to continue training or as final model if file ends in \'_final.pth\')")
