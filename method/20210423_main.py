@@ -7,8 +7,8 @@
 # for image classification: https://github.com/WangYueFt/rfs
 
 import os
-# os.chdir("/home/aya43/flowMagic_data/src/method")
-os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
+os.chdir("/home/aya43/flowMagic_data/src/method")
+# os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 import sys
 import trace
@@ -60,18 +60,22 @@ opt = parse_options()
 
 ## DATA: datasets x 4 ###########################################
 dss = os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))
+if dss[0] == '__MACOSX':
+    dss = dss[1:]
 
 # choose the data set 0-3 we use as the test data set
 for dti in range(4):
-    ds_tr = dss[-dti]
+    ds_tr = [x for i, x in enumerate(dss) if i!=dti]
     ds_mt = dss[dti]
 
     # train/metatrain data sets denscats
     flatx = lambda x: [i for row in x for i in row]
     x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr])
-    x_dirs_mt = flatx([os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
-                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))])
+    x_dirs_tr = [x for x in x_dirs_tr if '__MACOSX' not in x]
+    x_dirs_mt = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
+                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))]
+    x_dirs_mt = [x for x in x_dirs_mt if '__MACOSX' not in x]
 
 
     # ## DATA: scatterplot style x   #################################

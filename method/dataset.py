@@ -39,12 +39,13 @@ class Data2D(Dataset):
         if 'meta' in opt.mode: # x_dirs is just one directory
             x_files_ = [os.path.join(opt.x_2D[0], opt.data_scat, fn) for 
                             fn in os.listdir(opt.shot_dir)]
+            x_files_ = [x for x in x_files_ if '__MACOSX' not in x]
                     
             if opt.mode == 'metatest':
                 # x_files = list of test denscat samples of 1 scatterplot
                 x_files = [os.path.join(opt.x_2D[0], opt.data_scat, fn) for 
                             fn in os.listdir(os.path.join(opt.x_2D[0], opt.data_scat))]
-                x_files = [x for x in x_files if x not in x_files_]
+                x_files = [x for x in x_files if x not in x_files_ and '__MACOSX' not in x]
             else:
                 # x_files = list of reference denscat samples of 1 scatterpot
                 x_files = x_files_
@@ -54,9 +55,9 @@ class Data2D(Dataset):
                 x_dirs = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
                             sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
                             ds in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))])
-            x_files = [flatx([[os.path.join(x_den, f) for 
-                            f in os.listdir(x_den)] for 
-                            x_den in x_dirs])]
+                x_dirs = [x for x in x_dirs if '__MACOSX' not in x]
+            x_files = [flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs])]
+            x_files = [x for x in x_files if '__MACOSX' not in x]
         
         
         y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files[0]]
