@@ -14,8 +14,8 @@ def parse_options():
     parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'meta'])
 
     # root dir
-    # parser.add_argument('--root_dir', type=str, default='/home/aya43/flowMagic_data', help='root directory')
-    parser.add_argument('--root_dir', type=str, default='/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data', help='root directory')
+    parser.add_argument('--root_dir', type=str, default='/home/aya43/flowMagic_data', help='root directory')
+    # parser.add_argument('--root_dir', type=str, default='/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data', help='root directory')
 
     # model
     parser.add_argument('--model', type=str, default='unet')#, choices=model_names)
