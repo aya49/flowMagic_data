@@ -1,8 +1,8 @@
-from .vit_mla import model_setr
+# from .vit_mla import model_setr
 from .unet import model_unet
 
 model_dict = {
-    'setr': model_setr,
+    'setr': None, #model_setr,
     'unet': model_unet
 }
 

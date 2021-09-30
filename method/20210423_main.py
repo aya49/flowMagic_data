@@ -101,8 +101,9 @@ for dti in range(4):
     if opt.mode == 'pretrain':
         # create dataloader
         dataset_tr = Data2D(opt, x_dirs=x_dirs_tr)
-        dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
-                        shuffle=True, drop_last=True, num_workers=opt.num_workers)
+        dataloader_tr = DataLoader(dataset=dataset_tr, sampler=ids(dataset_tr), 
+                        batch_size=opt.batch_size, # shuffle=True, 
+                        drop_last=True, num_workers=opt.num_workers)
 
         # initialize model
         model = create_model(opt)
