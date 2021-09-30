@@ -25,7 +25,9 @@ import torch.nn.functional as FN
 from torch.utils.data import DataLoader
 
 from torchviz import make_dot
-import segmentation_models_pytorch as smp
+
+from mmseg.apis import init_segmentor, inference_segmentor
+from mmseg.models.segmentors import base
 
 import time
 import random
