@@ -31,8 +31,8 @@ def parse_options():
     # data
     
     parser.add_argument('--data_dir', type=str, default='data', help='data directory')
-    parser.add_argument('--x_2D', type=str, default='x_2Ddenscat, x_2Dcontour', help='delimited list of input folder names in data_dir')
-    parser.add_argument('--y_2D', type=str, default='y_2D, x_2Ddiscrete, y_vector_', help='output folder in data_dir')
+    parser.add_argument('--x_2D', type=str, default='x_2Ddenscat,x_2Dcontour', help='delimited list of input folder names in data_dir')
+    parser.add_argument('--y_2D', type=str, default='y_2D,x_2Ddiscrete,y_vector_', help='output folder in data_dir')
     parser.add_argument('--preload_data', action='store_true', help='preload data')
 
 
@@ -47,7 +47,7 @@ def parse_options():
     parser.add_argument('--epochs', type=int, default=100, help='number of training epochs')
 
     parser.add_argument('--learning_rate', type=float, default=0.05, help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='60, 80', help='delimited list of where to decay lr')
+    parser.add_argument('--lr_decay_epochs', type=str, default='60,80', help='delimited list of where to decay lr')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1, help='decay rate for learning rate')
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')

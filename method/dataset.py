@@ -4,6 +4,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from transform import transform_dict
+
 import pickle
 
 
@@ -56,17 +58,16 @@ class Data2D(Dataset):
                             sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
                             ds in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))])
                 x_dirs = [x for x in x_dirs if '__MACOSX' not in x]
-            x_files = [flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs])]
+            x_files = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs])])
             x_files = [x for x in x_files if '__MACOSX' not in x]
         
-        
-        y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files[0]]
+        x_dirs = [os.path.dirname(x_file) for x_file in x_files]
+        y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files]
 
-        if (len(opt.x_2D) > 0):
+        if len(opt.x_2D) > 1:
+            x_files = [x_files]
             for x2i in range(1, len(opt.x_2D)):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
-        
-        x_dirs = [os.path.dirname(x_file) for x_file in x_files]
 
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
@@ -92,19 +93,20 @@ class Data2D(Dataset):
 
         # self.preload_data = opt.preload_data # or len(x_files) < 200 # *** change
         if self.preload_data:
-            self.x = list([])
-            for i in range(len(x_files)):
-                xil = list([])
+            self.x = []
+            for i in range(len(self.x_files[0])):
+                xil = []
                 for x2i in range(len(self.x_2D)):
-                    xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
-                xi = torch.cat(xil, dim=0).squeeze_()
-                self.x.append(xi)
+                    xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
+                xil = torch.stack(xil)
+                self.x.append(xil)
+            self.x = torch.stack(self.x)
             
-            self.y = list([])
-            for i in range(len(y_files)):
-                yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
-                yi = yi0.unsqueeze(0)
+            self.y = []
+            for i in range(len(self.y_files)):
+                yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                 self.y.append(yi)
+            self.y = torch.stack(self.y)
             
             # if 'meta' in self.mode:
             #     self.ydiscrete = list([])
@@ -142,13 +144,13 @@ class Data2D(Dataset):
             #     yvi = self.yvector[i]
 
         else:
-            xil = list([])
+            xi = []
             for x2i in range(len(self.x_2D)):
-                xil.append(torch.tensor(pd.read_csv(self.x_files[i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values).unsqueeze_(0))
-            xi = torch.cat(xil, dim=0).squeeze_()
+                xi.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
+            xi = torch.stack(xi)
+            # xi = torch.cat(xil, dim=0).squeeze_()
             
-            yi0 = torch.tensor(pd.read_csv(self.y_files[i], header=None).values)
-            yi = yi0.unsqueeze(0)
+            yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
             # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
             # for yc in range(torch.max(i).int()):
             #     yi[yc, yi0 == (yc + 1)] = 1
@@ -164,7 +166,8 @@ class Data2D(Dataset):
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
 
         if self.transform != None:
-            xi, yi = self.transform(xi, yi, xi.shape[-1])
+            tr = transform_dict[self.transform]
+            xi, yi = tr(xi, yi, xi.shape[-1])
         yi = yi.squeeze()
         
         return xi, yi, i, self.x_dirs[i]

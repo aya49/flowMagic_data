@@ -1,10 +1,13 @@
 import torchvision.transforms as tr
 import torchvision.transforms.functional as tf
 
+import random
+
+ 
 # for training with training samples
-def transform_A(x, y, s=None):
+def transform_A(x, y):
     # Random rotation
-    deg = 90 * (tr.RandomRotation((0,359)).get_params() // 90)
+    deg = 90 * (tr.RandomRotation.get_params(degrees=(0,359)) // 90)
     if deg != 0:
         x = tf.rotate(x, deg)
         y = tf.rotate(y, deg)
@@ -20,16 +23,16 @@ def transform_A(x, y, s=None):
         y = tf.vflip(y)
     
     # Random resize
-    params = tr.RandomResizedCrop(size=s, scale=(0.8, 1.0), ratio=(0.75, 1.33)).get_params()
+    params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
     y = tf.crop(x, *params)
     
     return x, y
 
 # for meta training with reference samples
-def transform_B(x, y, s):
+def transform_B(x, y):
     # Random resize
-    params = tr.RandomResizedCrop(size=s, scale=(0.8, 1.0), ratio=(0.75, 1.33)).get_params()
+    params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
     y = tf.crop(x, *params)
 
