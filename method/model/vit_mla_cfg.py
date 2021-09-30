@@ -1,4 +1,3 @@
-_base_ = '../_base_/models/setr_mla.py'
 model = dict(
     type='EncoderDecoder',
     backbone=dict(
