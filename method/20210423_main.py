@@ -100,7 +100,7 @@ for dti in range(4):
     ## PRE TRAIN #################################################
     if opt.mode == 'pretrain':
         # create dataloader
-        dataset_tr = Data2D(opt, transform=transform_dict['A'], x_dirs=x_dirs_tr)
+        dataset_tr = Data2D(opt, x_dirs=x_dirs_tr)
         dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
                         shuffle=True, drop_last=True, num_workers=opt.num_workers)
 

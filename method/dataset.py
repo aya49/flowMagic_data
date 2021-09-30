@@ -16,7 +16,7 @@ import pickle
 # our data set is a dict {'image': image, 'landmarks': landmarks} + optional argument transform for any preprocessing
 class Data2D(Dataset):
   
-    def __init__(self, opt, transform=None, x_dirs=None):
+    def __init__(self, opt, x_dirs=None):
         """
         args:
         data_dir: 200 * 200 dataset directory (file format: .csv.gz) containing the following folders:
@@ -80,7 +80,7 @@ class Data2D(Dataset):
         #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]
         #    self.yvector_files = [x_file.replace(opt.x_2D[0], opt.y_2D[2]) for x_file in x_files[0]]
 
-        self.transform = transform
+        self.transform = opt.transform
         self.n_class = opt.n_class
 
         # these could be  @property; def x_dirs ...
