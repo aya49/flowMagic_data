@@ -16,7 +16,7 @@ def transform_A(x, y):
     if random.random() > 0.5:
         x = tf.hflip(x)
         y = tf.hflip(y)
-
+    
     # Random vertical flipping
     if random.random() > 0.5:
         x = tf.vflip(x)

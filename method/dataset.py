@@ -72,7 +72,6 @@ class Data2D(Dataset):
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
-        self.meta = opt.meta
         self.x_2D = opt.x_2D
         self.y_2D = opt.y_2D
 
@@ -167,7 +166,7 @@ class Data2D(Dataset):
 
         if self.transform != None:
             tr = transform_dict[self.transform]
-            xi, yi = tr(xi, yi, xi.shape[-1])
+            xi, yi = tr(xi, yi)
         yi = yi.squeeze()
         
         return xi, yi, i, self.x_dirs[i]
