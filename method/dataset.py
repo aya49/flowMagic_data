@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 
 import torch
 from torch.utils.data import Dataset
@@ -64,6 +65,9 @@ class Data2D(Dataset):
             elif x_dirs is None:
                 x_dirs = [os.path.dirname(x_file) for x_file in x_files]
         
+        # factorize data/scatterplot
+        x_dirs_unique, x_dirs_factor = np.unique(np.array(x_dirs), return_inverse=True)
+
         y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files]
 
         if len(opt.x_2D) > 1:
@@ -87,6 +91,7 @@ class Data2D(Dataset):
 
         # these could be  @property; def x_dirs ...
         self.x_dirs = x_dirs              # scatterplot ("class")
+        self.x_dirs_factor = x_dirs_factor
         self.x_files = x_files            # list of data set files: x_2D[0]
         self.y_files = y_files            # data set files: y_2D
 
@@ -165,6 +170,9 @@ class Data2D(Dataset):
         
         # if 'meta' in self.mode:
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
+
+        # experiment: add data/scat to data
+        xi[0][0][0] = self.x_dirs_factor[i]
 
         if self.transform != None:
             tr = transform_dict[self.transform]
