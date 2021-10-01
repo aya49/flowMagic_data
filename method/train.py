@@ -7,14 +7,14 @@ import torch.backends.cudnn as cudnn
 
 import tensorboard_logger as tb_logger
 
-import model.lovasz_losses as ll
+from loss import lovasz_softmax as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
 
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training
 
-    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    logger = tb_logger.Logger(logdir=opt.tb_dir, flush_secs=2)
 
     set_cuda = torch.cuda.is_available()
 
