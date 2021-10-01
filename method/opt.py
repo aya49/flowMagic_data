@@ -29,7 +29,7 @@ def parse_options():
     parser.add_argument('--dim', type=int, default=200, help='side length of square image data')
 
     # data
-    
+    parser.add_argument('--device', type=str, default='', help='no need to specify')
     parser.add_argument('--data_dir', type=str, default='data', help='data directory')
     parser.add_argument('--x_2D', type=str, default='x_2Ddenscat,x_2Dcontour', help='delimited list of input folder names in data_dir')
     parser.add_argument('--y_2D', type=str, default='y_2D,x_2Ddiscrete,y_vector_', help='output folder in data_dir')
@@ -42,6 +42,7 @@ def parse_options():
     
     # optimization
     parser.add_argument('--save_freq', type=int, default=10, help='pretrain: save model every save_freq epochs')
+    parser.add_argument('--print_freq', type=int, default=10, help='pretrain: print model score every print_freq epochs')
     parser.add_argument('--num_workers', type=int, default=4, help='number of workers to use')
     parser.add_argument('--batch_size', type=int, default=64, help='pretrain: batch size')
     parser.add_argument('--epochs', type=int, default=100, help='number of training epochs')
@@ -126,5 +127,10 @@ def parse_options():
         
     opt.save_dir = opt.model_dir
     os.makedirs(opt.model_dir, exist_ok=True)
+
+    if torch.cuda.is_available():
+        opt.device = torch.device('cpu')
+    else:
+        opt.device = torch.device('cuda:0')
 
     return opt

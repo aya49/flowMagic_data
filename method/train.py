@@ -183,9 +183,9 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         # regular saving
         if epoch % opt.save_freq == 0:
             print('==> Saving...')
-            save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
+            save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
 
     # save the last model
-    save_file = os.path.join(opt.save_folder, '{}_last.pth'.format(opt.model))
+    save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)

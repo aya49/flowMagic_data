@@ -30,5 +30,7 @@ model = dict(
         num_classes=5, ###
         align_corners=False,
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
-    )
+    ),
+    train_cfg=dict(crop_size=200),
+    test_cfg=dict(mode='slide', crop_size=200, stride=170)
 )

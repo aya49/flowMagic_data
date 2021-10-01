@@ -6,7 +6,6 @@
 
 # for image classification: https://github.com/WangYueFt/rfs
 
-from method.transform import transform_B
 import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
@@ -27,10 +26,7 @@ import torch.nn as nn
 import torch.nn.functional as FN
 from torch.utils.data import DataLoader
 
-from torchviz import make_dot
-
-from mmseg.apis import init_segmentor, inference_segmentor
-from mmseg.models.segmentors import base
+# from torchviz import make_dot
 
 import time
 import random

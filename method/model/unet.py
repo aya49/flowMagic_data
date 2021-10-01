@@ -1,12 +1,14 @@
-import segmentation_models_pytorch as smp
+import torch
+import mmcv
+from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
 
-def model_unet(opt):
-    model = smp.Unet(
-        encoder_name="resnet18",        # encoder
-        encoder_depth=opt.depth,
-        # encoder_weights="None",       # random initialization
-        in_channels=len(opt.x_2D),      # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-        classes=opt.n_class,            # model output channels (number of classes in your dataset)
-    )
+def model_setr(opts):
+    cfg = mmcv.Config.fromfile('unet_cfg.py')
+    # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/vit_mla_cfg.py')
+    
+    if torch.cuda.is_available():
+        model = init_segmentor(cfg, device='cuda:0')
+    else:
+        model = init_segmentor(cfg, device='cpu')
 
     return model
