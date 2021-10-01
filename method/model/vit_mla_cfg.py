@@ -22,7 +22,6 @@ model = dict(
     ),
     decode_head=dict(
         type='SETRMLAHead',
-        img_size=(200, 200), #
         in_channels=(128, 128, 128, 128), # 256
         channels=256, # 512
         in_index=(0, 1, 2, 3),
