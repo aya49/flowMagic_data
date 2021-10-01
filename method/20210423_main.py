@@ -115,12 +115,12 @@ for dti in range(4):
         # create dataloaders
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                          batch_size=opt.batch_size, # shuffle=True, 
-                          drop_last=True, num_workers=opt.num_workers)
+                            batch_size=opt.batch_size, # shuffle=True, 
+                            drop_last=True, num_workers=opt.num_workers)
         dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
         dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                          batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
-                          num_workers=opt.num_workers // 2)
+                            batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                            num_workers=opt.num_workers // 2)
 
         # initialize model
         model = create_model(opt)
