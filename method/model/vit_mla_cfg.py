@@ -29,6 +29,6 @@ model = dict(
         mla_channels=64, # 128
         num_classes=5, ###
         align_corners=False,
-        loss_decode=dict(type='LovaszLoss', loss_type='multi_class')
+        loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
     )
 )
