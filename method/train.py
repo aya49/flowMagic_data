@@ -125,7 +125,6 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
 
 
 def train(opt, model, train_loader, val_loader, model_t=None):
-    criterion = nn.CrossEntropyLoss()
 
     # optimizer
     mpar = model.parameters()
@@ -135,7 +134,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
         model = model.cuda()
-        criterion.cuda()
+        # ll.cuda()
         
         cudnn.benchmark = True
 
@@ -156,7 +155,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     ckpts.sort()
     print(ckpts)
     if 'ckpt' in ckpts[-1]:
-        model, optimizer, epoch_ = load_checkpoint(model, optimizer, os.path.join(opt.model_folder, ckpts[-1]))
+        model, optimizer, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
     print(epoch_)
 
     for epoch in range(epoch_ + 1, opt.epochs + 1):
@@ -168,14 +167,14 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         
         print("==> training")
         time1 = time.time()
-        train_acc, train_loss = train_epoch(epoch, train_loader, model, criterion, optimizer, opt)
+        train_acc, train_loss = train_epoch(epoch, train_loader, model, ll, optimizer, opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
-        test_acc, test_acc_top5, test_loss = validate(val_loader, model, criterion, opt, ll.iou)
+        test_acc, test_acc_top5, test_loss = validate(val_loader, model, ll, opt, ll.iou)
 
         logger.log_value('test_acc', test_acc, epoch)
         logger.log_value('test_acc_top5', test_acc_top5, epoch)

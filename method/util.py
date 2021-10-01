@@ -8,6 +8,11 @@ def save_checkpoint(model, optimizer, save_path, epoch, n_gpu=1):
         'epoch': epoch
     }, save_path)
 
+def load_checkpoint(model, save_path):
+    model_state = torch.load(save_path)
+    model.load_state_dict(model_state['model'])
+    return model, model_state['optimizer'], model_state['epoch']
+
 def get_teacher_name(model_path):
     """parse to get teacher model name"""
     segments = model_path.split('/')[-2].split('_')
