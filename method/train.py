@@ -14,22 +14,20 @@ from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjus
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training
 
-    logger = tb_logger.Logger(logdir=opt.tb_dir, flush_secs=2)
-
     set_cuda = torch.cuda.is_available()
 
-    # set modules as train()
-    if opt.mode == 'distill':
-        # set teacher as eval()
-        model_t = model[-1]
-        model_t.train()
-        model_t.eval()
+    # # set modules as train()
+    # if opt.mode == 'distill':
+    #     # set teacher as eval()
+    #     model_t = model[-1]
+    #     model_t.train()
+    #     model_t.eval()
 
-        model = model[0]
+    #     model = model[0]
 
-        criterion_cls = criterion[0]
-        criterion_div = criterion[1]
-        criterion_kd = criterion[2]
+    #     criterion_cls = criterion[0]
+    #     criterion_div = criterion[1]
+    #     criterion_kd = criterion[2]
     
     model.train()
 
@@ -142,7 +140,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         cudnn.benchmark = True
 
     # tensorboard
-    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    logger = tb_logger.Logger(logdir=opt.tb_dir, flush_secs=2)
 
     # set cosine annealing scheduler
     if opt.cosine:
@@ -151,14 +149,14 @@ def train(opt, model, train_loader, val_loader, model_t=None):
 
     # train
     epoch_ = 0
-    save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
+    save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
     save_checkpoint(model, optimizer, save_file, epoch_)
 
-    ckpts = os.listdir(opt.save_folder)
+    ckpts = os.listdir(opt.model_folder)
     ckpts.sort()
     print(ckpts)
     if 'ckpt' in ckpts[-1]:
-        model, optimizer, epoch_ = load_checkpoint(model, optimizer, os.path.join(opt.save_folder, ckpts[-1]))
+        model, optimizer, epoch_ = load_checkpoint(model, optimizer, os.path.join(opt.model_folder, ckpts[-1]))
     print(epoch_)
 
     for epoch in range(epoch_ + 1, opt.epochs + 1):

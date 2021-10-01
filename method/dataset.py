@@ -16,7 +16,7 @@ import pickle
 # our data set is a dict {'image': image, 'landmarks': landmarks} + optional argument transform for any preprocessing
 class Data2D(Dataset):
   
-    def __init__(self, opt, x_dirs=None):
+    def __init__(self, opt, x_dirs=None, x_files=None):
         """
         args:
         data_dir: 200 * 200 dataset directory (file format: .csv.gz) containing the following folders:
@@ -53,15 +53,17 @@ class Data2D(Dataset):
                 x_files = x_files_
             
         else:
-            if x_dirs is None:
-                x_dirs = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
-                            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
-                            ds in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))])
-                x_dirs = [x for x in x_dirs if '__MACOSX' not in x]
-            x_files = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs])])
-            x_files = [x for x in x_files if '__MACOSX' not in x]
+            if x_files is None:
+                if x_dirs is None:
+                    x_dirs = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
+                                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
+                                ds in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))])
+                    x_dirs = [x for x in x_dirs if '__MACOSX' not in x]
+                x_files = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs])])
+                x_files = [x for x in x_files if '__MACOSX' not in x]
+            elif x_dirs is None:
+                x_dirs = [os.path.dirname(x_file) for x_file in x_files]
         
-        x_dirs = [os.path.dirname(x_file) for x_file in x_files]
         y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files]
 
         if len(opt.x_2D) > 1:
