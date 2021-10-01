@@ -6,6 +6,7 @@
 
 # for image classification: https://github.com/WangYueFt/rfs
 
+from method.transform import transform_B
 import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
@@ -15,6 +16,8 @@ import trace
 
 import pandas as pd
 import numpy as np
+
+import random
 
 import torch
 from torch.utils.data import Dataset
@@ -101,17 +104,29 @@ for dti in range(4):
 
     ## PRE TRAIN #################################################
     if opt.mode == 'pretrain':
-        # create dataloader
-        dataset_tr = Data2D(opt, x_dirs=x_dirs_tr)
-        dataloader_tr = DataLoader(dataset=dataset_tr, sampler=ids(dataset_tr), 
-                        batch_size=opt.batch_size, # shuffle=True, 
-                        drop_last=True, num_workers=opt.num_workers)
+        # split pretrain data set into train and validation (for accuracy)
+        x_files_tr = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])])
+        x_files_tr = [x for x in x_files_tr if '__MACOSX' not in x]
+
+        x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
+        x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
+        x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
+
+        # create dataloaders
+        dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
+        dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                          batch_size=opt.batch_size, # shuffle=True, 
+                          drop_last=True, num_workers=opt.num_workers)
+        dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
+        dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                          batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                          num_workers=opt.num_workers // 2)
 
         # initialize model
         model = create_model(opt)
 
         # train
-        train(opt, model, dataloader_tr) # opt.preload_model = True
+        train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
 
     # ## DISTILL: work in progress ##################################
