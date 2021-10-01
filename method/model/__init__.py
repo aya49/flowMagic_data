@@ -1,4 +1,4 @@
-from .vit_mla_cfg import model_setr
+from .vit_mla import model_setr
 from .unet import model_unet
 
 model_dict = {
