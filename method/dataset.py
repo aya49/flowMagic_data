@@ -140,6 +140,9 @@ class Data2D(Dataset):
         with file(os.path.join(self.data_dir, 'data_temp'), 'rb') as f:
             return pickle.load(f)
     
+    def get_labels(self):
+        return self.x_dirs_factor
+    
     def __getitem__(self, i):
 
         if self.preload_data:
