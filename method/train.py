@@ -39,10 +39,10 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     end = time.time()
     for enum in enumerate(train_loader):
         data_time.update(time.time() - end)
-        inp, target, idx, _ = enum
+        inp, target = enum
         print(inp.size)
         print(target.size)
-        print(idx)
+        
 
         # if opt.mode == 'distill':
         #     inp, target, idx, _ = enum
