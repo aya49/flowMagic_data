@@ -42,7 +42,7 @@ from transform import transform_dict
 from dataset import Data2D
 # from datasampler import ImbalancedDatasetSampler as ids
 from torchsampler import ImbalancedDatasetSampler as ids
-# pip install pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
+# pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 from torch.utils.data import DataLoader
 
 import tensorboard_logger as tb_logger
@@ -112,8 +112,9 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 
 # create dataloaders
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                    batch_size=opt.batch_size, # shuffle=True, 
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
+                    sampler=ids(dataset_tr_t), 
+                    batch_size=opt.batch_size,# shuffle=True, 
                     drop_last=True, num_workers=opt.num_workers)
 dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,

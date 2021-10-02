@@ -9,7 +9,53 @@ import tensorboard_logger as tb_logger
 
 from loss import lovasz_softmax as ll
 
-from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
+from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
+
+
+def validate(val_loader, model, criterion, opt, accuracy):
+    """One epoch validation"""
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+
+    # switch to evaluate mode
+    model.eval()
+
+    with torch.no_grad():
+        end = time.time()
+        for idx, (inp, target, i, _) in enumerate(val_loader):
+
+            inp = inp.float()
+            if torch.cuda.is_available():
+                inp = inp.cuda()
+                target = target.cuda()
+
+            # compute output
+            output = model(inp)
+            loss = criterion(output, target)
+
+            # measure accuracy and record loss
+            acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            losses.update(loss.item(), inp.size(0))
+            top1.update(acc1[0], inp.size(0))
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if idx % opt.print_freq == 0:
+                print('Test: [{0}/{1}]\t'
+                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                      'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                      'Acc@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                       idx, len(val_loader), batch_time=batch_time, loss=losses,
+                       top1=top1))
+
+        print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+
+    return top1.avg, losses.avg
+
 
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training
@@ -37,12 +83,8 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     top1 = AverageMeter()
 
     end = time.time()
-    for enum in enumerate(train_loader):
+    for idx, (inp, target, i, _) in enumerate(train_loader):
         data_time.update(time.time() - end)
-        inp, target = enum
-        print(inp)
-        print(target)
-        
 
         # if opt.mode == 'distill':
         #     inp, target, idx, _ = enum
