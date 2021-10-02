@@ -51,7 +51,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         else:
             inp, target, idx, _ = enum
         
-        inp = inp.float()
+        # inp = inp.float()
         inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
 
