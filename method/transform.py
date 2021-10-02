@@ -3,6 +3,7 @@ import torchvision.transforms.functional as tf
 
 import random
 
+tresize = tr.Compose([tr.Resize(200)])
  
 # for training with training samples
 def transform_A(x, y):
@@ -26,6 +27,9 @@ def transform_A(x, y):
     params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
     y = tf.crop(y, *params)
+
+    x = tresize(x)
+    y = tresize(y)
     
     return x, y
 
@@ -35,6 +39,9 @@ def transform_B(x, y):
     params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
     y = tf.crop(y, *params)
+
+    x = tresize(x)
+    y = tresize(y)
 
     return x, y
 
