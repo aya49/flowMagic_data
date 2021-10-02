@@ -11,8 +11,6 @@ from loss import lovasz_softmax as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
 
-import pdb
-
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training
 
@@ -41,9 +39,10 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     end = time.time()
     for enum in enumerate(train_loader):
         data_time.update(time.time() - end)
-
-        pdb.set_trace()
         inp, target, idx, _ = enum
+        print(inp.size)
+        print(target.size)
+        print(idx)
 
         # if opt.mode == 'distill':
         #     inp, target, idx, _ = enum
