@@ -11,6 +11,8 @@ from loss import lovasz_softmax as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, validate, adjust_learning_rate
 
+import pdb
+
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     # One epoch training
 
@@ -40,16 +42,19 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     for enum in enumerate(train_loader):
         data_time.update(time.time() - end)
 
-        if opt.mode == 'distill':
-            idx, data = enum
-            if opt.distill in ['contrast']:
-                inp, target, index, contrast_idx = data
-                contrast_idx = contrast_idx.cuda() if set_cuda else contrast_idx
-            else:
-                inp, target, index = data
-            index = index.cuda() if set_cuda else index
-        else:
-            inp, target, idx, _ = enum
+        pdb.set_trace()
+        inp, target, idx, _ = enum
+
+        # if opt.mode == 'distill':
+        #     inp, target, idx, _ = enum
+        #     if opt.distill in ['contrast']:
+        #         inp, target, index, contrast_idx = enum
+        #         contrast_idx = contrast_idx.cuda() if set_cuda else contrast_idx
+        #     else:
+        #         inp, target, idx, _ = data
+        #     index = index.cuda() if set_cuda else index
+        # else:
+        #     inp, target, idx, _ = enum
         
         # inp = inp.float()
         inp = inp.cuda() if set_cuda else inp
