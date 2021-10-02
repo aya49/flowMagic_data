@@ -133,10 +133,10 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
-        model = model.cuda()
+        # model = model.cuda()
         # ll.cuda()
         
-        cudnn.benchmark = True
+        torch.backends.cudnn.benchmark = True
 
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_dir, flush_secs=2)
@@ -154,7 +154,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     ckpts = os.listdir(opt.model_folder)
     ckpts.sort()
     print(ckpts)
-    if 'ckpt' in ckpts[-1]:
+    if 'ckpt' in ckpts[-1] and '000' not in ckpts[-1]:
         model, optimizer, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
     print(epoch_)
 

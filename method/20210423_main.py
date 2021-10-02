@@ -65,18 +65,18 @@ if dss[0] == '__MACOSX':
     dss = dss[1:]
 
 # choose the data set 0-3 we use as the test data set
-for dti in range(4):
-    ds_tr = [x for i, x in enumerate(dss) if i!=dti]
-    ds_mt = dss[dti]
+dti = 3## for dti in range(4):
+ds_tr = [x for i, x in enumerate(dss) if i!=dti]
+ds_mt = dss[dti]
 
-    # train/metatrain data sets denscats
-    flatx = lambda x: [i for row in x for i in row]
-    x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
-                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr])
-    x_dirs_tr = [x for x in x_dirs_tr if '__MACOSX' not in x]
-    x_dirs_mt = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
-                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))]
-    x_dirs_mt = [x for x in x_dirs_mt if '__MACOSX' not in x]
+# train/metatrain data sets denscats
+flatx = lambda x: [i for row in x for i in row]
+x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
+            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr])
+x_dirs_tr = [x for x in x_dirs_tr if '__MACOSX' not in x]
+x_dirs_mt = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
+            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))]
+x_dirs_mt = [x for x in x_dirs_mt if '__MACOSX' not in x]
 
 
     # ## DATA: scatterplot style x   #################################
@@ -99,30 +99,30 @@ for dti in range(4):
 
 
     ## PRE TRAIN #################################################
-    if opt.mode == 'pretrain':
-        # split pretrain data set into train and validation (for accuracy)
-        x_files_tr = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])])
-        x_files_tr = [x for x in x_files_tr if '__MACOSX' not in x]
+    ## if opt.mode == 'pretrain':
+# split pretrain data set into train and validation (for accuracy)
+x_files_tr = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])])
+x_files_tr = [x for x in x_files_tr if '__MACOSX' not in x]
 
-        x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
-        x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
-        x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
+x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
+x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
+x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
 
-        # create dataloaders
-        dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-        dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                            batch_size=opt.batch_size, # shuffle=True, 
-                            drop_last=True, num_workers=opt.num_workers)
-        dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
-        dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                            batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
-                            num_workers=opt.num_workers // 2)
+# create dataloaders
+dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                    batch_size=opt.batch_size, # shuffle=True, 
+                    drop_last=True, num_workers=opt.num_workers)
+dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
+dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                    batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                    num_workers=opt.num_workers // 2)
 
-        # initialize model
-        model = create_model(opt)
+# initialize model
+model = create_model(opt)
 
-        # train
-        train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
+# train
+train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
 
     # ## DISTILL: work in progress ##################################

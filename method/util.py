@@ -1,5 +1,6 @@
 import torch
 import time
+import numpy as np
 
 def save_checkpoint(model, optimizer, save_path, epoch, n_gpu=1):
     torch.save({
