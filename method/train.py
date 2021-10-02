@@ -43,16 +43,16 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         if opt.mode == 'distill':
             idx, data = enum
             if opt.distill in ['contrast']:
-                input, target, index, contrast_idx = data
+                inp, target, index, contrast_idx = data
                 contrast_idx = contrast_idx.cuda() if set_cuda else contrast_idx
             else:
-                input, target, index = data
+                inp, target, index = data
             index = index.cuda() if set_cuda else index
         else:
-            idx, (input, target, _) = enum
+            inp, target, idx, _ = enum
         
-        input = input.float()
-        input = input.cuda() if set_cuda else input
+        inp = inp.float()
+        inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
 
         # ===================forward=====================
@@ -60,9 +60,9 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             preact = False
             # if opt.distill in ['abound', 'overhaul']:
             #     preact = True
-            # feat, logit = model(input, is_feat=True)
+            # feat, logit = model(inp, is_feat=True)
             # with torch.no_grad():
-            #     feat_t, logit_t = model_t(input, is_feat=True)
+            #     feat_t, logit_t = model_t(inp, is_feat=True)
             #     feat_t = [f.detach() for f in feat_t]
 
             # # cls + kl div
@@ -91,12 +91,12 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             # loss = opt.gamma * loss_cls + opt.alpha * loss_div + opt.beta * loss_kd 
             # acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         else:
-            output = model(input)
+            output = model(inp)
             loss = ll.lovasz_softmax(output, target, classes='present', per_image=True, ignore=None)
             acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         
-        losses.update(loss.item(), input.size(0))
-        top1.update(acc1[0], input.size(0))
+        losses.update(loss.item(), inp.size(0))
+        top1.update(acc1[0], inp.size(0))
 
         # ===================backward=====================
         optimizer.zero_grad()
