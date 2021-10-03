@@ -92,6 +92,7 @@ class Data2D(Dataset):
         # these could be  @property; def x_dirs ...
         self.x_dirs = x_dirs              # scatterplot ("class")
         self.x_dirs_factor = x_dirs_factor
+        self.x_filnames = [os.path.basename(x) for x in x_files]
         self.x_files = x_files            # list of data set files: x_2D[0]
         self.y_files = y_files            # data set files: y_2D
 
@@ -181,6 +182,6 @@ class Data2D(Dataset):
             xi, yi = self.transform(xi, yi)
         yi = yi.squeeze()
         
-        return xi, yi, i, self.x_dirs[i]
+        return xi, yi, i, self.x_dirs[i], self.x_filnames[i]
 
 

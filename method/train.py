@@ -23,15 +23,19 @@ def validate(val_loader, model, criterion, opt, accuracy):
 
     with torch.no_grad():
         end = time.time()
-        for idx, (inp, target, i, _) in enumerate(val_loader):
+        for idx, (inp, target, i, xdir, xfn) in enumerate(val_loader):
 
             inp = inp.float()
             if torch.cuda.is_available():
                 inp = inp.cuda()
                 target = target.cuda()
 
+            img_metas = [{
+                'filename': xfn_
+            } for xfn_ in xfn]
+
             # compute output
-            output = model(inp)
+            output = model(inp, img_metas)
             loss = criterion(output, target)
 
             # measure accuracy and record loss
@@ -83,7 +87,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     top1 = AverageMeter()
 
     end = time.time()
-    for idx, (inp, target, i, _) in enumerate(train_loader):
+    for idx, (inp, target, i, xdir, xfn) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
         # if opt.mode == 'distill':
@@ -100,6 +104,10 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         # inp = inp.float()
         inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
+
+        img_metas = [{
+            'filename': xfn_
+        } for xfn_ in xfn]
 
         # ===================forward=====================
         if opt.mode == 'distill':
@@ -137,7 +145,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             # loss = opt.gamma * loss_cls + opt.alpha * loss_div + opt.beta * loss_kd 
             # acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         else:
-            output = model(inp)
+            output = model(inp, img_metas)
             loss = ll.lovasz_softmax(output, target, classes='present', per_image=True, ignore=None)
             acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         

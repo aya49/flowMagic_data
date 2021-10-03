@@ -9,6 +9,7 @@
 import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
+import inspect # inspect.getfullargspec(function) # get function arguments
 
 import sys
 import trace
