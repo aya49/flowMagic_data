@@ -32,7 +32,7 @@ def parse_options():
     parser.add_argument('--data_dir', type=str, default='data', help='data directory')
     parser.add_argument('--x_2D', type=str, default='x_2Ddenscat,x_2Dcontour', help='delimited list of input folder names in data_dir')
     parser.add_argument('--y_2D', type=str, default='y_2D,x_2Ddiscrete,y_vector_', help='output folder in data_dir')
-    parser.add_argument('--preload_data', action='store_true', help='preload data')
+    parser.add_argument('--preload_data', action='store_false', help='preload data')
 
 
     parser.add_argument('--transform', type=str, default='A', choices=transform_names)

@@ -98,22 +98,21 @@ class Data2D(Dataset):
 
         self.data_dir = opt.data_dir
 
-    def preload(self):
-        # self.preload_data = opt.preload_data # or len(x_files) < 200 # *** change
-        self.x = []
-        for i in range(len(self.x_files[0])):
-            xil = []
-            for x2i in range(len(self.x_2D)):
-                xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
-            xil = torch.stack(xil)
-            self.x.append(xil)
-        self.x = torch.stack(self.x)
-        
-        self.y = []
-        for i in range(len(self.y_files)):
-            yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
-            self.y.append(yi)
-        self.y = torch.stack(self.y)
+        if opt.preload_data: # or len(x_files) < 200 # *** change
+            self.x = []
+            for i in range(len(self.x_files[0])):
+                xil = []
+                for x2i in range(len(self.x_2D)):
+                    xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
+                xil = torch.stack(xil)
+                self.x.append(xil)
+            self.x = torch.stack(self.x)
+            
+            self.y = []
+            for i in range(len(self.y_files)):
+                yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
+                self.y.append(yi)
+            self.y = torch.stack(self.y)
         
         # if 'meta' in self.mode:
         #     self.ydiscrete = list([])
