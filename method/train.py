@@ -31,6 +31,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
                 target = target.cuda()
 
             img_metas = [{
+                'img_shape': (256, 256, 2),
                 'filename': xfn_
             } for xfn_ in xfn]
 
