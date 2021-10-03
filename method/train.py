@@ -36,7 +36,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
             } for xfn_ in xfn]
 
             # compute output
-            output = model(img=inp, img_metas=img_metas, gt_semantic_seg=target)
+            output = model(inp, img_metas=img_metas, gt_semantic_seg=target)
             loss = criterion(output, target)
 
             # measure accuracy and record loss
@@ -146,7 +146,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             # loss = opt.gamma * loss_cls + opt.alpha * loss_div + opt.beta * loss_kd 
             # acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         else:
-            output = model(img=inp, img_metas=img_metas, gt_semantic_seg=target)
+            output = model(inp, img_metas=img_metas, gt_semantic_seg=target)
             loss = ll.lovasz_softmax(output, target, classes='present', per_image=True, ignore=None)
             acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         
