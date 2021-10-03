@@ -15,16 +15,6 @@ def transform_A(x, y):
     if deg != 0:
         x = tf.rotate(x, deg)
         y = tf.rotate(y, deg)
-
-    # Random horizontal flipping
-    if random.random() > 0.5:
-        x = tf.hflip(x)
-        y = tf.hflip(y)
-    
-    # Random vertical flipping
-    if random.random() > 0.5:
-        x = tf.vflip(x)
-        y = tf.vflip(y)
     
     # Random resize
     params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
@@ -38,6 +28,15 @@ def transform_A(x, y):
 
 # for meta training with reference samples
 def transform_B(x, y):
+    # Random rotation
+    deg = tr.RandomRotation.get_params(degrees=(0,45))
+    if random.random() > 0.5:
+        deg = 360-deg
+
+    if deg != 0:
+        x = tf.rotate(x, deg)
+        y = tf.rotate(y, deg)
+    
     # Random resize
     params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
@@ -48,10 +47,15 @@ def transform_B(x, y):
 
     return x, y
 
+# for test
+def transform_C(x, y):
+    return x, y
+
 
 transform_dict = {
     'A': transform_A,
-    'B': transform_B
+    'B': transform_B,
+    'C': transform_C
 }
 
 transform_names = list()
