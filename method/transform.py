@@ -3,7 +3,7 @@ import torchvision.transforms.functional as tf
 
 import random
 
-tresize = tr.Compose([tr.Resize((200, 200))])
+tresize = tr.Compose([tr.Resize((256, 256))])
  
 # for training with training samples
 def transform_A(x, y):

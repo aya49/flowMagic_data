@@ -2,7 +2,7 @@ model = dict(
     type='EncoderDecoder',
     backbone=dict(
         type='VisionTransformer',
-        img_size=(200, 200), # 480
+        img_size=(256, 256), # 480
         patch_size=16,
         in_channels=2, # 3
         embed_dims=256, # 512
@@ -31,6 +31,6 @@ model = dict(
         align_corners=False,
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
     ),
-    train_cfg=dict(crop_size=200),
-    test_cfg=dict(mode='slide', crop_size=200, stride=170)
+    train_cfg=dict(crop_size=256),
+    test_cfg=dict(mode='slide', crop_size=256, stride=170)
 )

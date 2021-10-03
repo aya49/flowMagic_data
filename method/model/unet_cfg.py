@@ -32,6 +32,6 @@ model = dict(
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
     ),
     # model training and testing settings
-    train_cfg=dict(crop_size=200),
-    test_cfg=dict(mode='slide', crop_size=200, stride=170)
+    train_cfg=dict(crop_size=256),
+    test_cfg=dict(mode='slide', crop_size=256, stride=170)
 )

@@ -35,7 +35,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
             } for xfn_ in xfn]
 
             # compute output
-            output = model(inp, img_metas)
+            output = model(img=inp, img_metas=img_metas, gt_semantic_seg=target)
             loss = criterion(output, target)
 
             # measure accuracy and record loss
