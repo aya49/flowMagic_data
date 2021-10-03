@@ -8,7 +8,10 @@ tresize = tr.Compose([tr.Resize((256, 256))])
 # for training with training samples
 def transform_A(x, y):
     # Random rotation
-    deg = 90 * (tr.RandomRotation.get_params(degrees=(0,359)) // 90)
+    deg = tr.RandomRotation.get_params(degrees=(0,45))
+    if random.random() > 0.5:
+        deg = 360-deg
+
     if deg != 0:
         x = tf.rotate(x, deg)
         y = tf.rotate(y, deg)

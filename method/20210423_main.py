@@ -36,7 +36,7 @@ import mmcv
 import mmseg
 
 from mmcv.utils import Config
-from mmseg.models import build_segmentor
+# from mmseg.models import build_segmentor
 
 from opt import parse_options
 from transform import transform_dict
@@ -142,9 +142,9 @@ train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
     #     train(opt, model, dataloader_tr, model_t)
         
 
-    if opt.mode == 'meta':
+    ## if opt.mode == 'meta':
         for n_shot in [1, 2, 3, 4, 5, 10, 15, 20]:
-            for x_dirs_mts_files in x_dirs_mts:
+            for x_dirs_mts_files in x_dirs_mt:
                 ## META TRAIN ################################################
                 # load model
                 model = create_model(opt.model, opt.n_class, opt.dim)

@@ -7,7 +7,7 @@ import torch.backends.cudnn as cudnn
 
 import tensorboard_logger as tb_logger
 
-from loss import lovasz_softmax as ll
+from mmseg.models.losses.lovasz_loss import lovasz_softmax as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
