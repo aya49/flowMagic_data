@@ -182,6 +182,6 @@ class Data2D(Dataset):
             xi, yi = self.transform(xi, yi)
         yi = yi.squeeze()
         
-        return xi, yi, i, self.x_dirs[i], self.x_filnames[i]
+        return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
 
