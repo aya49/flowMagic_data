@@ -31,7 +31,7 @@ x2_files <- list.files(x2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv.gz
 
 
 ## parameters
-dimsize <- 200 # dimension of 2D outputs
+dimsize <- 256 # dimension of 2D outputs
 overwrite <- FALSE
 
 

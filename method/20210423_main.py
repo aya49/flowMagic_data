@@ -48,7 +48,7 @@ from torch.utils.data import DataLoader
 
 import tensorboard_logger as tb_logger
 
-from model import create_model
+from models import create_model
 
 from train import train
 
