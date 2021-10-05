@@ -21,40 +21,43 @@ def model_unet(opt):
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/unet_cfg.py')
     
     cfg = ConfigDict(
-        type='EncoderDecoder',
-        pretrained=None,
-        backbone=dict(
-            type='UNet',
-            in_channels=len(opt.x_2D),
-            base_channels=64,
-            num_stages=5,
-            strides=(1, 1, 1, 1, 1),
-            enc_num_convs=(2, 2, 2, 2, 2),
-            dec_num_convs=(2, 2, 2, 2),
-            downsamples=(True, True, True, True),
-            enc_dilations=(1, 1, 1, 1, 1),
-            dec_dilations=(1, 1, 1, 1),
-            with_cp=False,
-            conv_cfg=None,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='ReLU'),
-            upsample_cfg=dict(type='InterpConv'),
-            norm_eval=False),
-        decode_head=dict(
-            type='ASPPHead',
-            in_channels=64,
-            in_index=4,
-            channels=16,
-            dilations=(1, 12, 24, 36),
-            dropout_ratio=0.1,
-            num_classes=2,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            align_corners=False,
-            loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
+        model = dict(
+            type='EncoderDecoder',
+            pretrained=None,
+            backbone=dict(
+                type='UNet',
+                in_channels=len(opt.x_2D),
+                base_channels=64,
+                num_stages=5,
+                strides=(1, 1, 1, 1, 1),
+                enc_num_convs=(2, 2, 2, 2, 2),
+                dec_num_convs=(2, 2, 2, 2),
+                downsamples=(True, True, True, True),
+                enc_dilations=(1, 1, 1, 1, 1),
+                dec_dilations=(1, 1, 1, 1),
+                with_cp=False,
+                conv_cfg=None,
+                norm_cfg=dict(type='BN', requires_grad=True),
+                act_cfg=dict(type='ReLU'),
+                upsample_cfg=dict(type='InterpConv'),
+                norm_eval=False
+            ),
+            decode_head=dict(
+                type='ASPPHead',
+                in_channels=64,
+                in_index=4,
+                channels=16,
+                dilations=(1, 12, 24, 36),
+                dropout_ratio=0.1,
+                num_classes=2,
+                norm_cfg=dict(type='BN', requires_grad=True),
+                align_corners=False,
+                loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
+            ),
+            train_cfg=dict(crop_size=(opt.dim, opt.dim)),
+            test_cfg=dict(mode='slide', crop_size=(opt.dim, opt.dim), stride=(170, 170)),
         ),
-        # model training and testing settings
-        train_cfg=dict(crop_size=opt.dim),
-        test_cfg=dict(mode='slide', crop_size=opt.dim, stride=170)
+        evaluation = dict(metric='mIoU')
     )
 
     model = build_segmentor(cfg, device='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -62,44 +65,49 @@ def model_unet(opt):
 
 def model_setr(opt):
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/vit_mla_cfg.py')
-    cfg =  = ConfigDict(
-    type='EncoderDecoder',
-        backbone=dict(
-            type='VisionTransformer',
-            img_size=(opt.dim, opt.dim), # 480
-            patch_size=16,
-            in_channels=2, # 3
-            embed_dims=opt.dim, # 512
-            num_layers=6, # 24
-            num_heads=16,
-            out_indices=(5, 11, 17, 23),
-            drop_rate=0.1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            with_cls_token=False,
-            interpolate_mode='bilinear',
+    cfg = ConfigDict(
+        model = dict(
+            type='EncoderDecoder',
+            backbone=dict(
+                type='VisionTransformer',
+                img_size=(opt.dim, opt.dim),
+                patch_size=8,
+                in_channels=len(opt.x_2D),
+                embed_dims=480,
+                num_layers=8,
+                num_heads=8,
+                out_indices=(4, 5, 6, 7),
+                drop_rate=0.1,
+                norm_cfg=dict(type='LN', eps=1e-6, requires_grad=True),
+                with_cls_token=False,
+                interpolate_mode='bilinear',
+            ),
+            neck=dict(
+                type='MLANeck',
+                in_channels=[480, 480, 480, 480],
+                out_channels=128,
+                norm_cfg=dict(type='BN', requires_grad=True),
+                act_cfg=dict(type='ReLU'),
+            ),
+            decode_head=dict(
+                type='SETRMLAHead',
+                in_channels=(128, 128, 128, 128),
+                channels=512,
+                in_index=(0, 1, 2, 3),
+                dropout_ratio=0,
+                mla_channels=128,
+                num_classes=opt.n_class,
+                norm_cfg=dict(type='BN', requires_grad=True),
+                align_corners=False,
+                loss_decode=dict(type='LovaszLoss', use_sigmoid=False, loss_weight=1.0)
+            ),
+            train_cfg=dict(crop_size=(opt.dim, opt.dim)),
+            test_cfg=dict(mode='whole'), crop_size=(opt.dim, opt.dim)
         ),
-        neck=dict(
-            type='MLANeck',
-            in_channels=[512, 512, 512, 512], # 1024
-            out_channels=128, # 256
-            act_cfg=dict(type='ReLU'),
-        ),
-        decode_head=dict(
-            type='SETRMLAHead',
-            in_channels=(128, 128, 128, 128), # 256
-            channels=opt.dim, # 512
-            in_index=(0, 1, 2, 3),
-            dropout_ratio=0,
-            mla_channels=64, # 128
-            num_classes=5, ###
-            align_corners=False,
-            loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
-        ),
-        train_cfg=dict(crop_size=opt.dim),
-        test_cfg=dict(mode='slide', crop_size=opt.dim, stride=170)
+        evaluation = dict(metric='mIoU')
     )
-    
-    model = build_segmentor(cfg, device='cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    model = build_segmentor(cfg, device=device)
     return model
 
 model_dict = {

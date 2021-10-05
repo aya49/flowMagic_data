@@ -179,7 +179,7 @@ class Data2D(Dataset):
 
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
-        yi = yi.squeeze()
+        # yi = yi.squeeze()
         
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
