@@ -123,7 +123,7 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 
 # create dataloaders
 opt.num_workers = 32
-opt.batch_size = 32
+opt.batch_size = 64
 opt.preload_data = False
 opt.cuda = 'cuda:5'
 
@@ -184,7 +184,7 @@ opt.tb_dir = opt.tb_dir + '_'
 
 
 opt.num_workers = 32
-opt.batch_size = 18
+opt.batch_size = 64
 opt.preload_data = True
 opt.cuda = 'cuda:0'
 
