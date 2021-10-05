@@ -1,3 +1,4 @@
+backbone_norm_cfg = dict(type='LN', eps=1e-6, requires_grad=True)
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
@@ -11,7 +12,7 @@ model = dict(
         num_heads=16,
         out_indices=(5, 11, 17, 23),
         drop_rate=0.1,
-        # norm_cfg=backbone_norm_cfg,
+        norm_cfg=backbone_norm_cfg,
         with_cls_token=False,
         interpolate_mode='bilinear',
     ),
