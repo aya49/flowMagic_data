@@ -38,7 +38,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
                 'pad_shape': (H, W, C),
                 'filename': xfn_
             } for xfn_ in xfn]
-            
+
             # compute output
             output = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
             assert isinstance(output, dict)
