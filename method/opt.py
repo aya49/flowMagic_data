@@ -12,6 +12,7 @@ def parse_options():
 
     # train/test stage
     parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'meta'])
+    parser.add_argument('--cuda', type=str, default='cuda:0', help='manually adjust, place holder')
 
     # root dir
     parser.add_argument('--root_dir', type=str, default='/home/aya43/flowMagic_data', help='root directory')

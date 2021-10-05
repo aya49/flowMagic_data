@@ -167,22 +167,24 @@ for x_dir_mt in x_dirs_mt:
 mt_files = flatx(mt_files)
 mv_files = flatx(mv_files)
 
-model = create_model(opt).cuda()
-
 opt.save_dir = opt.save_dir + '_'
+os.makedirs(opt.model_dir, exist_ok=True)
 opt.model_folder = opt.model_folder + '_'
+os.makedirs(opt.model_folder, exist_ok=True) 
 opt.tb_dir = opt.tb_dir + '_'
+
 
 opt.num_workers = 32
 opt.batch_size = 32
 opt.preload_data = True
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
+dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)
+
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
                     sampler=ids(dataset_tr_t), 
                     batch_size=opt.batch_size,# shuffle=True, 
                     drop_last=True, num_workers=opt.num_workers)
-dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
                     num_workers=opt.num_workers // 2)

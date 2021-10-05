@@ -11,6 +11,7 @@ from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
+from GPUtil import showUtilization as gpu_usage # gpu_usage()  
 
 def validate(val_loader, model, criterion, opt, accuracy):
     """One epoch validation"""
@@ -24,6 +25,8 @@ def validate(val_loader, model, criterion, opt, accuracy):
     with torch.no_grad():
         end = time.time()
         for idx, (inp, target, i, xdir, xfn) in enumerate(val_loader):
+            # switch to evaluate mode
+            model.eval()
 
             inp = inp.float()
             target = target.float()
@@ -31,7 +34,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
                 inp = inp.cuda()
                 target = target.cuda()
 
-            (H, W, C) = (256, 256, 2)
+            (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
             img_metas = [{
                 'img_shape': (H, W, C),
                 'ori_shape': (H, W, C),
@@ -111,7 +114,11 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
 
+        (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
         img_metas = [{
+            'img_shape': (H, W, C),
+            'ori_shape': (H, W, C),
+            'pad_shape': (H, W, C),
             'filename': xfn_
         } for xfn_ in xfn]
 
@@ -151,16 +158,18 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             # loss = opt.gamma * loss_cls + opt.alpha * loss_div + opt.beta * loss_kd 
             # acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
         else:
-            output = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-            loss = ll.lovasz_softmax(output, target, classes='present', per_image=True, ignore=None)
-            acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
+            scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+            loss = float(scores['decode.loss_seg']) # ll.lovasz_softmax(output, target, classes='present', per_image=True)
+            acc1 = float(scores['decode.acc_seg']) # ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
+
+            outputs = model.train_step(dict(img=inp, img_metas=img_metas, gt_semantic_seg=target), None)
         
-        losses.update(loss.item(), inp.size(0))
-        top1.update(acc1[0], inp.size(0))
+        losses.update(loss, inp.size(0))
+        top1.update(acc1, inp.size(0))
 
         # ===================backward=====================
         optimizer.zero_grad()
-        loss.backward()
+        # loss.backward()
         optimizer.step()
 
         # ===================meters=====================
