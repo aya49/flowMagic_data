@@ -44,14 +44,16 @@ def validate(val_loader, model, criterion, opt, accuracy):
             } for xfn_ in xfn]
 
             # compute output
-            output = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-            assert isinstance(output, dict)
-            loss = criterion(output, target)
+            scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+            assert isinstance(scores, dict)
+            # loss = criterion(output, target)
 
             # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
-            losses.update(loss.item(), inp.size(0))
-            top1.update(acc1[0], inp.size(0))
+            # acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            acc1 = float(scores['decode.acc_seg'])
+            loss = float(scores['decode.loss_seg'])
+            losses.update(loss, inp.size(0))
+            top1.update(acc1, inp.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
