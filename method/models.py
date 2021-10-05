@@ -1,7 +1,7 @@
 import torch
 import mmcv
-# from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
-from mmseg.models import build_segmentor
+from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
+# from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
 import segmentation_models_pytorch as smp
@@ -59,7 +59,7 @@ def model_unet(opt):
         ),
         evaluation = dict(metric='mIoU')
     )
-    model = build_segmentor(cfg)
+    model = init_segmentor(cfg)
     return model
 
 def model_setr(opt):
@@ -105,7 +105,7 @@ def model_setr(opt):
         ),
         evaluation = dict(metric='mIoU')
     )
-    model = build_segmentor(cfg)
+    model = init_segmentor(cfg)
     return model
 
 model_dict = {
