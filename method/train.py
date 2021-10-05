@@ -224,7 +224,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
             scheduler.step()
         else:
             adjust_learning_rate(epoch, opt, optimizer)
-        
+
         print("==> training")
         time1 = time.time()
         train_acc, train_loss = train_epoch(epoch, train_loader, model, ll, optimizer, opt)

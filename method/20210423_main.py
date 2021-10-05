@@ -35,6 +35,8 @@ import random
 import mmcv
 import mmseg
 
+import pickle
+
 from mmcv.utils import Config
 # from mmseg.models import build_segmentor
 
@@ -113,13 +115,21 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 
 # create dataloaders
 opt.num_workers = 32
-opt.preload_data = True
+opt.preload_data = False
+
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
+f = file(os.path.join(opt.data_dir, 'data_tr_t'), 'wb')
+pickle.dump(dataset_tr_t, f, pickle.HIGHEST_PROTOCOL)
+f.close()
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
                     sampler=ids(dataset_tr_t), 
                     batch_size=opt.batch_size,# shuffle=True, 
                     drop_last=True, num_workers=opt.num_workers)
-dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
+
+dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_v)
+f = file(os.path.join(opt.data_dir, 'data_tr_v'), 'wb')
+pickle.dump(dataset_tr_v, f, pickle.HIGHEST_PROTOCOL)
+f.close()
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
                     num_workers=opt.num_workers // 2)
@@ -142,47 +152,92 @@ train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
     #     train(opt, model, dataloader_tr, model_t)
         
 
-    ## if opt.mode == 'meta':
+
+n_shot = 10
+mt_files = []
+mv_files = []
+for x_dir_mt in x_dirs_mt:
+    x_dirs_mts_files = [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)]
+    x_dirs_mts_files = [x for x in x_dirs_mts_files if '__MACOSX' not in x]
+    # get n-shot samples
+    mt_files.append(random.sample(x_dirs_mts_files, n_shot))
+    mv_files.append([mvf for mvf in x_dirs_mts_files if mvf not in mt_files])
+
+mt_files = flatx(mt_files)
+mv_files = flatx(mv_files)
+
+model = create_model(opt).cuda()
+
+opt.save_dir = opt.save_dir + '_'
+opt.model_folder = opt.model_folder + '_'
+
+opt.num_workers = 32
+opt.batch_size = 64
+opt.preload_data = True
+
+dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
+                    sampler=ids(dataset_tr_t), 
+                    batch_size=opt.batch_size,# shuffle=True, 
+                    drop_last=True, num_workers=opt.num_workers)
+dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)
+dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                    batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                    num_workers=opt.num_workers // 2)
+
+# initialize model
+model = create_model(opt).cuda()
+
+# train
+loss = train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
+
+
+
+
+
+
+
+    if opt.mode == 'meta':
         for n_shot in [1, 2, 3, 4, 5, 10, 15, 20]:
-            for x_dirs_mts_files in x_dirs_mt:
+
                 ## META TRAIN ################################################
                 # load model
-                model = create_model(opt.model, opt.n_class, opt.dim)
-                ckpt = torch.load(opt.model_path, map_location="cuda:0" if torch.cuda.is_available() else "cpu")
-                model.load_state_dict(torch.load(ckpt)['model'])
+    model = create_model(opt).cuda()
+    ## ckpt = torch.load(opt.model_path)
+    ## model.load_state_dict(torch.load(ckpt)['model'])
 
-                # get n-shot samples
-                mt_dir = os.path.join(x_dirs_mts_files[0].split('/')[0:-1])
-                pam_dir = mt_dir.replace("data/2D/x_2Ddenscat","data/2D/x_2Ddenscat_euclidean_rankkmed")
-                mt_files = os.path.join(mt_dir, os.listdir(pam_dir + "/" + str(n_shot)))
-                mv_files = [mvf for mvf in x_dirs_mts_files if mvf not in mt_files]
-                
-                # create dataloader
-                dataset_tr = Data2D(opt, transform=transform_dict['B'], x_dirs=mt_files)
-                dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
-                                shuffle=True, drop_last=True, num_workers=opt.num_workers)
+    # get n-shot samples
+    mt_dir = os.path.dirname(x_dirs_mts_files[0])
+    pam_dir = mt_dir.replace("data/2D/x_2Ddenscat","data/2D/x_2Ddenscat_euclidean_rankkmed")
+    mt_files = os.path.join(mt_dir, os.listdir(pam_dir + "/" + str(n_shot)))
+    mv_files = [mvf for mvf in x_dirs_mts_files if mvf not in mt_files]
 
-                dataset_val = Data2D(opt, x_dirs=mt_files)
-                dataloader_val = DataLoader(dataset_val)
+# create dataloader
+dataset_tr = Data2D(opt, transform=transform_dict['B'], x_dirs=mt_files)
+dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
+                shuffle=True, drop_last=True, num_workers=opt.num_workers)
 
-                train(opt, model, dataloader_tr, dataloader_val)
+dataset_val = Data2D(opt, x_dirs=mt_files)
+dataloader_val = DataLoader(dataset_val)
 
-                ## META TEST #################################################
-                start = time.time()
-                val_acc, val_std = meta_test(model, meta_valloader)
-                print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, time.time() - start))
+train(opt, model, dataloader_tr, dataloader_val)
 
-                start = time.time()
-                val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False)
-                val_time = time.time() - start
-                print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, time.time() - start))
+## META TEST #################################################
+start = time.time()
+val_acc, val_std = meta_test(model, meta_valloader)
+print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, time.time() - start))
 
-                start = time.time()
-                test_acc, test_std = meta_test(model, meta_testloader)
-                print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, time.time() - start))
+start = time.time()
+val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False)
+val_time = time.time() - start
+print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, time.time() - start))
 
-                start = time.time()
-                test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
-                print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, time.time() - start))
+start = time.time()
+test_acc, test_std = meta_test(model, meta_testloader)
+print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, time.time() - start))
+
+start = time.time()
+test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
+print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, time.time() - start))
 
 
