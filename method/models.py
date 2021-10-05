@@ -1,7 +1,7 @@
 import torch
 import mmcv
 from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
-# from mmseg.models import build_segmentor
+from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
 import segmentation_models_pytorch as smp
@@ -55,11 +55,11 @@ def model_unet(opt):
                 loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
             ),
             train_cfg=dict(crop_size=(opt.dim, opt.dim)),
-            test_cfg=dict(mode='slide', crop_size=(opt.dim, opt.dim), stride=(170, 170)),
+            test_cfg=dict(mode='slide', crop_size=(opt.dim, opt.dim), stride=(170, 170))
         ),
         evaluation = dict(metric='mIoU')
     )
-    model = init_segmentor(cfg)
+    model = build_segmentor(cfg)
     return model
 
 def model_setr(opt):
@@ -105,7 +105,7 @@ def model_setr(opt):
         ),
         evaluation = dict(metric='mIoU')
     )
-    model = init_segmentor(cfg)
+    model = build_segmentor(cfg)
     return model
 
 model_dict = {
