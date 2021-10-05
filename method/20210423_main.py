@@ -113,7 +113,7 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 
 # create dataloaders
 opt.num_workers = 32
-opt.preload_data = False
+opt.preload_data = True
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
                     sampler=ids(dataset_tr_t), 

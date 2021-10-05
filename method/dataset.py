@@ -113,9 +113,11 @@ class Data2D(Dataset):
                 yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                 self.y.append(yi)
 
-                if round(i/xyl, 2) == prog:
-                    print('{prog} ')
-                    prog += .05
+                print(i)
+
+                # if round(i/xyl, 2) == prog:
+                #     print('{prog} ')
+                #     prog += .05
 
             self.x = torch.stack(self.x)
             self.y = torch.stack(self.y)
