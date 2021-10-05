@@ -21,14 +21,14 @@ def model_unet(opt):
     cfg = mmcv.Config.fromfile('model/unet_cfg.py')
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/unet_cfg.py')
     
-    model = build_segmentor(cfg)
+    model = init_segmentor(cfg)
     return model
 
 def model_setr(opt):
     cfg = mmcv.Config.fromfile('model/vit_mla_cfg.py')
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/vit_mla_cfg.py')
     
-    model = build_segmentor(cfg)
+    model = init_segmentor(cfg)
     return model
 
 model_dict = {
