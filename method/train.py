@@ -188,13 +188,12 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                     'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                    'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                    'Acc@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                    'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
                     epoch, idx, len(train_loader), batch_time=batch_time,
                     data_time=data_time, loss=losses, top1=top1))
             sys.stdout.flush()
 
-    print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(top1=top1))
+    print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
 
     return top1.avg, losses.avg
 
@@ -253,7 +252,6 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         test_acc, test_acc_top5, test_loss, loss = validate(val_loader, model, ll, opt, ll.iou)
 
         logger.log_value('test_acc', test_acc, epoch)
-        logger.log_value('test_acc_top5', test_acc_top5, epoch)
         logger.log_value('test_loss', test_loss, epoch)
 
         # regular saving

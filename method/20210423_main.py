@@ -183,8 +183,8 @@ os.makedirs(opt.model_folder, exist_ok=True)
 opt.tb_dir = opt.tb_dir + '_'
 
 
-opt.num_workers = 32
-opt.batch_size = 64
+opt.num_workers = 16
+opt.batch_size = 16
 opt.preload_data = True
 opt.cuda = 'cuda:0'
 
