@@ -229,6 +229,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     print(ckpts)
     if 'ckpt' in ckpts[-1] and '000' not in ckpts[-1]:
         model, optimizer, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
+    
     print(epoch_)
 
     for epoch in range(epoch_ + 1, opt.epochs + 1):
