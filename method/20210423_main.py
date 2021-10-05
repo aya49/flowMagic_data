@@ -125,7 +125,7 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     num_workers=opt.num_workers // 2)
 
 # initialize model
-model = create_model(opt)
+model = create_model(opt).cuda()
 
 # train
 train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
