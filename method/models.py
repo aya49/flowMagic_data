@@ -41,5 +41,5 @@ for name, dict_ in model_dict.items():
     model_names.append(name)
 
 def create_model(opt):
-    return model_dict[name](opt)
+    return model_dict[opt.model](opt)
         

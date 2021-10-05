@@ -48,6 +48,12 @@ from torchsampler import ImbalancedDatasetSampler as ids
 # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 from torch.utils.data import DataLoader
 
+## number of parameters
+# sum(p.numel() for p in model.parameters())
+## If you want to calculate only the trainable parameters:
+# sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 import tensorboard_logger as tb_logger
 
 from GPUtil import showUtilization as gpu_usage # gpu_usage()
