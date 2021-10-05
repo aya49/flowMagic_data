@@ -59,8 +59,7 @@ def model_unet(opt):
         ),
         evaluation = dict(metric='mIoU')
     )
-
-    model = build_segmentor(cfg, device='cuda:0' if torch.cuda.is_available() else 'cpu')
+    model = build_segmentor(cfg)
     return model
 
 def model_setr(opt):
@@ -106,8 +105,7 @@ def model_setr(opt):
         ),
         evaluation = dict(metric='mIoU')
     )
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    model = build_segmentor(cfg, device=device)
+    model = build_segmentor(cfg)
     return model
 
 model_dict = {
