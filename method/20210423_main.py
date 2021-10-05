@@ -117,6 +117,7 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 opt.num_workers = 32
 opt.batch_size = 32
 opt.preload_data = False
+opt.cuda = 'cuda:5'
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
 f = file(os.path.join(opt.data_dir, 'data_tr_t'), 'wb')
@@ -177,6 +178,7 @@ opt.tb_dir = opt.tb_dir + '_'
 opt.num_workers = 32
 opt.batch_size = 32
 opt.preload_data = True
+opt.cuda = 'cuda:5'
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
 dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)

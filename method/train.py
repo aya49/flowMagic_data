@@ -31,8 +31,8 @@ def validate(val_loader, model, criterion, opt, accuracy):
             inp = inp.float()
             target = target.float()
             if torch.cuda.is_available():
-                inp = inp.cuda()
-                target = target.cuda()
+                inp = inp.cuda(device=opt.cuda)
+                target = target.cuda(device=opt.cuda)
 
             (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
             img_metas = [{
@@ -111,8 +111,8 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         #     inp, target, idx, _ = enum
 
         inp = inp.float()
-        inp = inp.cuda() if set_cuda else inp
-        target = target.cuda() if set_cuda else target
+        inp = inp.cuda(device=opt.cuda) if set_cuda else inp
+        target = target.cuda(device=opt.cuda) if set_cuda else target
 
         (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
         img_metas = [{
