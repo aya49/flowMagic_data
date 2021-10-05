@@ -26,17 +26,22 @@ def validate(val_loader, model, criterion, opt, accuracy):
         for idx, (inp, target, i, xdir, xfn) in enumerate(val_loader):
 
             inp = inp.float()
+            target = target.float()
             if torch.cuda.is_available():
                 inp = inp.cuda()
                 target = target.cuda()
 
+            (H, W, C) = (256, 256, 2)
             img_metas = [{
-                'img_shape': (256, 256, 2),
+                'img_shape': (H, W, C),
+                'ori_shape': (H, W, C),
+                'pad_shape': (H, W, C),
                 'filename': xfn_
             } for xfn_ in xfn]
-
+            
             # compute output
             output = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+            assert isinstance(output, dict)
             loss = criterion(output, target)
 
             # measure accuracy and record loss

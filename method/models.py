@@ -1,6 +1,7 @@
 import torch
 import mmcv
-from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
+# from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
+from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
 import segmentation_models_pytorch as smp
@@ -56,11 +57,7 @@ def model_unet(opt):
         test_cfg=dict(mode='slide', crop_size=opt.dim, stride=170)
     )
 
-    if torch.cuda.is_available():
-        model = init_segmentor(cfg, device='cuda:0')
-    else:
-        model = init_segmentor(cfg, device='cpu')
-
+    model = build_segmentor(cfg, device='cuda:0' if torch.cuda.is_available() else 'cpu')
     return model
 
 def model_setr(opt):
@@ -102,11 +99,7 @@ def model_setr(opt):
         test_cfg=dict(mode='slide', crop_size=opt.dim, stride=170)
     )
     
-    if torch.cuda.is_available():
-        model = init_segmentor(cfg, device='cuda:0')
-    else:
-        model = init_segmentor(cfg, device='cpu')
-
+    model = build_segmentor(cfg, device='cuda:0' if torch.cuda.is_available() else 'cpu')
     return model
 
 model_dict = {
