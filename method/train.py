@@ -5,13 +5,14 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 
+import gc
+
 import tensorboard_logger as tb_logger
 
 from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
-from GPUtil import showUtilization as gpu_usage # gpu_usage()  
 
 def validate(val_loader, model, criterion, opt, accuracy):
     """One epoch validation"""
@@ -166,6 +167,9 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         
         losses.update(loss, inp.size(0))
         top1.update(acc1, inp.size(0))
+
+        torch.cuda.empty_cache()
+        # gc.collect()
 
         # ===================backward=====================
         optimizer.zero_grad()

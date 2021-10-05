@@ -50,6 +50,8 @@ from torch.utils.data import DataLoader
 
 import tensorboard_logger as tb_logger
 
+from GPUtil import showUtilization as gpu_usage # gpu_usage()
+
 from models import create_model
 
 from train import train
@@ -176,9 +178,9 @@ opt.tb_dir = opt.tb_dir + '_'
 
 
 opt.num_workers = 32
-opt.batch_size = 32
+opt.batch_size = 18
 opt.preload_data = True
-opt.cuda = 'cuda:5'
+opt.cuda = 'cuda:0'
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
 dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)
@@ -192,7 +194,7 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     num_workers=opt.num_workers // 2)
 
 # initialize model
-model = create_model(opt).cuda()
+model = create_model(opt).cuda(device=opt.cuda)
 
 # train
 loss = train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
