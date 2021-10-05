@@ -7,7 +7,7 @@ import torch.backends.cudnn as cudnn
 
 import tensorboard_logger as tb_logger
 
-from mmseg.models.losses.lovasz_loss import lovasz_softmax as ll
+from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
@@ -64,7 +64,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
 
         print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
 
-    return top1.avg, losses.avg
+    return top1.avg, losses.avg, losses
 
 
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
@@ -84,7 +84,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     #     criterion_cls = criterion[0]
     #     criterion_div = criterion[1]
     #     criterion_kd = criterion[2]
-    
+
     model.train()
 
     batch_time = AverageMeter()
@@ -106,7 +106,7 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         #     index = index.cuda() if set_cuda else index
         # else:
         #     inp, target, idx, _ = enum
-        
+
         inp = inp.float()
         inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
@@ -234,7 +234,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
-        test_acc, test_acc_top5, test_loss = validate(val_loader, model, ll, opt, ll.iou)
+        test_acc, test_acc_top5, test_loss, loss = validate(val_loader, model, ll, opt, ll.iou)
 
         logger.log_value('test_acc', test_acc, epoch)
         logger.log_value('test_acc_top5', test_acc_top5, epoch)
@@ -249,3 +249,5 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     # save the last model
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
+
+    return loss
