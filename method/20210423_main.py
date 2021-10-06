@@ -35,7 +35,7 @@ import random
 import mmcv
 import mmseg
 
-import pickle
+from compress_pickle import dump, load
 
 from mmcv.utils import Config
 # from mmseg.models import build_segmentor
@@ -125,11 +125,11 @@ x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_fi
 opt.num_workers = 32
 opt.batch_size = 64
 opt.preload_data = False
-opt.cuda = 'cuda:5'
+opt.cuda = 'cuda:0'
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-f = file(os.path.join(opt.data_dir, 'data_tr_t'), 'wb')
-pickle.dump(dataset_tr_t, f, pickle.HIGHEST_PROTOCOL)
+f = open(os.path.join(opt.data_dir, 'data_tr_t_pregnancy.gz'), 'wb')
+dump(dataset_tr_t, f, compression="lzma", set_default_extension=False) #gzip
 f.close()
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
                     sampler=ids(dataset_tr_t), 
@@ -137,8 +137,8 @@ dataloader_tr_t = DataLoader(dataset=dataset_tr_t,
                     drop_last=True, num_workers=opt.num_workers)
 
 dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_v)
-f = file(os.path.join(opt.data_dir, 'data_tr_v'), 'wb')
-pickle.dump(dataset_tr_v, f, pickle.HIGHEST_PROTOCOL)
+f = open(os.path.join(opt.data_dir, 'data_tr_v_pregnancy.gz'), 'wb')
+dump(dataset_tr_v, f, compression="lzma", set_default_extension=False) #gzip
 f.close()
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
@@ -189,7 +189,7 @@ opt.preload_data = True
 opt.cuda = 'cuda:0'
 
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
-dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=mv_files)
+dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=mv_files)
 
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
                     sampler=ids(dataset_tr_t), 
@@ -203,9 +203,62 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
 model = create_model(opt).cuda(device=opt.cuda)
 # sum(p.numel() for p in model.parameters())
 
-# train
-loss = train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
+# train and validate
+acc, loss, model = train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
+# get results
+dataset_tr_v.transform = transform_dict['B']
+dataloader_tr_test = DataLoader(dataset=dataset_tr_v,
+                    batch_size=len(dataset_tr_v), shuffle=False, drop_last=False,
+                    num_workers=1)
+for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_tr_test):
+    break
+
+set_cuda = torch.cuda.is_available()
+
+inp = inp.float()
+inp = inp.cuda(device=opt.cuda) if set_cuda else inp
+target = target.cuda(device=opt.cuda) if set_cuda else target
+
+
+model.eval()
+
+start_i = 0
+xdir_ = xdir[0]
+(H, W, C) = (256, 256, len(opt.x_2D))
+
+acc[]
+
+for j in range(len(inp)-1):
+    if xdir[j+1] != xdir_:
+        end_i = j
+        if j == len(inp)-1:
+            inp_ = inp[:][start_i:(j+1)]
+            target_ = target[:][start_i:(j+1)]
+            img_metas_ = [{
+                'img_shape': (H, W, C),
+                'ori_shape': (H, W, C),
+                'pad_shape': (H, W, C),
+                'filename': xfn__,
+                'scale_factor': 1.0,
+                'flip': False,
+            } for xfn__ in xfn[start_i:]]
+        else:
+            inp_ = inp[:][start_i:]
+            target_ = target[:][start_i:]
+            img_metas_ = [{
+                'img_shape': (H, W, C),
+                'ori_shape': (H, W, C),
+                'pad_shape': (H, W, C),
+                'filename': xfn__,
+                'scale_factor': 1.0,
+                'flip': False,
+            } for xfn__ in xfn[start_i:]]
+            xdir_ = xdir[j+1]
+        start_i = j+1
+
+        scores = model.forward(inp_, img_metas_, gt_semantic_seg=target_, return_loss=True)
+        # res = model.inference(inp, img_metas, rescale=False)
 
 
 

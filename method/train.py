@@ -13,8 +13,35 @@ from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
+# https://github.com/open-mmlab/mmsegmentation/blob/441be4e435127868a0c72a4e0e6b87662a4c415b/mmseg/apis/inference.py#L70
+def inference_segmentor(model, img):
+    """Inference image(s) with the segmentor.
+    Args:
+        model (nn.Module): The loaded segmentor.
+        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
+            images.
+    Returns:
+        (list[Tensor]): The segmentation result.
+    """
 
-def validate(val_loader, model, criterion, opt, accuracy):
+    device = next(model.parameters()).device  # model device
+    # prepare data
+    data = dict(img=img)
+    data = test_pipeline(data)
+    data = collate([data], samples_per_gpu=1)
+    if next(model.parameters()).is_cuda:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
+    else:
+        data['img_metas'] = [i.data[0] for i in data['img_metas']]
+
+    # forward the model
+    with torch.no_grad():
+        result = model(return_loss=False, rescale=True, **dataloader_tr_v)
+    return result
+
+
+def validate(val_loader, model, opt):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -26,8 +53,6 @@ def validate(val_loader, model, criterion, opt, accuracy):
     with torch.no_grad():
         end = time.time()
         for idx, (inp, target, i, xdir, xfn) in enumerate(val_loader):
-            # switch to evaluate mode
-            model.eval()
 
             inp = inp.float()
             target = target.float()
@@ -40,12 +65,14 @@ def validate(val_loader, model, criterion, opt, accuracy):
                 'img_shape': (H, W, C),
                 'ori_shape': (H, W, C),
                 'pad_shape': (H, W, C),
-                'filename': xfn_
+                'filename': xfn_,
+                'scale_factor': 1.0,
+                'flip': False,
             } for xfn_ in xfn]
 
             # compute output
             scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-            assert isinstance(scores, dict)
+            # assert isinstance(scores, dict)
             # loss = criterion(output, target)
 
             # measure accuracy and record loss
@@ -71,6 +98,7 @@ def validate(val_loader, model, criterion, opt, accuracy):
         print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
 
     return top1.avg, losses.avg, losses
+    
 
 
 def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
@@ -122,7 +150,9 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             'img_shape': (H, W, C),
             'ori_shape': (H, W, C),
             'pad_shape': (H, W, C),
-            'filename': xfn_
+            'filename': xfn_,
+            'scale_factor': 1.0,
+            'flip': False,
         } for xfn_ in xfn]
 
         # ===================forward=====================
@@ -249,10 +279,10 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
-        test_acc, test_acc_top5, test_loss, loss = validate(val_loader, model, ll, opt, ll.iou)
+        top1_avg, loss_avg, _ = validate(val_loader, model, opt)
 
-        logger.log_value('test_acc', test_acc, epoch)
-        logger.log_value('test_loss', test_loss, epoch)
+        logger.log_value('test_acc', top1_avg, epoch)
+        logger.log_value('test_loss', loss_avg, epoch)
 
         # regular saving
         if epoch % opt.save_freq == 0:
@@ -264,4 +294,4 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
 
-    return loss
+    return top1_avg, loss_avg, model # yes, i return the model because i like seeing it there

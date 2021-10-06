@@ -152,6 +152,9 @@ class Data2D(Dataset):
     def get_labels(self):
         return self.x_dirs_factor
     
+    def transform(self, transform):
+        self.transform = transform
+    
     def __getitem__(self, i):
 
         if self.preload_data:
