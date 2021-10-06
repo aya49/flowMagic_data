@@ -7,7 +7,7 @@ model = dict(
         img_size=(256, 256),
         patch_size=16,
         in_channels=3,
-        embed_dims=1024,
+        embed_dims=256, #1024
         num_layers=24,
         num_heads=16,
         out_indices=(5, 11, 17, 23),
@@ -18,14 +18,14 @@ model = dict(
     ),
     neck=dict(
         type='MLANeck',
-        in_channels=[1024, 1024, 1024, 1024],
-        out_channels=256,
+        in_channels=[256, 256, 256, 256],
+        out_channels=128, #256
         norm_cfg=norm_cfg,
         act_cfg=dict(type='ReLU'),
     ),
     decode_head=dict(
         type='SETRMLAHead',
-        in_channels=(256, 256, 256, 256),
+        in_channels=(128, 128, 128, 128),
         channels=512,
         in_index=(0, 1, 2, 3),
         dropout_ratio=0,
