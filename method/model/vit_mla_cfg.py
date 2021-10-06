@@ -2,10 +2,9 @@ backbone_norm_cfg = dict(type='LN', eps=1e-6, requires_grad=True)
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
-    pretrained='pretrain/jx_vit_large_p16_384-b3be5167.pth',
     backbone=dict(
         type='VisionTransformer',
-        img_size=(768, 768),
+        img_size=(256, 256),
         patch_size=16,
         in_channels=3,
         embed_dims=1024,
