@@ -208,7 +208,7 @@ optimizer = torch.optim.Adam(model.parameters(),
                                 
 
 # train and validate
-opt.epochs = 1000
+opt.epochs = 5000
 opt.save_freq = 50
 acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
 
