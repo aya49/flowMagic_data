@@ -192,7 +192,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     # train
     epoch_ = 0
     save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
-    save_checkpoint(model, optimizer, save_file, epoch_)
+    save_checkpoint(model, optimizer=optimizer, save_file, epoch_)
 
     ckpts = os.listdir(opt.model_folder)
     ckpts.sort()
@@ -211,7 +211,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
 
         print("==> training")
         time1 = time.time()
-        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, optimizer, opt)
+        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, optimizer=optimizer, opt=opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 

@@ -185,7 +185,7 @@ opt.tb_dir = opt.tb_dir + '_'
 dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
 dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=mv_files)
 
-opt.num_workers = 16
+opt.num_workers = 32
 opt.batch_size = 16
 opt.preload_data = True
 opt.cuda = 'cuda:0'
@@ -198,18 +198,19 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                     batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
                     num_workers=opt.num_workers // 2)
 
-
-optimizer = torch.optim.Adam(model.parameters(),
-                                lr=opt.learning_rate,
-                                weight_decay=0.0005)
-                                
 # initialize model
 model = create_model(opt).cuda(device=opt.cuda)
 # sum(p.numel() for p in model.parameters())
 
+optimizer = torch.optim.Adam(model.parameters(),
+                             lr=opt.learning_rate,
+                             weight_decay=0.0005)
+                                
+
 # train and validate
 opt.epochs = 1000
-acc, loss, model = train(opt, model, dataloader_tr_t, dataloader_tr_v, optimizer) # opt.preload_model = True
+opt.save_freq = 100
+acc, loss, model = train(opt, model, dataloader_tr_t, dataloader_tr_v, optimizer=optimizer) # opt.preload_model = True
 
 # get results
 dataset_tr_v.transform = transform_dict['B']
