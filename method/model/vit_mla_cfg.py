@@ -1,3 +1,4 @@
+backbone_norm_cfg = dict(type='LN', eps=1e-6, requires_grad=True)
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
