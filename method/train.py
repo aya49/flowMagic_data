@@ -192,7 +192,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     # train
     epoch_ = 0
     save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
-    save_checkpoint(model, optimizer=optimizer, save_file, epoch_)
+    save_checkpoint(model=model, optimizer=optimizer, save_path=save_file, epoch=epoch_)
 
     ckpts = os.listdir(opt.model_folder)
     ckpts.sort()
