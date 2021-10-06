@@ -8,9 +8,9 @@ model = dict(
         patch_size=16,
         in_channels=3,
         embed_dims=128, #1024
-        num_layers=12,
+        num_layers=8,
         num_heads=16,
-        out_indices=(5, 7, 9, 11),
+        out_indices=(3, 5, 6, 7),
         drop_rate=0.1,
         norm_cfg=backbone_norm_cfg,
         with_cls_token=False,
@@ -19,13 +19,13 @@ model = dict(
     neck=dict(
         type='MLANeck',
         in_channels=[128, 128, 128, 128],
-        out_channels=64, #256
+        out_channels=128, #256
         norm_cfg=norm_cfg,
         act_cfg=dict(type='ReLU'),
     ),
     decode_head=dict(
         type='SETRMLAHead',
-        in_channels=(64, 64, 64, 64),
+        in_channels=(128, 128, 128, 128),
         channels=512, #512
         in_index=(0, 1, 2, 3),
         dropout_ratio=0,
