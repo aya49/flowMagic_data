@@ -13,33 +13,6 @@ from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
-# https://github.com/open-mmlab/mmsegmentation/blob/441be4e435127868a0c72a4e0e6b87662a4c415b/mmseg/apis/inference.py#L70
-def inference_segmentor(model, img):
-    """Inference image(s) with the segmentor.
-    Args:
-        model (nn.Module): The loaded segmentor.
-        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
-            images.
-    Returns:
-        (list[Tensor]): The segmentation result.
-    """
-
-    device = next(model.parameters()).device  # model device
-    # prepare data
-    data = dict(img=img)
-    data = test_pipeline(data)
-    data = collate([data], samples_per_gpu=1)
-    if next(model.parameters()).is_cuda:
-        # scatter to specified GPU
-        data = scatter(data, [device])[0]
-    else:
-        data['img_metas'] = [i.data[0] for i in data['img_metas']]
-
-    # forward the model
-    with torch.no_grad():
-        result = model(return_loss=False, rescale=True, **dataloader_tr_v)
-    return result
-
 
 def validate(val_loader, model, opt):
     """One epoch validation"""
@@ -100,7 +73,7 @@ def validate(val_loader, model, opt):
     
 
 
-def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
+def train_epoch(epoch, train_loader, model, optimizer, opt):
     # One epoch training
 
     set_cuda = torch.cuda.is_available()
@@ -155,46 +128,11 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
         } for xfn_ in xfn]
 
         # ===================forward=====================
-        if opt.mode == 'distill':
-            preact = False
-            # if opt.distill in ['abound', 'overhaul']:
-            #     preact = True
-            # feat, logit = model(inp, is_feat=True)
-            # with torch.no_grad():
-            #     feat_t, logit_t = model_t(inp, is_feat=True)
-            #     feat_t = [f.detach() for f in feat_t]
+        ls = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+        loss = float(ls['decode.loss_seg']) # ll.lovasz_softmax(output, target, classes='present', per_image=True)
+        acc1 = float(ls['decode.acc_seg']) # ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
 
-            # # cls + kl div
-            # loss_cls = criterion_cls(logit, target)
-            # loss_div = criterion_div(logit, logit_t)
-
-            # # other kd beyond KL divergence
-            # if opt.distill == 'kd':
-            #     loss_kd = 0
-            # elif opt.distill == 'contrast':
-            #     f = module_list[1](feat[-1])
-            #     f_t = module_list[2](feat_t[-1])
-            #     loss_kd = criterion_kd(f, f_t, index, contrast_idx)
-            # elif opt.distill == 'hint':
-            #     f = feat[-1]
-            #     f_t = feat_t[-1]
-            #     loss_kd = criterion_kd(f, f_t)
-            # elif opt.distill == 'attention':
-            #     g = feat[1:-1]
-            #     g_t = feat_t[1:-1]
-            #     loss_group = criterion_kd(g, g_t)
-            #     loss_kd = sum(loss_group)
-            # else:
-            #     raise NotImplementedError(opt.distill)
-
-            # loss = opt.gamma * loss_cls + opt.alpha * loss_div + opt.beta * loss_kd 
-            # acc1 = ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
-        else:
-            scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-            loss = float(scores['decode.loss_seg']) # ll.lovasz_softmax(output, target, classes='present', per_image=True)
-            acc1 = float(scores['decode.acc_seg']) # ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
-
-            outputs = model.train_step(dict(img=inp, img_metas=img_metas, gt_semantic_seg=target), None)
+        # outputs = model.train_step(dict(img=inp, img_metas=img_metas, gt_semantic_seg=target), None)
         
         losses.update(loss, inp.size(0))
         top1.update(acc1, inp.size(0))
@@ -204,12 +142,15 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
 
         # ===================backward=====================
         optimizer.zero_grad()
-        # loss.backward()
+        ls['decode.loss_seg'].backward()
         optimizer.step()
 
         # ===================meters=====================
         batch_time.update(time.time() - end)
         end = time.time()
+
+        # tensorboard logger
+        pass
 
         # print info
         if idx % opt.print_freq == 0:
@@ -227,11 +168,10 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
     return acc1, loss, losses
 
 
-def train(opt, model, train_loader, val_loader, model_t=None):
+def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
 
     # optimizer
-    mpar = model.parameters()
-    optimizer = torch.optim.Adam(mpar, lr=opt.learning_rate, weight_decay=0.0005)
+    
 
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
@@ -271,7 +211,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
 
         print("==> training")
         time1 = time.time()
-        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, ll, optimizer, opt)
+        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, optimizer, opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
