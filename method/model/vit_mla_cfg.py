@@ -19,13 +19,13 @@ model = dict(
     neck=dict(
         type='MLANeck',
         in_channels=[128, 128, 128, 128],
-        out_channels=128, #256
+        out_channels=64, #256
         norm_cfg=norm_cfg,
         act_cfg=dict(type='ReLU'),
     ),
     decode_head=dict(
         type='SETRMLAHead',
-        in_channels=(128, 128, 128, 128),
+        in_channels=(64, 64, 64, 64),
         channels=512, #512
         in_index=(0, 1, 2, 3),
         dropout_ratio=0,

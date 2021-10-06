@@ -5,7 +5,7 @@ model = dict(
     backbone=dict(
         type='UNet',
         in_channels=2, ##
-        base_channels=8,
+        base_channels=16,
         num_stages=5,
         strides=(1, 1, 1, 1, 1),
         enc_num_convs=(2, 2, 2, 2, 2),
@@ -22,7 +22,7 @@ model = dict(
     ),
     decode_head=dict(
         type='ASPPHead',
-        in_channels=8,
+        in_channels=16,
         in_index=4,
         channels=8,
         dilations=(1, 12, 24, 36),
