@@ -57,6 +57,18 @@ score2D <- score2D %>% dplyr::group_by(dataset, scatterplot, cpop) %>%
 score2D <- score2D %>% dplyr::group_by(dataset, scatterplot, cpop) %>%
     dplyr::mutate(mean_true_proportion=mean(true_proportion))
 
+# get mean mean F1 for each scatterplot
+score2D$dscat <- paste0(score2D$dataset," || ",score2D$scatterplot)
+scoremean <- NULL
+for (meth in unique(score2D$method)) {
+    score2D_ = score2D[score2D$method==meth,]
+    for (ds in unique(score2D_$dscat)) {
+        score2D__ <- score2D_[score2D_$dscat==ds,]
+        ds_mean <- mean(sapply(unique(score2D__$cpop), function(cp) mean(score2D__$f1[score2D__$cpop==cp])))
+        scoremean <- rbind(scoremean, data.frame(method=meth, dscat=ds, meanF1=ds_mean))
+    }
+}
+
 # filter
 score2D_ <- score2D %>% dplyr::filter(
     !((method=="flowLearn" & train_no!=10) | 
