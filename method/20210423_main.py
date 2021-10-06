@@ -227,7 +227,7 @@ start_i = 0
 xdir_ = xdir[0]
 (H, W, C) = (256, 256, len(opt.x_2D))
 
-acc[]
+acc = []
 
 for j in range(len(inp)-1):
     if xdir[j+1] != xdir_:
@@ -255,10 +255,15 @@ for j in range(len(inp)-1):
                 'flip': False,
             } for xfn__ in xfn[start_i:]]
             xdir_ = xdir[j+1]
+        
+        scores = model.forward(inp_, img_metas_, gt_semantic_seg=target_, return_loss=True)
+        acc.append([xdir_, float(scores['decode.acc_seg'])])
+        # res = model.inference(inp, img_metas, rescale=False)
+
+        if j != len(inp)-1:
+            xdir_ = xdir[j+1]
         start_i = j+1
 
-        scores = model.forward(inp_, img_metas_, gt_semantic_seg=target_, return_loss=True)
-        # res = model.inference(inp, img_metas, rescale=False)
 
 
 

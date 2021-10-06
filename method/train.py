@@ -89,15 +89,14 @@ def validate(val_loader, model, opt):
             if idx % opt.print_freq == 0:
                 print('Test: [{0}/{1}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                      'Acc@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                       idx, len(val_loader), batch_time=batch_time, loss=losses,
-                       top1=top1))
+                      'Loss ({loss:.4f})\t'
+                      'Acc@1 ({acc1:.3f})'.format(
+                       idx, len(val_loader), batch_time=batch_time, loss=loss,
+                       acc1=acc1))
 
-        print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+        print(' * Acc@1 {acc1:.3f}'.format(acc1=acc1))
 
-    return top1.avg, losses.avg, losses
+    return acc1, loss, losses
     
 
 
@@ -217,15 +216,15 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, opt):
             print('Epoch: [{0}][{1}/{2}]\t'
                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                     'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                    'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                    'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
+                    'Loss ({loss:.4f})\t'
+                    'Acc@1 ({acc1:.3f})\t'.format(
                     epoch, idx, len(train_loader), batch_time=batch_time,
-                    data_time=data_time, loss=losses, top1=top1))
+                    data_time=data_time, loss=loss, acc1=acc1))
             sys.stdout.flush()
 
-    print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+    print(' * Acc@1 {acc1:.3f}'.format(acc1=acc1))
 
-    return top1.avg, losses.avg
+    return acc1, loss, losses
 
 
 def train(opt, model, train_loader, val_loader, model_t=None):
@@ -272,17 +271,17 @@ def train(opt, model, train_loader, val_loader, model_t=None):
 
         print("==> training")
         time1 = time.time()
-        train_acc, train_loss = train_epoch(epoch, train_loader, model, ll, optimizer, opt)
+        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, ll, optimizer, opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
-        top1_avg, loss_avg, _ = validate(val_loader, model, opt)
+        val_acc, val_loss, val_losses = validate(val_loader, model, opt)
 
-        logger.log_value('test_acc', top1_avg, epoch)
-        logger.log_value('test_loss', loss_avg, epoch)
+        logger.log_value('test_acc', val_acc, epoch)
+        logger.log_value('test_loss', val_loss, epoch)
 
         # regular saving
         if epoch % opt.save_freq == 0:
@@ -294,4 +293,4 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
 
-    return top1_avg, loss_avg, model # yes, i return the model because i like seeing it there
+    return val_acc, val_loss, model # yes, i return the model because i like seeing it there
