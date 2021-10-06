@@ -211,14 +211,14 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
 
         print("==> training")
         time1 = time.time()
-        train_acc, train_loss, train_losses = train_epoch(epoch, train_loader, model, optimizer=optimizer, opt=opt)
+        train_acc, train_loss, train_losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
-        val_acc, val_loss, val_losses = validate(val_loader, model, opt)
+        val_acc, val_loss, val_losses = validate(val_loader=val_loader, model=model, opt=opt)
 
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)
