@@ -33,7 +33,7 @@ model = dict(
         num_classes=5, ##
         norm_cfg=norm_cfg,
         align_corners=False,
-        loss_decode=dict(type='LovaszLoss', use_sigmoid=False, loss_weight=1.0)
+        loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
     ),
     train_cfg=dict(crop_size=256),
     test_cfg=dict(mode='slide', crop_size=256, stride=170)
