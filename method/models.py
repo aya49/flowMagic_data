@@ -1,3 +1,4 @@
+from genericpath import samefile
 import torch
 import mmcv
 from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
@@ -42,4 +43,19 @@ for name, dict_ in model_dict.items():
 
 def create_model(opt):
     return model_dict[opt.model](opt)
+
+
+
+def metafreeze_model(model, opt):
+    # freeze
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    if opt.model == 'setr':
+        samefile
+    
+    if opt.model == 'unet':
+        samefile
+    
+    return model
         

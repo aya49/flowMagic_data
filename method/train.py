@@ -20,9 +20,6 @@ def validate(val_loader, model, opt):
     losses = AverageMeter()
     top1 = AverageMeter()
 
-    # switch to evaluate mode
-    model.eval()
-
     with torch.no_grad():
         end = time.time()
         for idx, (inp, target, i, xdir, xfn) in enumerate(val_loader):
@@ -30,8 +27,8 @@ def validate(val_loader, model, opt):
             inp = inp.float()
             target = target.float()
             if torch.cuda.is_available():
-                inp = inp.cuda(device=opt.cuda)
-                target = target.cuda(device=opt.cuda)
+                inp = inp.cuda()
+                target = target.cuda()
 
             (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
             img_metas = [{
@@ -91,8 +88,6 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
     #     criterion_div = criterion[1]
     #     criterion_kd = criterion[2]
 
-    model.train()
-
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -114,8 +109,8 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
         #     inp, target, idx, _ = enum
 
         inp = inp.float()
-        inp = inp.cuda(device=opt.cuda) if set_cuda else inp
-        target = target.cuda(device=opt.cuda) if set_cuda else target
+        inp = inp.cuda() if set_cuda else inp
+        target = target.cuda() if set_cuda else target
 
         (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
         img_metas = [{
@@ -170,9 +165,6 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
 
-    # optimizer
-    
-
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
@@ -211,6 +203,9 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
 
         print("==> training")
         time1 = time.time()
+        model.train()
+        if opt.mode == 'meta':
+            model = metafreeze_model(model)
         train_acc, train_loss, train_losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
@@ -218,6 +213,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
 
+        model.eval()
         val_acc, val_loss, val_losses = validate(val_loader=val_loader, model=model, opt=opt)
 
         logger.log_value('test_acc', val_acc, epoch)

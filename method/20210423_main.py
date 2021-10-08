@@ -1,8 +1,4 @@
-# module load LIB/CUDA/10.2
-
-# !pip install segmentation_models_pytorch
-# !pip install torchviz
-# !MMCV_WITH_OPS=1 pip install mmcv-full==1.2.2 -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html #full version not for windows
+# this training was done on 1 gpu and 32 workers
 
 # for image classification: https://github.com/WangYueFt/rfs
 
@@ -35,7 +31,7 @@ import random
 import mmcv
 import mmseg
 
-from compress_pickle import dump, load
+import compress_pickle
 
 from mmcv.utils import Config
 # from mmseg.models import build_segmentor
@@ -52,7 +48,6 @@ from torch.utils.data import DataLoader
 # sum(p.numel() for p in model.parameters())
 ## If you want to calculate only the trainable parameters:
 # sum(p.numel() for p in model.parameters() if p.requires_grad)
-
 
 import tensorboard_logger as tb_logger
 
@@ -71,49 +66,30 @@ opt = parse_options()
 # tensorboard logger
 # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
 
+# I used a mac, so I need to get rid of '__MACOSX'
+def nomac(xx):
+    return [x for x in xx if '__MACOSX' not in x]
 
-## DATA: datasets x 4 ###########################################
-dss = os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))
-if dss[0] == '__MACOSX':
-    dss = dss[1:]
 
-# choose the data set 0-3 we use as the test data set
-dti = 3## for dti in range(4):
+## DATA: datasets x 4 ########################################
+dss = nomac( os.listdir(os.path.join(opt.data_dir, opt.x_2D[0])) )
+
+## PRE-TRAIN #################################################
+# choose the data set 0-3 we use as the metatest data set
+## for dti in range(4):
+dti = 3 ##
 ds_tr = [x for i, x in enumerate(dss) if i!=dti]
 ds_mt = dss[dti]
 
-# train/metatrain data sets denscats
+# train/metatrain data sets denscats folder paths
 flatx = lambda x: [i for row in x for i in row]
-x_dirs_tr = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
-            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr])
-x_dirs_tr = [x for x in x_dirs_tr if '__MACOSX' not in x]
-x_dirs_mt = [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
-            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))]
-x_dirs_mt = [x for x in x_dirs_mt if '__MACOSX' not in x]
+x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
+            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr]) )
+x_dirs_mt = nomac( [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
+            sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))] )
 
-
-    # ## DATA: scatterplot style x   #################################
-    # dss = os.listdir(os.path.join(opt.data_dir, opt.x_2D[0]))
-
-    # # list of denscat folders
-    # flatx = lambda x: [i for row in x for i in row]
-    # x_dirs = flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
-    #          sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for 
-    #          ds in dss])
-
-    # # PARAMETER (only lowest scoring one in each style will act as meta)
-    # sti = [3,5,6,12,20]
-    # smi = 0
-    # # dti = [3,5,6,12,20]
-    # # dmi = 0
-
-    # x_dirs_tr = x_dirs[sti]
-    # x_dirs_mt = x_dirs[smi]
-
-
-    ## PRE TRAIN #################################################
-    ## if opt.mode == 'pretrain':
-# split pretrain data set into train and validation (for accuracy)
+## if opt.mode == 'pretrain':
+# split pre-train data set into train (95%) and validation (5%)
 x_files_tr = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])])
 x_files_tr = [x for x in x_files_tr if '__MACOSX' not in x]
 
@@ -121,28 +97,34 @@ x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/2
 x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
 x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
 
-# create dataloaders
+# set some parameters --- if not enough gpu memory, reduce batch_size
 opt.num_workers = 32
-opt.batch_size = 64
-opt.preload_data = False
+opt.batch_size = 32
+opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 opt.cuda = 'cuda:0'
 
-dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-f = open(os.path.join(opt.data_dir, 'data_tr_t_pregnancy.gz'), 'wb')
-dump(dataset_tr_t, f, compression="lzma", set_default_extension=False) #gzip
-f.close()
-dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
-                    sampler=ids(dataset_tr_t), 
-                    batch_size=opt.batch_size,# shuffle=True, 
-                    drop_last=True, num_workers=opt.num_workers)
+# create datasets
+ds_tr_t_path = os.path.join(opt.data_dir, 'data_tr_t_{}.gz'.format(ds_mt))
+if os.path.exists(ds_tr_t_path):
+    dataset_tr_t = compress_pickle.load(ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
+else:
+    dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
+    compress_pickle.dump(dataset_tr_t, ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
 
-dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_v)
-f = open(os.path.join(opt.data_dir, 'data_tr_v_pregnancy.gz'), 'wb')
-dump(dataset_tr_v, f, compression="lzma", set_default_extension=False) #gzip
-f.close()
+ds_tr_v_path = os.path.join(opt.data_dir, 'data_tr_v_{}.gz'.format(ds_mt))
+if os.path.exists(ds_tr_v_path):
+    dataset_tr_v = compress_pickle.load(ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
+else:
+    dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_v)
+    compress_pickle.dump(dataset_tr_v, ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
+
+# create dataloaders
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                             batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                             num_workers=opt.num_workers)
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                    batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
-                    num_workers=opt.num_workers // 2)
+                             batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                             num_workers=opt.num_workers)
 
 # initialize model
 model = create_model(opt).cuda()
@@ -151,18 +133,18 @@ model = create_model(opt).cuda()
 train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
 
-    # ## DISTILL: work in progress ##################################
-    # if opt.mode == 'distill':
-    #     # load model
-    #     model   = create_model(opt.model, opt.n_class, opt.dim)
-    #     model_t = create_model(opt.model, opt.n_class, opt.dim)
-    #     ckpt = torch.load(opt.model_path, map_location="cuda:0" if torch.cuda.is_available() else "cpu")
-    #     model_t.load_state_dict(torch.load(ckpt)['model'])
+# ## DISTILL: work in progress ##################################
+# if opt.mode == 'distill':
+#     # load model
+#     model   = create_model(opt.model, opt.n_class, opt.dim)
+#     model_t = create_model(opt.model, opt.n_class, opt.dim)
+#     ckpt = torch.load(opt.model_path, map_location="cuda:0" if torch.cuda.is_available() else "cpu")
+#     model_t.load_state_dict(torch.load(ckpt)['model'])
 
-    #     train(opt, model, dataloader_tr, model_t)
+#     train(opt, model, dataloader_tr, model_t)
         
 
-
+## try just training with 10 samples ####################################
 n_shot = 10
 mt_files = []
 mv_files = []
@@ -202,10 +184,7 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
 model = create_model(opt).cuda(device=opt.cuda)
 # sum(p.numel() for p in model.parameters())
 
-optimizer = torch.optim.Adam(model.parameters(),
-                             lr=opt.learning_rate,
-                             weight_decay=0.0005)
-                                
+optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
 
 # train and validate
 opt.epochs = 5000
@@ -276,17 +255,24 @@ for j in range(len(inp)-1):
 
 
 
-    if opt.mode == 'meta':
-        for n_shot in [1, 2, 3, 4, 5, 10, 15, 20]:
+## if opt.mode == 'meta':
+## for n_shot in [1, 2, 3, 4, 5, 10, 15, 20]:
+n_shot = 10
+
+opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots)
+
+# shot_dir = ./data/x_2Ddensity_euclidean_rankkmed / pregnancy/07_FoxP3CD25_CD4Tcell / 1-5, 10, 15, 20
+opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots))
+
 
                 ## META TRAIN ################################################
                 # load model
-    model = create_model(opt).cuda()
-    ## ckpt = torch.load(opt.model_path)
-    ## model.load_state_dict(torch.load(ckpt)['model'])
+model = create_model(opt).cuda()
+ckpt = torch.load(opt.model_path)
+model.load_state_dict(torch.load(ckpt)['model'])
 
-    # get n-shot samples
-    mt_dir = os.path.dirname(x_dirs_mts_files[0])
+# get n-shot samples
+mt_dir = os.path.dirname(x_dirs_mts_files[0])
     pam_dir = mt_dir.replace("data/2D/x_2Ddenscat","data/2D/x_2Ddenscat_euclidean_rankkmed")
     mt_files = os.path.join(mt_dir, os.listdir(pam_dir + "/" + str(n_shot)))
     mv_files = [mvf for mvf in x_dirs_mts_files if mvf not in mt_files]

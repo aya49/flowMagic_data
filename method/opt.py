@@ -120,7 +120,7 @@ def parse_options():
         opt.transform = 'B' # only aug size
         opt.batch_size = opt.meta_batch_size
 
-        opt.model_name_meta = '{}_META_shots:{}'.format(opt.model_name, opt.n_shots)
+        opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots)
 
         # shot_dir = ./data/x_2Ddensity_euclidean_rankkmed / pregnancy/07_FoxP3CD25_CD4Tcell / 1-5, 10, 15, 20
         opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots))

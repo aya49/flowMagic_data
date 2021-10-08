@@ -26,15 +26,15 @@ model = dict(
     decode_head=dict(
         type='SETRMLAHead',
         in_channels=(64, 64, 64, 64),
-        channels=512, #512
+        channels=128, #512
         in_index=(0, 1, 2, 3),
         dropout_ratio=0,
         mla_channels=128,
         num_classes=5, ##
         norm_cfg=norm_cfg,
         align_corners=False,
-        loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+        loss_decode=dict(type='LovaszLoss', use_sigmoid=False, loss_weight=1.0)
+    ),
     train_cfg=dict(crop_size=256),
     test_cfg=dict(mode='slide', crop_size=256, stride=170)
 )
