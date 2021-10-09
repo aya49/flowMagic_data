@@ -44,6 +44,8 @@ from torchsampler import ImbalancedDatasetSampler as ids
 # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 from torch.utils.data import DataLoader
 
+# import imp # update module with imp.reload()
+
 ## number of parameters
 # sum(p.numel() for p in model.parameters())
 ## If you want to calculate only the trainable parameters:
