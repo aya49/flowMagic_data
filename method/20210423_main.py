@@ -55,7 +55,7 @@ from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
 from models import create_model
 
-from train import train
+from train import train, validate
 
 print("cuda available")
 print(torch.cuda.is_available())
@@ -90,17 +90,16 @@ x_dirs_mt = nomac( [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for
 
 ## if opt.mode == 'pretrain':
 # split pre-train data set into train (95%) and validation (5%)
-x_files_tr = flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])])
-x_files_tr = [x for x in x_files_tr if '__MACOSX' not in x]
+x_files_tr = nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) )
 
 x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
 x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
 x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
 
 # set some parameters --- if not enough gpu memory, reduce batch_size
+opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 opt.num_workers = 32
 opt.batch_size = 32
-opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 opt.cuda = 'cuda:0'
 
 # create datasets
@@ -128,6 +127,14 @@ dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
 
 # initialize model
 model = create_model(opt).cuda()
+# sum(p.numel() for p in model.parameters())
+
+optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
+
+# train and validate
+opt.epochs = 50
+opt.save_freq = 10
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
 
 # train
 train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
@@ -143,6 +150,14 @@ train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
 #     train(opt, model, dataloader_tr, model_t)
         
+
+
+
+
+
+
+
+
 
 ## try just training with 10 samples ####################################
 n_shot = 10
@@ -254,55 +269,84 @@ for j in range(len(inp)-1):
 
 
 
-
 ## if opt.mode == 'meta':
-## for n_shot in [1, 2, 3, 4, 5, 10, 15, 20]:
-n_shot = 10
+opt.mode = 'meta'
+## for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
+n_shots = 10
+opt.n_shots = n_shots
+## for x_dir_mt in x_dirs_mt:
+x_dir_mt = x_dirs_mt[0]
+xdmsplit = x_dir_mt.split('/')
+opt.data_scat = xdmsplit[-2:]
 
-opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots)
+opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots) + '.csv.gz')
+x_files_mt_t = pd.read_csv(opt.shot_dir)
+# file handling HERE!!!
 
-# shot_dir = ./data/x_2Ddensity_euclidean_rankkmed / pregnancy/07_FoxP3CD25_CD4Tcell / 1-5, 10, 15, 20
-opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots))
 
+## META-TRAIN #################################################
+# create datasets
+dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
+dataset_tr_v = dataset_tr_t
+dataset_tr_v.transform = transform_dict['B']
 
-                ## META TRAIN ################################################
-                # load model
+# set some parameters --- if not enough gpu memory, reduce batch_size
+opt.num_workers = 32
+opt.batch_size = 32
+opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
+opt.cuda = 'cuda:0'
+
+# create dataloaders
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                             batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                             num_workers=opt.num_workers)
+dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                             batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                             num_workers=opt.num_workers)
+
+# load model
 model = create_model(opt).cuda()
 ckpt = torch.load(opt.model_path)
 model.load_state_dict(torch.load(ckpt)['model'])
 
+# train
+train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
+
+## META-TEST ##############################################
 # get n-shot samples
-mt_dir = os.path.dirname(x_dirs_mts_files[0])
-    pam_dir = mt_dir.replace("data/2D/x_2Ddenscat","data/2D/x_2Ddenscat_euclidean_rankkmed")
-    mt_files = os.path.join(mt_dir, os.listdir(pam_dir + "/" + str(n_shot)))
-    mv_files = [mvf for mvf in x_dirs_mts_files if mvf not in mt_files]
+x_files_mt = nomac( flatx([os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)]) )
+x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
 
-# create dataloader
-dataset_tr = Data2D(opt, transform=transform_dict['B'], x_dirs=mt_files)
-dataloader_tr = DataLoader(sampler=ids(dataset_tr), batch_size=opt.batch_size,
-                shuffle=True, drop_last=True, num_workers=opt.num_workers)
+ds_mt_r_path = os.path.join(opt.data_dir, 'data_mt_r_{}.gz'.format(opt.data_scat))
+if os.path.exists(ds_mt_r_path):
+    dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+else:
+    dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_r)
+    compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 
-dataset_val = Data2D(opt, x_dirs=mt_files)
-dataloader_val = DataLoader(dataset_val)
+dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
+                                batch_size=len(dataset_mt_r), shuffle=False, drop_last=False,
+                                num_workers=1)
+for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
+    break
 
-train(opt, model, dataloader_tr, dataloader_val)
+model.eval()
 
-## META TEST #################################################
-start = time.time()
-val_acc, val_std = meta_test(model, meta_valloader)
-print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, time.time() - start))
+start_i = 0
+xdir_ = xdir[0]
+(H, W, C) = (256, 256, len(opt.x_2D))
+img_metas = [{
+    'img_shape': (H, W, C),
+    'ori_shape': (H, W, C),
+    'pad_shape': (H, W, C),
+    'filename': xfn__,
+    'scale_factor': 1.0,
+    'flip': False,
+} for xfn__ in xfn]
+scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+acc.append([xdir_, float(scores['decode.acc_seg'])])
 
-start = time.time()
-val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False)
-val_time = time.time() - start
-print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, time.time() - start))
-
-start = time.time()
-test_acc, test_std = meta_test(model, meta_testloader)
-print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, time.time() - start))
-
-start = time.time()
-test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
-print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, time.time() - start))
-
+res = model.inference(inp, img_metas, rescale=False)
+val_acc, val_loss, val_losses = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
 
