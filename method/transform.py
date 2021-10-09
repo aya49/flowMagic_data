@@ -29,6 +29,9 @@ def transform_A(x, y):
 
 # for test
 def transform_B(x, y):
+    x = tresize(x)
+    y = tresize(y)
+    
     return x, y
 
 

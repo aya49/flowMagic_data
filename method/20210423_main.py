@@ -57,7 +57,7 @@ from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
 from models import create_model
 
-from train import train, validate
+from train_premeta import train, validate
 
 print("cuda available")
 print(torch.cuda.is_available())
@@ -351,8 +351,6 @@ dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
 for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     break
 
-model.eval()
-
 (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
 img_metas = [{
     'img_shape': (H, W, C),
@@ -362,8 +360,11 @@ img_metas = [{
     'scale_factor': 1.0,
     'flip': False,
 } for xfn__ in xfn]
-scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-acc.append([xdir_, float(scores['decode.acc_seg'])])
+
+# inference and score
+model.eval()
+
+res_table = pd.DataFrame(scores)
 
 res = model.inference(inp, img_metas, rescale=False)
 val_acc, val_loss, val_losses = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
