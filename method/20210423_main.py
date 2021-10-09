@@ -308,10 +308,15 @@ opt.cuda = 'cuda:0'
 
 # create datasets
 dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
+dataset_mt_v = dataset_mt_t
+dataset_mt_v.transform = transform_dict['B']
 
 # create dataloaders
 dataloader_mt_t = DataLoader(dataset=dataset_mt_t, sampler=ids(dataset_mt_t), 
-                             batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                             batch_size=opt.batch_size, drop_last=True, # shuffle=True, 
+                             num_workers=opt.num_workers)
+dataloader_mt_v = DataLoader(dataset=dataset_mt_v, sampler=ids(dataset_mt_v), 
+                             batch_size=len(dataset_mt_v), drop_last=False, shuffle=False, 
                              num_workers=opt.num_workers)
 
 # load model
@@ -319,8 +324,12 @@ model = create_model(opt).cuda()
 ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
 model.load_state_dict(ckpt['model'])
 
-# train
-train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
+optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
+
+# train and validate
+opt.epochs = 50
+opt.save_freq = 50
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
 
 
 ## META-TEST ##############################################

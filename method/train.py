@@ -13,6 +13,7 @@ from mmseg.models.losses import lovasz_loss as ll
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 
+from model import metafreeze_model
 
 def validate(val_loader, model, opt):
     """One epoch validation"""
