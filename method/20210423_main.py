@@ -57,6 +57,8 @@ from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
 from models import create_model
 
+from util import prep_input
+
 from train_premeta import train, validate
 
 print("cuda available")
@@ -351,15 +353,7 @@ dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
 for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     break
 
-(H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
-img_metas = [{
-    'img_shape': (H, W, C),
-    'ori_shape': (H, W, C),
-    'pad_shape': (H, W, C),
-    'filename': xfn__,
-    'scale_factor': 1.0,
-    'flip': False,
-} for xfn__ in xfn]
+inp, target, img_metas = prep_input(inp, target, xfn)
 
 # inference and score
 model.eval()
@@ -367,4 +361,4 @@ model.eval()
 res = model.inference(inp, img_metas, rescale=False)
 val_acc, val_loss, val_losses = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
 
-res_table = pd.DataFrame(val_losses)
+res

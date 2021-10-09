@@ -2,6 +2,26 @@ import torch
 import time
 import numpy as np
 
+
+def prep_input(inp, target, xfn):
+    inp = inp.float()
+    target = target.float()
+    if torch.cuda.is_available():
+        inp = inp.cuda()
+        target = target.cuda()
+
+    (H, W, C) = (inp.shape[3], inp.shape[2], inp.shape[1])
+    img_metas = [{
+        'img_shape': (H, W, C),
+        'ori_shape': (H, W, C),
+        'pad_shape': (H, W, C),
+        'filename': xfn_,
+        'scale_factor': 1.0,
+        'flip': False,
+    } for xfn_ in xfn]
+
+    return inp, target, img_metas
+
 def save_checkpoint(model, optimizer, save_path, epoch, n_gpu=1):
     torch.save({
         'model': model.state_dict() if n_gpu <= 1 else model.module.state_dict(),

@@ -32,7 +32,7 @@ model = dict(
         align_corners=False,
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)
     ),
-    train_cfg=dict(crop_size=(256, 256)), ##
-    test_cfg=dict(mode='slide', crop_size=(256, 256), stride=(170, 170)) ##
+    train_cfg=dict(mode='whole'),
+    test_cfg=dict(mode='whole')
 )
 evaluation = dict(metric='mIoU')
