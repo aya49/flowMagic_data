@@ -27,7 +27,7 @@ def parse_options():
                         help="preload model to continue training or as final model if file ends in \'_final.pth\')")
     parser.add_argument('--n_class', type=int, default=5, help='max number of classes')
     parser.add_argument('--depth', type=int, default=5, help='encoder depth')
-    parser.add_argument('--dim', type=int, default=200, help='side length of square image data')
+    parser.add_argument('--dim', type=int, default=256, help='side length of square image data')
 
     # data
     parser.add_argument('--data_dir', type=str, default='data', help='data directory')

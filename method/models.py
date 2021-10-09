@@ -52,7 +52,10 @@ def metafreeze_model(model, opt):
         param.requires_grad = False
     
     if opt.model == 'setr':
-        samefile
+        for param in model.backbone.layers[6].parameters():
+            param.requires_grad = True
+        for param in model.backbone.layers[7].parameters():
+            param.requires_grad = True
     
     if opt.model == 'unet':
         samefile

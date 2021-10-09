@@ -60,6 +60,14 @@ from train import train, validate
 print("cuda available")
 print(torch.cuda.is_available())
 
+# print to file
+# orig_stdout = sys.stdout
+# f = open('model_setr.txt', 'w')
+# sys.stdout = f
+# OUT
+# sys.stdout = orig_stdout
+# f.close()
+
 # options
 opt = parse_options()
 
@@ -103,14 +111,14 @@ opt.batch_size = 32
 opt.cuda = 'cuda:0'
 
 # create datasets
-ds_tr_t_path = os.path.join(opt.data_dir, 'data_tr_t_{}.gz'.format(ds_mt))
+ds_tr_t_path = os.path.join(opt.data_dir, 'dataset_tr_t_{}.gz'.format(ds_mt))
 if os.path.exists(ds_tr_t_path):
     dataset_tr_t = compress_pickle.load(ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
 else:
     dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
     compress_pickle.dump(dataset_tr_t, ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
 
-ds_tr_v_path = os.path.join(opt.data_dir, 'data_tr_v_{}.gz'.format(ds_mt))
+ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
 if os.path.exists(ds_tr_v_path):
     dataset_tr_v = compress_pickle.load(ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
 else:
@@ -135,9 +143,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_de
 opt.epochs = 50
 opt.save_freq = 10
 acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
-
-# train
-train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
 
 # ## DISTILL: work in progress ##################################
@@ -277,19 +282,23 @@ opt.n_shots = n_shots
 ## for x_dir_mt in x_dirs_mt:
 x_dir_mt = x_dirs_mt[0]
 xdmsplit = x_dir_mt.split('/')
-opt.data_scat = xdmsplit[-2:]
+opt.data_scat = '/'.join(xdmsplit[-2:])
 
+x_files_mt = nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] )
+
+# get n-shot samples
 opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
 opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots) + '.csv.gz')
 x_files_mt_t = pd.read_csv(opt.shot_dir)
 # file handling HERE!!!
+x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
+
+# get test samples
+x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
 
 
 ## META-TRAIN #################################################
-# create datasets
-dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
-dataset_tr_v = dataset_tr_t
-dataset_tr_v.transform = transform_dict['B']
+dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_r)
 
 # set some parameters --- if not enough gpu memory, reduce batch_size
 opt.num_workers = 32
@@ -297,45 +306,43 @@ opt.batch_size = 32
 opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 opt.cuda = 'cuda:0'
 
+# create datasets
+dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
+
 # create dataloaders
-dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+dataloader_mt_t = DataLoader(dataset=dataset_mt_t, sampler=ids(dataset_mt_t), 
                              batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                             num_workers=opt.num_workers)
-dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                             batch_size=opt.batch_size, drop_last=False, shuffle=False,
                              num_workers=opt.num_workers)
 
 # load model
 model = create_model(opt).cuda()
-ckpt = torch.load(opt.model_path)
-model.load_state_dict(torch.load(ckpt)['model'])
+ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
+model.load_state_dict(ckpt['model'])
 
 # train
 train(opt, model, dataloader_tr_t, dataloader_tr_v) # opt.preload_model = True
 
-## META-TEST ##############################################
-# get n-shot samples
-x_files_mt = nomac( flatx([os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)]) )
-x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
 
-ds_mt_r_path = os.path.join(opt.data_dir, 'data_mt_r_{}.gz'.format(opt.data_scat))
+## META-TEST ##############################################
+# create datasets
+ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
 if os.path.exists(ds_mt_r_path):
     dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 else:
     dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_r)
     compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 
+# create dataloaders
 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
                                 batch_size=len(dataset_mt_r), shuffle=False, drop_last=False,
                                 num_workers=1)
+
 for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     break
 
 model.eval()
 
-start_i = 0
-xdir_ = xdir[0]
-(H, W, C) = (256, 256, len(opt.x_2D))
+(H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
 img_metas = [{
     'img_shape': (H, W, C),
     'ori_shape': (H, W, C),
