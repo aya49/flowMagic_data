@@ -364,8 +364,7 @@ img_metas = [{
 # inference and score
 model.eval()
 
-res_table = pd.DataFrame(scores)
-
 res = model.inference(inp, img_metas, rescale=False)
 val_acc, val_loss, val_losses = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
 
+res_table = pd.DataFrame(val_losses)
