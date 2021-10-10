@@ -131,7 +131,7 @@ else:
 
 # create dataloaders
 dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                             batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                             batch_size=2, drop_last=True, #shuffle=True, 
                              num_workers=opt.num_workers)
 dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                              batch_size=opt.batch_size, drop_last=False, shuffle=False,
@@ -159,7 +159,7 @@ acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val
 
 #     train(opt, model, dataloader_tr, model_t)
         
-        
+
 ## META #######################################################
 ## if opt.mode == 'meta':
 opt.mode = 'meta'
@@ -185,8 +185,6 @@ x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
 
 
 ## META-TRAIN #################################################
-dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_r)
-
 # set some parameters --- if not enough gpu memory, reduce batch_size
 opt.num_workers = 32
 opt.batch_size = 32
@@ -248,3 +246,125 @@ for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
 acct = pd.DataFrame(acc,columns=['filename','pixelacc'])
 acc_file = os.path.join(opt.data_dir, 'accpixel_{}.csv.gz'.format(opt.data_scat.replace('/','_')))
 acct.to_csv(acc_file, header=True, index=False, compression='gzip')
+
+
+
+
+
+
+
+
+
+
+
+
+
+## try just training with 10 samples ####################################
+n_shot = 10
+mt_files = []
+mv_files = []
+for x_dir_mt in x_dirs_mt:
+    x_dirs_mts_files = [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)]
+    x_dirs_mts_files = [x for x in x_dirs_mts_files if '__MACOSX' not in x]
+    # get n-shot samples
+    mt_files.append(random.sample(x_dirs_mts_files, n_shot))
+    mv_files.append([mvf for mvf in x_dirs_mts_files if mvf not in mt_files])
+
+mt_files = flatx(mt_files)
+mv_files = flatx(mv_files)
+
+opt.save_dir = opt.save_dir + '_'
+os.makedirs(opt.model_dir, exist_ok=True)
+opt.model_folder = opt.model_folder + '_'
+os.makedirs(opt.model_folder, exist_ok=True) 
+opt.tb_dir = opt.tb_dir + '_'
+
+dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=mt_files)
+dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=mv_files)
+
+opt.num_workers = 32
+opt.batch_size = 16
+opt.preload_data = True
+opt.cuda = 'cuda:0'
+
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, 
+                    sampler=ids(dataset_tr_t), 
+                    batch_size=opt.batch_size,# shuffle=True, 
+                    drop_last=True, num_workers=opt.num_workers)
+dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                    batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                    num_workers=opt.num_workers // 2)
+
+# initialize model
+model = create_model(opt).cuda(device=opt.cuda)
+# sum(p.numel() for p in model.parameters())
+
+optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
+
+# train and validate
+opt.epochs = 5000
+opt.save_freq = 50
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
+
+# get results
+dataset_tr_v.transform = transform_dict['B']
+dataloader_tr_test = DataLoader(dataset=dataset_tr_v,
+                    batch_size=len(dataset_tr_v), shuffle=False, drop_last=False,
+                    num_workers=1)
+for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_tr_test):
+    break
+
+set_cuda = torch.cuda.is_available()
+
+inp = inp.float()
+inp = inp.cuda(device=opt.cuda) if set_cuda else inp
+target = target.cuda(device=opt.cuda) if set_cuda else target
+
+
+model.eval()
+
+start_i = 0
+xdir_ = xdir[0]
+(H, W, C) = (256, 256, len(opt.x_2D))
+
+acc = []
+
+for j in range(len(inp)-1):
+    if xdir[j+1] != xdir_:
+        end_i = j
+        if j == len(inp)-1:
+            inp_ = inp[:][start_i:(j+1)]
+            target_ = target[:][start_i:(j+1)]
+            img_metas_ = [{
+                'img_shape': (H, W, C),
+                'ori_shape': (H, W, C),
+                'pad_shape': (H, W, C),
+                'filename': xfn__,
+                'scale_factor': 1.0,
+                'flip': False,
+            } for xfn__ in xfn[start_i:]]
+        else:
+            inp_ = inp[:][start_i:]
+            target_ = target[:][start_i:]
+            img_metas_ = [{
+                'img_shape': (H, W, C),
+                'ori_shape': (H, W, C),
+                'pad_shape': (H, W, C),
+                'filename': xfn__,
+                'scale_factor': 1.0,
+                'flip': False,
+            } for xfn__ in xfn[start_i:]]
+            xdir_ = xdir[j+1]
+        
+        scores = model.forward(inp_, img_metas_, gt_semantic_seg=target_, return_loss=True)
+        acc.append([xdir_, float(scores['decode.acc_seg'])])
+        # res = model.inference(inp, img_metas, rescale=False)
+
+        if j != len(inp)-1:
+            xdir_ = xdir[j+1]
+        start_i = j+1
+
+
+
+
+

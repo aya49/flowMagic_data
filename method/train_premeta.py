@@ -206,7 +206,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         time1 = time.time()
         model.train()
         if opt.mode == 'meta':
-            model = metafreeze_model(model)
+            model = metafreeze_model(model, opt)
         train_acc, train_loss, train_losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))

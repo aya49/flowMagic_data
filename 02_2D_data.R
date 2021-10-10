@@ -60,7 +60,7 @@ f <- flowCore::read.FCS("/mnt/FCS_local3/backup/Brinkman group/current/Alice/G69
 
 cat("out of",length(fe),"\n")
 loop_ind <- loop_ind_f(sample(fe), no_cores)
-a = plyr::llply(loop_ind, function(ii) plyr::llply(ii, function(i) { tryCatch({
+a = plyr::llply(loop_ind, function(ii) plyr::llply(ii, function(i) {# tryCatch({
     # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
     x2_file <- x2_files[i]
     if (!overwrite & file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))
@@ -205,7 +205,8 @@ a = plyr::llply(loop_ind, function(ii) plyr::llply(ii, function(i) { tryCatch({
     save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
     return()
     
-}, error = function(e) return(i) ) }), .parallel=TRUE)
+# }, error = function(e) return(i) ) 
+}), .parallel=TRUE)
 time_output(start)
 
 blscore <- Reduce(rbind, plyr::llply(x2_files[fe], function(x) get(load(paste0(gs_xr(x,"temp_score"),".Rdata")))))
