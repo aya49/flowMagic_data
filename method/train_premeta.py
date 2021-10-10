@@ -67,7 +67,7 @@ def validate(val_loader, model, opt):
 
         print(' * Acc@1 {acc1:.3f}'.format(acc1=top1))
 
-    return top1, losses
+    return top1.avg, losses.avg
     
 
 
@@ -161,7 +161,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
         
         print(' * Acc@1 {acc1:.3f}'.format(acc1=top1))
 
-    return top1, losses
+    return top1.avg, losses.avg
 
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
