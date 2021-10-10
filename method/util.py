@@ -2,14 +2,13 @@ import torch
 import time
 import numpy as np
 
-
 def prep_input(inp, target, xfn):
     inp = inp.float()
     target = target.float()
     if torch.cuda.is_available():
         inp = inp.cuda()
         target = target.cuda()
-
+    
     (H, W, C) = (inp.shape[3], inp.shape[2], inp.shape[1])
     img_metas = [{
         'img_shape': (H, W, C),
