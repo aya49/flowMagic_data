@@ -231,21 +231,32 @@ dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
                                 batch_size=1, shuffle=False, drop_last=False,
                                 num_workers=1)
 
-acc = []
+model.eval()
+total_r = len(dataset_mt_r)
+# acc = []
 for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     inp, target, img_metas = prep_input(inp, target, xfn)
     # inference and score
-    model.eval()
+    
     res = model.inference(inp, img_metas, rescale=False)
-    res_file = os.path.join(opt.data_dir, 'res_{}.csv.gz'.format(opt.data_scat.replace('/','_')))
-    np.savetxt(res_file, res[0], delimiter=",")
+    res = res.squeeze()
+    res_vals, res_ind = torch.max(res, 0)
+    res_ind = res_ind.cpu().detach().numpy() 
 
-    val_acc, val_loss, val_losses = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
-    acc.append([xfn[0], val_acc])
+    res_dir = os.path.join(opt.data_dir, 'res/{}'.format(opt.data_scat))
+    os.makedirs(res_dir, exist_ok=True)
 
-acct = pd.DataFrame(acc,columns=['filename','pixelacc'])
-acc_file = os.path.join(opt.data_dir, 'accpixel_{}.csv.gz'.format(opt.data_scat.replace('/','_')))
-acct.to_csv(acc_file, header=True, index=False, compression='gzip')
+    res_file = os.path.join(res_dir, xfn[0]) # ends with gz so auto compress
+    np.savetxt(res_file, res_ind, delimiter=",")
+
+    val_acc, val_loss = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
+    # acc.append([xfn[0], val_acc])
+
+    print('{}/{}: acc({}) loss({})'.format(int(i)+1, total_r, val_acc, val_loss))
+
+# acct = pd.DataFrame(acc,columns=['filename','pixelacc'])
+# acc_file = os.path.join(opt.data_dir, 'accpixel_{}.csv.gz'.format(opt.data_scat.replace('/','_')))
+# acct.to_csv(acc_file, header=True, index=False, compression='gzip')
 
 
 
