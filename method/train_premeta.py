@@ -159,7 +159,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
                     data_time=data_time, loss=loss, acc1=acc1))
             sys.stdout.flush()
         
-        print(' * Acc@1 {acc1:.3f}'.format(acc1=top1.avg))
+    print(' * Acc@1 {acc1:.3f}'.format(acc1=top1.avg))
 
     return top1.avg, losses.avg
 
