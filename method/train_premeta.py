@@ -65,9 +65,9 @@ def validate(val_loader, model, opt):
                        idx, len(val_loader), batch_time=batch_time, loss=loss,
                        acc1=acc1))
 
-        print(' * Acc@1 {acc1:.3f}'.format(acc1=acc1))
+        print(' * Acc@1 {acc1:.3f}'.format(acc1=top1))
 
-    return acc1, loss, losses
+    return top1, losses
     
 
 
@@ -158,10 +158,10 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
                     epoch, idx, len(train_loader), batch_time=batch_time,
                     data_time=data_time, loss=loss, acc1=acc1))
             sys.stdout.flush()
+        
+        print(' * Acc@1 {acc1:.3f}'.format(acc1=top1))
 
-    print(' * Acc@1 {acc1:.3f}'.format(acc1=acc1))
-
-    return acc1, loss, losses
+    return top1, losses
 
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
@@ -207,7 +207,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         model.train()
         if opt.mode == 'meta':
             model = metafreeze_model(model, opt)
-        train_acc, train_loss, train_losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
+        train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
@@ -215,7 +215,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         logger.log_value('train_loss', train_loss, epoch)
 
         model.eval()
-        val_acc, val_loss, val_losses = validate(val_loader=val_loader, model=model, opt=opt)
+        val_acc, val_loss = validate(val_loader=val_loader, model=model, opt=opt)
 
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)
