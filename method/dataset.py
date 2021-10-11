@@ -140,15 +140,6 @@ class Data2D(Dataset):
     def __len__(self):
         return len(self.x_files[0])
     
-    def pickle(self):
-        f = file(os.path.join(self.data_dir, 'data_temp'), 'wb')
-        pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-        f.close()
-
-    def unpickle(self):
-        with file(os.path.join(self.data_dir, 'data_temp'), 'rb') as f:
-            return pickle.load(f)
-    
     def get_labels(self):
         return self.x_dirs_factor
     

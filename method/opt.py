@@ -30,7 +30,7 @@ def parse_options():
     parser.add_argument('--dim', type=int, default=256, help='side length of square image data')
 
     # data
-    parser.add_argument('--data_dir', type=str, default='data', help='data directory')
+    parser.add_argument('--data_dir', type=str, default='data/2D', help='data directory')
     parser.add_argument('--x_2D', type=str, default='x_2Ddenscat,x_2Dcontour', help='delimited list of input folder names in data_dir')
     parser.add_argument('--y_2D', type=str, default='y_2D,x_2Ddiscrete,y_vector_', help='output folder in data_dir')
     parser.add_argument('--preload_data', action='store_false', help='preload data')

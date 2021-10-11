@@ -1,5 +1,13 @@
 # this training was done on 1 gpu and 32 workers
+'''
+conda activate pytorch_seg
 
+module load LANG/PYTHON/3.7.6
+module load TOOLS/PYTORCH/1.7.1-CUDA101-PY376 # automatically loads CUDA 10.1
+module load LIB/OPENCV/3.4.9-PY376-CUDA
+# module load LIB/CUDNN/8.0.5-CUDA11.1
+nvcc --version # default CUDA 9.1 # CUDA version
+'''
 # for image classification: https://github.com/WangYueFt/rfs
 
 import os
@@ -223,7 +231,7 @@ ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.dat
 if os.path.exists(ds_mt_r_path):
     dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 else:
-    dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_r)
+    dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt)
     compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 
 # create dataloaders
@@ -233,6 +241,8 @@ dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
 
 model.eval()
 total_r = len(dataset_mt_r)
+res_dir = os.path.join(opt.data_dir.replace('data','results'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
+os.makedirs(res_dir, exist_ok=True)
 # acc = []
 for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     inp, target, img_metas = prep_input(inp, target, xfn)
@@ -243,11 +253,13 @@ for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
     res_vals, res_ind = torch.max(res, 0)
     res_ind = res_ind.cpu().detach().numpy() 
 
-    res_dir = os.path.join(opt.data_dir, 'res/{}'.format(opt.data_scat))
-    os.makedirs(res_dir, exist_ok=True)
-
     res_file = os.path.join(res_dir, xfn[0]) # ends with gz so auto compress
-    np.savetxt(res_file, res_ind, delimiter=",")
+
+    xdisc = xdir.replace('x_2Ddenscat', 'x_2Ddiscrete')
+    x2discrete = pd.read_csv(xdisc, header=None).values.tolist()
+    yres = [res[xy[1]-1, xy[2]-1] for xy in x2discrete]
+    yres = pd.DataFrame(data=yres, index=None, columns=None)
+    yres.to_csv(res_file, index=False, header=False, compression='gzip')
 
     val_acc, val_loss = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
     # acc.append([xfn[0], val_acc])
