@@ -49,8 +49,8 @@ kd2Dto3D <- function(x) {
 # fe <- which(!unlist(plyr::llply(gsub("/data/2D/x","/results/2D/y_2D",x2_files), file.exists)))
 fe <- 1:length(x2_files)
 # fe <- fe[sapply(x2_files, function(x2_file) !file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))]
-fe <- fe[sapply(x2_files, function(x2_file) !file.exists(gs_xr(x2_file,"x_2Ddenscat")))]
-fe <- fe[!grepl("HIPCmyeloid[/]viabilitydyeSSCA_Allcells", x2_files[fe]) & !grepl("HIPCmyeloid[/]CD66CD14_Livecells_", x2_files[fe])]
+fe <- fe[sapply(x2_files[fe], function(x2_file) !file.exists(gs_xr(x2_file,"x_2Ddenscat")))]
+fe <- fe[!grepl("HIPCmyeloid[/]FSCASSCA_Singlets", x2_files[fe]) & !grepl("HIPCmyeloid[/]viabilitydyeSSCA_Allcells", x2_files[fe])]
 loop_ind <- loop_ind_f(fe, no_cores)
 # fe <- fe[plyr::llply(loop_ind, function(ii) 
 #     sapply(ii, function(i) {
@@ -67,14 +67,16 @@ f <- flowCore::read.FCS("/mnt/FCS_local3/backup/Brinkman group/current/Alice/G69
 #7231
 
 cat("out of",length(fe),"\n")
-loop_ind <- loop_ind_f(sample(fe), no_cores)
-a = plyr::llply(loop_ind, function(ii) 
-    plyr::llply(ii, function(i) {# tryCatch({
+# loop_ind <- loop_ind_f(sample(fe), no_cores)
+# plyr::l_ply(loop_ind, function(ii) {
+a <- furrr::future_map(loop_ind, function(ii) {
+    # plyr::l_ply(ii, function(i) {# tryCatch({
+    for (i in ii) { tryCatch({
         # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
         x2_file <- x2_files[i]
-        if (file.exists(gs_xr(x2_file,"x_2Ddenscat")))
-            if (!is.na(data.table::fread(gs_xr(x2_file,"x_2Ddenscat"))[1,1]))
-                return()
+        # if (file.exists(gs_xr(x2_file,"x_2Ddenscat")))
+        #     if (!is.na(data.table::fread(gs_xr(x2_file,"x_2Ddenscat"))[1,1]))
+        #         next
         # if (!overwrite & file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))
         #     # if (!overwrite & file.exists(gs_xr(x2_file,"y_2D")))
         #     # if (!overwrite & file.exists(gs_xr(x2_file,"x_2Dcontour")))
@@ -215,18 +217,19 @@ a = plyr::llply(loop_ind, function(ii)
         #     f1_score(y2i, y2dp, silent=TRUE))
         # 
         # save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
-        return()
+        # return()
         
         # }, error = function(e) return(i) ) 
-    }), 
-    .parallel=TRUE)
+        # })
+    }, error = function(e) next ) }
+# }, .parallel=TRUE)
+})
 time_output(start)
 
 blscore <- Reduce(rbind, plyr::llply(x2_files[fe], function(x) {
     tryCatch({
         get(load(paste0(gs_xr(x,"temp_score"),".Rdata")))
-        return(FALSE)
-    }, error = function(e) return(TRUE))
+    }, error = function(e) return())
     
 }))
 

@@ -29,7 +29,7 @@ wget  -O x_2Ddenscat.zip
 unzip x_2Ddenscat.zip
 rm x_2Ddenscat.zip
 
-wget  -O x_2Dcontour.zip
+wget http://vault.sfu.ca/index.php/s/MzA6acXFQYNCO91/download -O x_2Dcontour.zip
 unzip x_2Dcontour.zip
 rm x_2Dcontour.zip
 
