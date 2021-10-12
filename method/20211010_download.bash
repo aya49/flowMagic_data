@@ -25,7 +25,7 @@ wget http://vault.sfu.ca/index.php/s/4vcFP82sIR6S53H/download -O y_2D.zip
 unzip y_2D.zip
 rm y_2D.zip
 
-wget  -O x_2Ddenscat.zip
+wget http://vault.sfu.ca/index.php/s/ursZXAFtxEG9kVI/download -O x_2Ddenscat.zip
 unzip x_2Ddenscat.zip
 rm x_2Ddenscat.zip
 
@@ -33,7 +33,7 @@ wget http://vault.sfu.ca/index.php/s/MzA6acXFQYNCO91/download -O x_2Dcontour.zip
 unzip x_2Dcontour.zip
 rm x_2Dcontour.zip
 
-wget  -O x_2Ddenscat_euclidean_rankkmed.zip
+wget http://vault.sfu.ca/index.php/s/09lBvEI1w1ao5KD/downloads -O x_2Ddenscat_euclidean_rankkmed.zip
 unzip x_2Ddenscat_euclidean_rankkmed.zip
 rm x_2Ddenscat_euclidean_rankkmed.zip
 
@@ -46,4 +46,19 @@ cd 2D
 wget http://vault.sfu.ca/index.php/s/dVnVhG1nxg2x2bN/download -O y.zip
 unzip y.zip
 rm y.zip
+
+
+
+
+# miniconda
+conda install -c anaconda numpy
+conda install -c conda-forge pandas
+pip install mmcv-full==1.3.14 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.7.0/index.html
+pip install mmsegmentation
+
+pip install argparse
+pip install compress_pickle
+pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
+pip install tensorboard_logger
+pip install GPUtil
 

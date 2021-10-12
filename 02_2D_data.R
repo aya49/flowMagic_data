@@ -5,11 +5,12 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 50#parallel::detectCores() - 5
+no_cores <- 14#parallel::detectCores() - 5
 # root <- "/mnt/FCS_local2/Brinkman group/Alice/flowMagic_data"
 # root <- "/home/ayue/projects/flowMagic_data"
 root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
+future::plan(future::multisession, workers=no_cores) # for furrr
 
 
 ## output ####
@@ -49,7 +50,7 @@ kd2Dto3D <- function(x) {
 # fe <- which(!unlist(plyr::llply(gsub("/data/2D/x","/results/2D/y_2D",x2_files), file.exists)))
 fe <- 1:length(x2_files)
 # fe <- fe[sapply(x2_files, function(x2_file) !file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))]
-fe <- fe[sapply(x2_files[fe], function(x2_file) !file.exists(gs_xr(x2_file,"x_2Ddenscat")))]
+# fe <- fe[sapply(x2_files[fe], function(x2_file) !file.exists(gs_xr(x2_file,"x_2Ddenscat")))]
 fe <- fe[!grepl("HIPCmyeloid[/]FSCASSCA_Singlets", x2_files[fe]) & !grepl("HIPCmyeloid[/]viabilitydyeSSCA_Allcells", x2_files[fe])]
 loop_ind <- loop_ind_f(fe, no_cores)
 # fe <- fe[plyr::llply(loop_ind, function(ii) 
@@ -118,70 +119,70 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # gplots::heatmap.2(plotsc, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
         # plotsc <- as.matrix(data.table::fread(gs_xr(x2_file,"x_2Dscatter")))
         
-        # density
-        dens2scat <- dens2 <-
-            # KernSmooth::bkde2D(
-            #   x2, gridsize=rep(dimsize,2),
-            #   bandwidth=c(max(x2[,1])-min(x2[,1]), max(x2[,2])-min(x2[,2]))/30)$fhat # bandwidth in each coordinate
-            MASS::kde2d(x2[,1],x2[,2], n=dimsize)$z
-        # write.table(dens2, file=gzfile(gs_xr(x2_file,"x_2Ddensity")),
-        #             col.names=FALSE, row.names=FALSE, sep=",")
-        # gplots::heatmap.2(dens2, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
-        
-        min0 <- min(dens2[dens2>0])
-        dens2scat[plotsc==0] <- 0
-        dens2scat[plotsc==1 & dens2scat==0] <- min0
-        dens2scat <- 100 * dens2scat/max(dens2scat)
-        write.table(dens2scat, file=gzfile(gs_xr(x2_file,"x_2Ddenscat")),
-                    col.names=FALSE, row.names=FALSE, sep=",")
-        # gplots::heatmap.2(dens2scat, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
-        # # png(paste0(gs_xr(x2_file,"x_2Ddenscat_plot_"),".png"), width=dimsize, height=dimsize)
-        # # plot_dens(x2)
-        # # graphics.off()
+        # # density
+        # dens2scat <- dens2 <-
+        #     # KernSmooth::bkde2D(
+        #     #   x2, gridsize=rep(dimsize,2),
+        #     #   bandwidth=c(max(x2[,1])-min(x2[,1]), max(x2[,2])-min(x2[,2]))/30)$fhat # bandwidth in each coordinate
+        #     MASS::kde2d(x2[,1],x2[,2], n=dimsize)$z
+        # # write.table(dens2, file=gzfile(gs_xr(x2_file,"x_2Ddensity")),
+        # #             col.names=FALSE, row.names=FALSE, sep=",")
+        # # gplots::heatmap.2(dens2, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
         # 
-        
-        # density contour
-        f@exprs <- as.matrix(x2)
-        hor <- unique(c(
-            flowDensity::deGate(f, 2, all.cuts=TRUE),
-            flowDensity::deGate(f, 2, use.upper=TRUE, upper=TRUE),
-            flowDensity::deGate(f, 2, use.upper=TRUE, upper=FALSE) ))
-        hor <- ((dimsize-1)*(hor-yr[1])/(yr[2]-yr[1]))+1
-        ver <- unique(c(
-            flowDensity::deGate(f, 1, all.cuts=TRUE),
-            flowDensity::deGate(f, 1, use.upper=TRUE, upper=TRUE),
-            flowDensity::deGate(f, 1, use.upper=TRUE, upper=FALSE) ))
-        ver <- ((dimsize-1)*(ver-xr[1])/(xr[2]-xr[1]))+1
-        
-        gp <- ggplot2::ggplot(kd2Dto3D(dens2)) +
-            ggplot2::geom_contour(aes(x=key, y=rowname, z=value), colour="black", size=.25) + # switched key and rowname for easier conversion
-            ggplot2::scale_x_continuous(limits=c(0, dimsize), expand = c(0, 0)) +
-            ggplot2::scale_y_continuous(limits=c(0, dimsize), expand = c(0, 0)) +
-            ggplot2::theme(
-                panel.grid.major=ggplot2::element_blank(),
-                panel.grid.minor=ggplot2::element_blank(),
-                panel.background=ggplot2::element_blank(),
-                axis.line=ggplot2::element_blank(), axis.text=ggplot2::element_blank(),
-                axis.ticks=ggplot2::element_blank(), axis.title=ggplot2::element_blank(),
-                plot.margin=grid::unit(c(0,0,0,0), "mm"))
-        
-        for (veri in ver)
-            gp = gp + ggplot2::geom_hline(yintercept=veri, colour="black", size=.25)
-        for (hori in hor)
-            gp = gp + ggplot2::geom_vline(xintercept=hori, colour="black", size=.25)
-        
-        ggplot2::ggsave(paste0(gs_xr(x2_file,"x_2Dcontour_plot_"),".png"), gp, dpi=dimsize, height=1, width=1)
-        
-        # load and greyscale
-        contpng <- png::readPNG(paste0(gs_xr(x2_file,"x_2Dcontour_plot_"),".png"))
-        # file.remove(paste0(gs_xr(x2_file,"x_2Dcontour"),".png"))
-        contpng <- contpng[,,1] + contpng[,,2] + contpng[,,3]
-        contpng <- contpng/max(contpng)
-        contpng <- 1 - contpng[nrow(contpng):1,,drop=FALSE] # flip values 0 - 1 & y axis
-        contpng <- 100 * contpng
-        write.table(contpng, file=gzfile(gs_xr(x2_file,"x_2Dcontour")),
-                    col.names=FALSE, row.names=FALSE, sep=",")
-        # gplots::heatmap.2(contpng, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        # min0 <- min(dens2[dens2>0])
+        # dens2scat[plotsc==0] <- 0
+        # dens2scat[plotsc==1 & dens2scat==0] <- min0
+        # dens2scat <- 100 * dens2scat/max(dens2scat)
+        # write.table(dens2scat, file=gzfile(gs_xr(x2_file,"x_2Ddenscat")),
+        #             col.names=FALSE, row.names=FALSE, sep=",")
+        # # gplots::heatmap.2(dens2scat, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        # # # png(paste0(gs_xr(x2_file,"x_2Ddenscat_plot_"),".png"), width=dimsize, height=dimsize)
+        # # # plot_dens(x2)
+        # # # graphics.off()
+        # # 
+        # 
+        # # density contour
+        # f@exprs <- as.matrix(x2)
+        # hor <- unique(c(
+        #     flowDensity::deGate(f, 2, all.cuts=TRUE),
+        #     flowDensity::deGate(f, 2, use.upper=TRUE, upper=TRUE),
+        #     flowDensity::deGate(f, 2, use.upper=TRUE, upper=FALSE) ))
+        # hor <- ((dimsize-1)*(hor-yr[1])/(yr[2]-yr[1]))+1
+        # ver <- unique(c(
+        #     flowDensity::deGate(f, 1, all.cuts=TRUE),
+        #     flowDensity::deGate(f, 1, use.upper=TRUE, upper=TRUE),
+        #     flowDensity::deGate(f, 1, use.upper=TRUE, upper=FALSE) ))
+        # ver <- ((dimsize-1)*(ver-xr[1])/(xr[2]-xr[1]))+1
+        # 
+        # gp <- ggplot2::ggplot(kd2Dto3D(dens2)) +
+        #     ggplot2::geom_contour(aes(x=key, y=rowname, z=value), colour="black", size=.25) + # switched key and rowname for easier conversion
+        #     ggplot2::scale_x_continuous(limits=c(0, dimsize), expand = c(0, 0)) +
+        #     ggplot2::scale_y_continuous(limits=c(0, dimsize), expand = c(0, 0)) +
+        #     ggplot2::theme(
+        #         panel.grid.major=ggplot2::element_blank(),
+        #         panel.grid.minor=ggplot2::element_blank(),
+        #         panel.background=ggplot2::element_blank(),
+        #         axis.line=ggplot2::element_blank(), axis.text=ggplot2::element_blank(),
+        #         axis.ticks=ggplot2::element_blank(), axis.title=ggplot2::element_blank(),
+        #         plot.margin=grid::unit(c(0,0,0,0), "mm"))
+        # 
+        # for (veri in ver)
+        #     gp = gp + ggplot2::geom_hline(yintercept=veri, colour="black", size=.25)
+        # for (hori in hor)
+        #     gp = gp + ggplot2::geom_vline(xintercept=hori, colour="black", size=.25)
+        # 
+        # ggplot2::ggsave(paste0(gs_xr(x2_file,"x_2Dcontour_plot_"),".png"), gp, dpi=dimsize, height=1, width=1)
+        # 
+        # # load and greyscale
+        # contpng <- png::readPNG(paste0(gs_xr(x2_file,"x_2Dcontour_plot_"),".png"))
+        # # file.remove(paste0(gs_xr(x2_file,"x_2Dcontour"),".png"))
+        # contpng <- contpng[,,1] + contpng[,,2] + contpng[,,3]
+        # contpng <- contpng/max(contpng)
+        # contpng <- 1 - contpng[nrow(contpng):1,,drop=FALSE] # flip values 0 - 1 & y axis
+        # contpng <- 100 * contpng
+        # write.table(contpng, file=gzfile(gs_xr(x2_file,"x_2Dcontour")),
+        #             col.names=FALSE, row.names=FALSE, sep=",")
+        # # gplots::heatmap.2(contpng, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
         
         
         # # contour(dens2, drawlabels=FALSE, xlim=c(0,1), ylim=c(0,1))
@@ -193,30 +194,30 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # # write.table(plotgn, file=gzfile(gs_xr(x2_file,"y_2Dncells")),
         # #             col.names=FALSE, row.names=FALSE, sep=",")
         # 
-        # # answer: label of each pixel
-        # plotgs <- plotsc
-        # x2discrete_y <- apply(x2discrete_, 1, function(x)
-        #     getmode(y2i[x2discrete[,1]==x[1] & x2discrete[,2]==x[2]]) )
-        # for (yi in unique(x2discrete_y))
-        #     plotgs[x2discrete_[x2discrete_y==yi,,drop=FALSE]] <- yi
-        # write.table(plotgs, file=gzfile(gs_xr(x2_file,"y_2D")),
-        #             col.names=FALSE, row.names=FALSE, sep=",")
-        # # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
-        # 
-        # 
-        # # answer: label of each cell according to its pixel
-        # # i.e. convert 2D label to vector label
-        # y2dp <- apply(x2discrete, 1, function(xy) plotgs[xy[1], xy[2]])
-        # 
-        # # baseline accuracy in this dimension
-        # file_split <- stringr::str_split(x2_file, "/")[[1]]
-        # fl <- length(file_split)
-        # cpops <- colnames(y2)[colnames(y2)!="other"]
-        # a <- cbind(
-        #     data.table(method="2Dbaseline", dataset=file_split[fl-2], scatpop=file_split[fl-1], cpop=cpops, train_no=0, fcs=file_split[fl], train=FALSE),
-        #     f1_score(y2i, y2dp, silent=TRUE))
-        # 
-        # save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
+        # answer: label of each pixel
+        plotgs <- plotsc
+        x2discrete_y <- apply(x2discrete_, 1, function(x)
+            getmode(y2i[x2discrete[,1]==x[1] & x2discrete[,2]==x[2]]) )
+        for (yi in unique(x2discrete_y))
+            plotgs[x2discrete_[x2discrete_y==yi,,drop=FALSE]] <- yi
+        write.table(plotgs, file=gzfile(gs_xr(x2_file,"y_2D")),
+                    col.names=FALSE, row.names=FALSE, sep=",")
+        # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+
+
+        # answer: label of each cell according to its pixel
+        # i.e. convert 2D label to vector label
+        y2dp <- apply(x2discrete, 1, function(xy) plotgs[xy[1], xy[2]])
+
+        # baseline accuracy in this dimension
+        file_split <- stringr::str_split(x2_file, "/")[[1]]
+        fl <- length(file_split)
+        cpops <- colnames(y2)[colnames(y2)!="other"]
+        a <- cbind(
+            data.table(method="2Dbaseline", dataset=file_split[fl-2], scatpop=file_split[fl-1], cpop=cpops, train_no=0, fcs=file_split[fl], train=FALSE),
+            f1_score(y2i, y2dp, silent=TRUE))
+
+        save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
         # return()
         
         # }, error = function(e) return(i) ) 

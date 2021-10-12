@@ -36,7 +36,7 @@ start <- Sys.time()
 # load csv
 # loop_ind <- loop_ind_f(sample(seq_len(length(x2_files))), no_cores)
 # plyr::l_ply(x2_dir_s, function(x2_dir) {
-for (x2_dir in x2_dir_s) {
+for (x2_dir in x2_dir_s[33:length(x2_dir_s)]) {
   x2_fs <- list.files(x2_dir, full.names=TRUE, pattern=".csv.gz")
   dist_dir <- paste0(gsub(ingrid,paste0(ingrid,"_",distn),x2_dir),".Rdata")
   # if (file.exists(gsub(".Rdata"," .Rdata",dist_dir))) {

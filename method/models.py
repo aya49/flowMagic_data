@@ -5,8 +5,6 @@ from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
 from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
-import segmentation_models_pytorch as smp
-
 def model_unet_(opt):
     model = smp.Unet(
         encoder_name="resnet18",        # encoder

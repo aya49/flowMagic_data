@@ -33,15 +33,10 @@ from torch.utils.data import DataLoader
 
 # from torchviz import make_dot
 
-import time
 import random
-
-import mmcv
-import mmseg
 
 import compress_pickle
 
-from mmcv.utils import Config
 # from mmseg.models import build_segmentor
 
 from opt import parse_options
@@ -97,7 +92,7 @@ dss = nomac( os.listdir(os.path.join(opt.data_dir, opt.x_2D[0])) )
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
 ## for dti in range(4):
-dti = 3 ##
+dti = 1 ##
 ds_tr = [x for i, x in enumerate(dss) if i!=dti]
 ds_mt = dss[dti]
 
