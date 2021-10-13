@@ -66,6 +66,7 @@ class Data2D(Dataset):
         
         # factorize data/scatterplot
         x_dirs_unique, x_dirs_factor = np.unique(np.array(x_dirs), return_inverse=True)
+        x_dirs_factor = x_dirs_factor.tolist()
 
         y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files]
 
@@ -245,21 +246,21 @@ def split_Data2D(dataset, n, preload=True):
 
 def merge_Data2D(datasets, preload=True):
     dataset = copy.deepcopy(datasets[0])
-    for i in range(1, datasets):
-        datasets[i]
-        dataset.x_dirs = dataset.x_dirs.append(datasets[i].x_dirs)
-        dataset.x_dirs_factor = dataset.x_dirs_factor.append(datasets[i].x_dirs_factor)
-        dataset.x_filenames = dataset.x_filenames.append(datasets[i].x_filenames)
-        if len(dataset.x_2D)>1:
+    for i in range(1, len(datasets)):
+        dataset = datasets[i]
+        dataset.x_dirs.append(datasets[i].x_dirs)
+        dataset.x_dirs_factor.append(datasets[i].x_dirs_factor)
+        dataset.x_filenames.append(datasets[i].x_filenames)
+        if len(dataset.x_2D) > 1:
             for j in range(len(dataset.x_2D)):
-                dataset.x_files[j] = dataset.x_files.append(datasets[i].x_files[j])
+                dataset.x_files[j].append(datasets[i].x_files[j])
             else:
-                dataset.x_files = dataset.x_files.append(datasets[i].x_files)
-        dataset.y_files = dataset.y_files.append(datasets[i].y_files)
+                dataset.x_files.append(datasets[i].x_files)
+        dataset.y_files.append(datasets[i].y_files)
         
         if preload:
-            dataset.y = dataset.y.append(datasets[i].y)
-            dataset.x = dataset.x.append(datasets[i].x)
+            dataset.y.append(datasets[i].y)
+            dataset.x.append(datasets[i].x)
     return dataset
 
 

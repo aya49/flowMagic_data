@@ -124,13 +124,17 @@ for dti in range(4):
     n = 4 # split into 4 data sets for saving
     ds_tr_t_path = os.path.join(opt.data_dir, 'dataset_tr_t_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_t_path):
-        dataset_tr_t = compress_pickle.load(ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
+        dataset_tr_ts = []
+        for i in range(n):
+            dataset_tr_ts.append( compress_pickle.load('{}_i'.format(ds_tr_t_path), compression="lzma", set_default_extension=False) ) #gzip
+        dataset_tr_t = merge_Data2D(dataset_tr_ts)
+        del dataset_tr_ts
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
         dataset_tr_ts = split_Data2D(dataset_tr_t, n=n)
         for i in range(n):
-
             compress_pickle.dump(dataset_tr_ts[i], '{}_i'.format(ds_tr_t_path), compression="lzma", set_default_extension=False) #gzip
+        del dataset_tr_ts
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):
