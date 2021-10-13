@@ -100,7 +100,7 @@ class Data2D(Dataset):
             self.y = []
             goodi = []
             xyl = len(self.x_files[0])
-            for i in reversed(range(xyl)):
+            for i in range(xyl):
                 print(i)
                 try:
                     xil = []
@@ -121,16 +121,19 @@ class Data2D(Dataset):
             x_filenames = self.x_filenames
             x_files = self.x_files
             y_files = self.y_files
-            
-            self.x_dirs = [x_dirs[i] for i in goodi]
-            self.x_dirs_factor = [x_dirs_factor[i] for i in goodi]
-            self.x_filenames = [x_filenames[i] for i in goodi]
-            if (len(self.x_2D)>1):
-                for j in len(x_files):
-                    self.x_files[j] = [x_files[j][i] for i in goodi]
-            else:
-                self.x_files = [x_files[i] for i in goodi]
-            self.y_files = [y_files[i] for i in goodi]
+
+            if isinstance(goodi, int):
+                goodi = [goodi]
+            if (range(xyl)>len(goodi)):
+                self.x_dirs = [x_dirs[i] for i in goodi]
+                self.x_dirs_factor = [x_dirs_factor[i] for i in goodi]
+                self.x_filenames = [x_filenames[i] for i in goodi]
+                if (len(self.x_2D)>1):
+                    for j in range(len(x_files)):
+                        self.x_files[j] = [x_files[j][i] for i in goodi]
+                else:
+                    self.x_files = [x_files[i] for i in goodi]
+                self.y_files = [y_files[i] for i in goodi]
 
             # if round(i/xyl, 2) == prog:
             #     print('{prog} ')
