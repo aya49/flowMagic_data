@@ -100,7 +100,6 @@ class Data2D(Dataset):
             self.y = []
             errori = []
             xyl = len(self.x_files[0])
-            prog = .05
             for i in range(xyl):
                 print(i)
                 try:
@@ -112,10 +111,10 @@ class Data2D(Dataset):
 
                     yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     self.y.append(yi)
-
                 except:
                     print("error")
                     errori = errori.append(i)
+                    pass
 
             if len(errori) > 0:
                 for i in sorted(errori, reverse=True):

@@ -84,6 +84,7 @@ opt = parse_options()
 # I used a mac, so I need to get rid of '__MACOSX'
 def nomac(xx):
     return [x for x in xx if '__MACOSX' not in x]
+
 def yegz(xx):
     return [x for x in xx if '.gz' in x]
 
@@ -97,18 +98,18 @@ for dti in range(4):
     # dti = 0 ##
     ds_tr = [x for i, x in enumerate(dss) if i!=dti]
     ds_mt = dss[dti]
-    
+
     # train/metatrain data sets denscats folder paths
     flatx = lambda x: [i for row in x for i in row]
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr]) )
     x_dirs_mt = nomac( [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds_mt))] )
-    
+
     ## if opt.mode == 'pretrain':
     # split pre-train data set into train (95%) and validation (5%)
-    x_files_tr = x_dirs_tr(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
-    
+    x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
+
     x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
     x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
     x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
@@ -175,7 +176,6 @@ for dti in range(4):
             # x_dir_mt = x_dirs_mt[0]
             xdmsplit = x_dir_mt.split('/')
             opt.data_scat = '/'.join(xdmsplit[-2:])
-
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
 
             # get n-shot samples
