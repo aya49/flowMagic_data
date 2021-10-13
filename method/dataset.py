@@ -124,7 +124,7 @@ class Data2D(Dataset):
 
             if isinstance(goodi, int):
                 goodi = [goodi]
-            if (range(xyl)>len(goodi)):
+            if (len(range(xyl))>len(goodi)):
                 self.x_dirs = [x_dirs[i] for i in goodi]
                 self.x_dirs_factor = [x_dirs_factor[i] for i in goodi]
                 self.x_filenames = [x_filenames[i] for i in goodi]
