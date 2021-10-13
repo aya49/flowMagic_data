@@ -127,8 +127,10 @@ for dti in range(4):
         dataset_tr_t = compress_pickle.load(ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-        dataset_tr_ts = split_Data2D(dataset_tr_t, n=4)
-        compress_pickle.dump(dataset_tr_t, ds_tr_t_path, compression="lzma", set_default_extension=False) #gzip
+        dataset_tr_ts = split_Data2D(dataset_tr_t, n=n)
+        for i in range(n):
+
+            compress_pickle.dump(dataset_tr_ts[i], '{}_i'.format(ds_tr_t_path), compression="lzma", set_default_extension=False) #gzip
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):

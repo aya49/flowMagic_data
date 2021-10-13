@@ -224,7 +224,7 @@ def split_Data2D(dataset, n, preload=True):
             dataseti.x_filenames = dataseti.x_filenames[0:nsize]
             dataseti.x_files = dataseti.x_files[0:nsize]
             dataseti.y_files = dataseti.y_files[0:nsize]
-            
+
             dataset.x_dirs = dataset.x_dirs[nsize:]
             dataset.x_dirs_factor = dataset.x_dirs_factor[nsize:]
             dataset.x_filenames = dataset.x_filenames[nsize:]
@@ -234,13 +234,8 @@ def split_Data2D(dataset, n, preload=True):
             if preload:
                 dataseti.y = dataseti.y[0:nsize]
                 dataset.y = dataset.y[nsize:]
-                if len(dataseti.x_2D) > 1:
-                    for j in range(len(dataseti.x_2D)):
-                        dataseti.x[j] = dataseti.x[j][0:nsize]
-                        dataset.x[j] = dataset.x[j][nsize:]
-                else:
-                    dataseti.x = dataseti.x[0:nsize]
-                    dataset.x = dataset.x[nsize:]
+                dataseti.x = dataseti.x[0:nsize]
+                dataset.x = dataset.x[nsize:]
             datasets.append(dataseti)
     return datasets
 
@@ -256,11 +251,7 @@ def merge_Data2D(datasets, preload=True):
         
         if preload:
             dataset.y = dataset.y.append(datasets[i].y)
-            if len(dataset.x_2D) > 1:
-                for j in range(len(dataset.x_2D)):
-                    dataset.x[j] = dataset.x[j].append(datasets[i].x[j])
-            else:
-                dataset.x = dataset.x.append(datasets[i].x)
+            dataset.x = dataset.x.append(datasets[i].x)
     return dataset
 
 
