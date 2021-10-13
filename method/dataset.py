@@ -244,23 +244,21 @@ def split_Data2D(dataset, n, preload=True):
             datasets.append(dataseti)
     return datasets
 
-def merge_Data2D(datasets, preload=True):
-    dataset = copy.deepcopy(datasets[0])
-    for i in range(1, len(datasets)):
-        dataset = datasets[i]
-        dataset.x_dirs.append(datasets[i].x_dirs)
-        dataset.x_dirs_factor.append(datasets[i].x_dirs_factor)
-        dataset.x_filenames.append(datasets[i].x_filenames)
-        if len(dataset.x_2D) > 1:
-            for j in range(len(dataset.x_2D)):
-                dataset.x_files[j].append(datasets[i].x_files[j])
-            else:
-                dataset.x_files.append(datasets[i].x_files)
-        dataset.y_files.append(datasets[i].y_files)
+def merge_Data2D(dataset, dataset_, preload=True):
+    dataset.x_dirs.extend(dataset_.x_dirs)
+    dataset.x_dirs_factor.extend(dataset_.x_dirs_factor)
+    dataset.x_filenames.extend(dataset_.x_filenames)
+    if len(dataset.x_2D) > 1:
+        for j in range(len(dataset.x_2D)):
+            dataset.x_files[j].extend(dataset_.x_files[j])
+        else:
+            dataset.x_files.extend(dataset_.x_files)
+    dataset.y_files.extend(dataset_.y_files)
+    
+    if preload:
+        dataset.y = torch.cat((dataset.y, dataset_.y), 0)
+        dataset.x = torch.cat((dataset.x, dataset_.x), 0)
         
-        if preload:
-            dataset.y = torch.cat((dataset.y, datasets[i].y), 0)
-            dataset.x = torch.cat((dataset.x, datasets[i].x), 0)
     return dataset
 
 

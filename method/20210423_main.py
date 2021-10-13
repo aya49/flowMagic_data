@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 
 import random
+import copy
 
 import torch
 from torch.utils.data import Dataset
@@ -32,8 +33,6 @@ import torch.nn.functional as FN
 from torch.utils.data import DataLoader
 
 # from torchviz import make_dot
-
-import random
 
 import compress_pickle
 
@@ -55,13 +54,10 @@ from torch.utils.data import DataLoader
 # sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 import tensorboard_logger as tb_logger
-
 from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
 from models import create_model
-
 from util import prep_input
-
 from train_premeta import train, validate
 
 print("cuda available")
@@ -124,16 +120,15 @@ for dti in range(4):
     n = 5 # split into 5 data sets for saving
     ds_tr_t_path = os.path.join(opt.data_dir, 'dataset_tr_t_{}.gz'.format(ds_mt))
     if os.path.exists('{}_{}'.format(ds_tr_t_path,n-1)):
-        dataset_tr_ts = []
-        for i in range(n):
-            dataset_tr_ts.append( compress_pickle.load('{}_{}'.format(ds_tr_t_path,i), compression="lzma", set_default_extension=False) ) #gzip
-        dataset_tr_t = merge_Data2D(dataset_tr_ts)
-        del dataset_tr_ts
+        dataset_tr_t = compress_pickle.load('{}_{}'.format(ds_tr_t_path, 0), compression="lzma", set_default_extension=False) #gzip
+        for i in range(1, n):
+            dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load('{}_{}'.format(ds_tr_t_path, i), compression="lzma", set_default_extension=False) ) #gzip
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
         dataset_tr_ts = split_Data2D(dataset_tr_t, n=n)
         for i in range(n):
-            compress_pickle.dump(dataset_tr_ts[i], '{}_{}'.format(ds_tr_t_path,i), compression="lzma", set_default_extension=False) #gzip
+            dataset_tr_t_ = copy.deepcopy(dataset_tr_ts[i])
+            compress_pickle.dump(dataset_tr_t_, '{}_{}'.format(ds_tr_t_path, i), compression="lzma", set_default_extension=False) #gzip
         del dataset_tr_ts
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
