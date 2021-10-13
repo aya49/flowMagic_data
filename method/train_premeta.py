@@ -125,7 +125,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
 
         # ===================forward=====================
         ls = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-        loss = float(ls['decode.loss_seg']) # ll.lovasz_softmax(output, target, classes='present', per_image=True)
+        loss = float(ls['decode.loss_lovasz']) # ll.lovasz_softmax(output, target, classes='present', per_image=True)
         acc1 = float(ls['decode.acc_seg']) # ll.iou(output, target, opt.n_class, EMPTY=1., ignore=None, per_image=True)
 
         # outputs = model.train_step(dict(img=inp, img_metas=img_metas, gt_semantic_seg=target), None)

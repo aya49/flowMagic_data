@@ -132,7 +132,7 @@ for dti in range(4):
     if os.path.exists(ds_tr_v_path):
         dataset_tr_v = compress_pickle.load(ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
     else:
-        dataset_tr_v = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_v)
+        dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
         compress_pickle.dump(dataset_tr_v, ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
 
     # create dataloaders
