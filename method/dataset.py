@@ -100,7 +100,7 @@ class Data2D(Dataset):
             self.y = []
             errori = []
             xyl = len(self.x_files[0])
-            for i in range(xyl):
+            for i in reversed(range(xyl)):
                 print(i)
                 try:
                     xil = []
@@ -113,11 +113,6 @@ class Data2D(Dataset):
                     self.y.append(yi)
                 except:
                     print("error")
-                    errori = errori.append(i)
-                    pass
-
-            if len(errori) > 0:
-                for i in sorted(errori, reverse=True):
                     del self.x_dirs[i]
                     del self.x_dirs_factor[i]
                     del self.x_filenames[i]
@@ -127,6 +122,7 @@ class Data2D(Dataset):
                     else:
                         del self.x_files[i]
                     del self.y_files[i]
+                    pass
 
             # if round(i/xyl, 2) == prog:
             #     print('{prog} ')
