@@ -84,9 +84,21 @@ def nomac(xx):
 def yegz(xx):
     return [x for x in xx if '.gz' in x]
 
+flatx = lambda x: [i for row in x for i in row]
 
 ## DATA: datasets x 4 ########################################
 dss = nomac( os.listdir(os.path.join(opt.data_dir, opt.x_2D[0])) )
+
+x_dirs = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
+                sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in dss]) )
+
+# load data
+for x_dir_mt in x_dirs:
+    x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
+    ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
+    if not os.path.exists(ds_mt_r_path):
+        dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
+        compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
 
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
@@ -96,7 +108,7 @@ for dti in range(4):
     ds_mt = dss[dti]
 
     # train/metatrain data sets denscats folder paths
-    flatx = lambda x: [i for row in x for i in row]
+    
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr]) )
     x_dirs_mt = nomac( [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
@@ -129,7 +141,7 @@ for dti in range(4):
         for i in range(n):
             dataset_tr_t_ = copy.deepcopy(dataset_tr_ts[i])
             compress_pickle.dump(dataset_tr_t_, '{}_{}'.format(ds_tr_t_path, i), compression="lzma", set_default_extension=False) #gzip
-        del dataset_tr_ts
+        del(dataset_tr_ts)
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):
@@ -228,11 +240,8 @@ for dti in range(4):
             ## META-TEST ##############################################
             # create datasets
             ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
-            if os.path.exists(ds_mt_r_path):
-                dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
-            else:
-                dataset_mt_r = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt)
-                compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+            dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+            dataset_mt_r.transform = transform_dict['B']
 
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,

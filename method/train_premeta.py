@@ -49,7 +49,7 @@ def validate(val_loader, model, opt):
             # measure accuracy and record loss
             # acc1, acc5 = accuracy(output, target, topk=(1, 5))
             acc1 = float(scores['decode.acc_seg'])
-            loss = float(scores['decode.loss_seg'])
+            loss = float(scores['decode.loss_lovasz'])
             losses.update(loss, inp.size(0))
             top1.update(acc1, inp.size(0))
 
@@ -138,7 +138,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
 
         # ===================backward=====================
         optimizer.zero_grad()
-        ls['decode.loss_seg'].backward()
+        ls['decode.loss_lovasz'].backward()
         optimizer.step()
 
         # ===================meters=====================
