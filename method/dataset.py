@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 
 from transform import transform_dict
 
+import copy
+
 # dataset loader class: torch.utils.data.Dataset
 # overwrite class methods:
 # - __len__ so that len(dataset) returns the size of the dataset. READ CSV HERE
@@ -205,5 +207,60 @@ class Data2D(Dataset):
         # yi = yi.squeeze()
         
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
+
+# making this a separater function to split up Data2D into smaller chunks for saving
+def split_Data2D(dataset, n, preload=True):
+    nsize = len(dataset) // n
+    
+    datasets = []
+    for i in range(n):
+        if i == (n-1):
+            datasets.append(dataset)
+        else:
+            dataseti = copy.deepcopy(dataset)
+            
+            dataseti.x_dirs = dataseti.x_dirs[0:nsize]
+            dataseti.x_dirs_factor = dataseti.x_dirs_factor[0:nsize]
+            dataseti.x_filenames = dataseti.x_filenames[0:nsize]
+            dataseti.x_files = dataseti.x_files[0:nsize]
+            dataseti.y_files = dataseti.y_files[0:nsize]
+            
+            dataset.x_dirs = dataset.x_dirs[nsize:]
+            dataset.x_dirs_factor = dataset.x_dirs_factor[nsize:]
+            dataset.x_filenames = dataset.x_filenames[nsize:]
+            dataset.x_files = dataset.x_files[nsize:]
+            dataset.y_files = dataset.y_files[nsize:]
+            
+            if preload:
+                dataseti.y = dataseti.y[0:nsize]
+                dataset.y = dataset.y[nsize:]
+                if len(dataseti.x_2D) > 1:
+                    for j in range(len(dataseti.x_2D)):
+                        dataseti.x[j] = dataseti.x[j][0:nsize]
+                        dataset.x[j] = dataset.x[j][nsize:]
+                else:
+                    dataseti.x = dataseti.x[0:nsize]
+                    dataset.x = dataset.x[nsize:]
+            datasets.append(dataseti)
+    return datasets
+
+def merge_Data2D(datasets, preload=True):
+    dataset = copy.deepcopy(datasets[0])
+    for i in range(1, datasets):
+        datasets[i]
+        dataset.x_dirs = dataset.x_dirs.append(datasets[i].x_dirs)
+        dataset.x_dirs_factor = dataset.x_dirs_factor.append(datasets[i].x_dirs_factor)
+        dataset.x_filenames = dataset.x_filenames.append(datasets[i].x_filenames)
+        dataset.x_files = dataset.x_files.append(datasets[i].x_files)
+        dataset.y_files = dataset.y_files.append(datasets[i].y_files)
+        
+        if preload:
+            dataset.y = dataset.y.append(datasets[i].y)
+            if len(dataset.x_2D) > 1:
+                for j in range(len(dataset.x_2D)):
+                    dataset.x[j] = dataset.x[j].append(datasets[i].x[j])
+            else:
+                dataset.x = dataset.x.append(datasets[i].x)
+    return dataset
 
 
