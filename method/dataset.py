@@ -220,15 +220,19 @@ def split_Data2D(dataset, n, preload=True):
             dataseti = copy.deepcopy(dataset)
             
             dataseti.x_dirs = dataseti.x_dirs[0:nsize]
-            dataseti.x_dirs_factor = dataseti.x_dirs_factor[0:nsize]
-            dataseti.x_filenames = dataseti.x_filenames[0:nsize]
-            dataseti.x_files = dataseti.x_files[0:nsize]
-            dataseti.y_files = dataseti.y_files[0:nsize]
-
             dataset.x_dirs = dataset.x_dirs[nsize:]
+            dataseti.x_dirs_factor = dataseti.x_dirs_factor[0:nsize]
             dataset.x_dirs_factor = dataset.x_dirs_factor[nsize:]
+            dataseti.x_filenames = dataseti.x_filenames[0:nsize]
             dataset.x_filenames = dataset.x_filenames[nsize:]
-            dataset.x_files = dataset.x_files[nsize:]
+            if len(dataset.x_2D)>1:
+                for j in range(len(dataset.x_2D)):
+                    dataseti.x_files[j] = dataseti.x_files[j][0:nsize]
+                    dataset.x_files[j] = dataset.x_files[j][nsize:]
+            else:
+                dataseti.x_files = dataseti.x_files[0:nsize]
+                dataset.x_files = dataset.x_files[nsize:]
+            dataseti.y_files = dataseti.y_files[0:nsize]
             dataset.y_files = dataset.y_files[nsize:]
             
             if preload:
@@ -246,7 +250,11 @@ def merge_Data2D(datasets, preload=True):
         dataset.x_dirs = dataset.x_dirs.append(datasets[i].x_dirs)
         dataset.x_dirs_factor = dataset.x_dirs_factor.append(datasets[i].x_dirs_factor)
         dataset.x_filenames = dataset.x_filenames.append(datasets[i].x_filenames)
-        dataset.x_files = dataset.x_files.append(datasets[i].x_files)
+        if len(dataset.x_2D)>1:
+            for j in range(len(dataset.x_2D)):
+                dataset.x_files[j] = dataset.x_files.append(datasets[i].x_files[j])
+            else:
+                dataset.x_files = dataset.x_files.append(datasets[i].x_files)
         dataset.y_files = dataset.y_files.append(datasets[i].y_files)
         
         if preload:
