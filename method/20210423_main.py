@@ -140,8 +140,13 @@ for dti in range(4):
     dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
     dataset_tr_t.factorize_labels()
     for i in range(1, len(ds_files_tr)):
-        dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False).factorize_labels() ) #gzip
+        print(ds_files_tr[i])
+        dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+        dataset_tr_t_.factorize_labels()
+        dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
+
     dataset_tr_t.factorize_labels()
+    dataset_tr_t.transform = transform_dict['A']
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):
@@ -167,7 +172,9 @@ for dti in range(4):
     # train and validate
     opt.epochs = 100
     opt.save_freq = 10
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
+    acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
+    losses_train = np.asarray(losses.vals)
+    np.savetxt(os.path.join(opt.data_dir.replace('data','results'), 'method/{}/{}_pretrainlosses.csv'.format(opt.model, dss[dti])), losses_train, delimiter=',')
 
 
     # ## DISTILL: work in progress ##################################
