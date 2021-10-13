@@ -98,7 +98,7 @@ class Data2D(Dataset):
         if opt.preload_data: # or len(x_files) < 200 # *** change
             self.x = []
             self.y = []
-            errori = []
+            goodi = []
             xyl = len(self.x_files[0])
             for i in reversed(range(xyl)):
                 print(i)
@@ -111,18 +111,26 @@ class Data2D(Dataset):
 
                     yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     self.y.append(yi)
+                    goodi.append(i)
                 except:
                     print("error")
-                    del self.x_dirs[i]
-                    del self.x_dirs_factor[i]
-                    del self.x_filenames[i]
-                    if (len(self.x_2D)>1):
-                        for j in len(x_files):
-                            del self.x_files[j][i]
-                    else:
-                        del self.x_files[i]
-                    del self.y_files[i]
                     pass
+            
+            x_dirs = self.x_dirs
+            x_dirs_factor = self.x_dirs_factor
+            x_filenames = self.x_filenames
+            x_files = self.x_files
+            y_files = self.y_files
+            
+            self.x_dirs = [x_dirs[i] for i in goodi]
+            self.x_dirs_factor = [x_dirs_factor[i] for i in goodi]
+            self.x_filenames = [x_filenames[i] for i in goodi]
+            if (len(self.x_2D)>1):
+                for j in len(x_files):
+                    self.x_files[j] = [x_files[j][i] for i in goodi]
+            else:
+                self.x_files = [x_files[i] for i in goodi]
+            self.y_files = [y_files[i] for i in goodi]
 
             # if round(i/xyl, 2) == prog:
             #     print('{prog} ')
