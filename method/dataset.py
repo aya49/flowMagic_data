@@ -7,9 +7,6 @@ from torch.utils.data import Dataset
 
 from transform import transform_dict
 
-import pickle
-
-
 # dataset loader class: torch.utils.data.Dataset
 # overwrite class methods:
 # - __len__ so that len(dataset) returns the size of the dataset. READ CSV HERE
@@ -101,23 +98,40 @@ class Data2D(Dataset):
         if opt.preload_data: # or len(x_files) < 200 # *** change
             self.x = []
             self.y = []
+            errori = []
             xyl = len(self.x_files[0])
             prog = .05
             for i in range(xyl):
-                xil = []
-                for x2i in range(len(self.x_2D)):
-                    xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
-                xil = torch.stack(xil)
-                self.x.append(xil)
-
-                yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
-                self.y.append(yi)
-
                 print(i)
+                try:
+                    xil = []
+                    for x2i in range(len(self.x_2D)):
+                        xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
+                    xil = torch.stack(xil)
+                    self.x.append(xil)
 
-                # if round(i/xyl, 2) == prog:
-                #     print('{prog} ')
-                #     prog += .05
+                    yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
+                    self.y.append(yi)
+
+                except:
+                    print("error")
+                    errori = errori.append(i)
+
+            if len(errori) > 0:
+                for i in sorted(errori, reverse=True):
+                    del self.x_dirs[i]
+                    del self.x_dirs_factor[i]
+                    del self.x_filenames[i]
+                    if (len(self.x_2D)>1):
+                        for j in len(x_files):
+                            del self.x_files[j][i]
+                    else:
+                        del self.x_files[i]
+                    del self.y_files[i]
+
+            # if round(i/xyl, 2) == prog:
+            #     print('{prog} ')
+            #     prog += .05
 
             self.x = torch.stack(self.x)
             self.y = torch.stack(self.y)
