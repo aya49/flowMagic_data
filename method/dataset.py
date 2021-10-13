@@ -259,8 +259,8 @@ def merge_Data2D(datasets, preload=True):
         dataset.y_files.append(datasets[i].y_files)
         
         if preload:
-            dataset.y.append(datasets[i].y)
-            dataset.x.append(datasets[i].x)
+            dataset.y = torch.cat((dataset.y, datasets[i].y), 0)
+            dataset.x = torch.cat((dataset.x, datasets[i].x), 0)
     return dataset
 
 
