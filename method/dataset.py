@@ -171,7 +171,7 @@ class Data2D(Dataset):
     
     def factorize_labels(self):
         x_dirs_unique, x_dirs_factor = np.unique(np.array(self.x_dirs), return_inverse=True)
-        x_dirs_factor = x_dirs_factor.tolist()
+        self.x_dirs_factor = x_dirs_factor.tolist()
     
     def __getitem__(self, i):
 

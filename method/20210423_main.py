@@ -116,7 +116,7 @@ for dti in range(4):
     ds_mt = dss[dti]
 
     # train/metatrain data sets denscats folder paths
-    
+
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in ds_tr]) )
     x_dirs_mt = nomac( [os.path.join(opt.data_dir, opt.x_2D[0], ds_mt, sc) for 
@@ -138,8 +138,10 @@ for dti in range(4):
     # create datasets
     ds_files_tr = [x for x in ds_files if dss[dti] not in x]
     dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
+    dataset_tr_t.factorize_labels()
     for i in range(1, len(ds_files_tr)):
-        dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False) ) #gzip
+        dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False).factorize_labels() ) #gzip
+    dataset_tr_t.factorize_labels()
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):
