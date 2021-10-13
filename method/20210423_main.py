@@ -93,12 +93,20 @@ x_dirs = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for
                 sc in os.listdir(os.path.join(opt.data_dir, opt.x_2D[0], ds))] for ds in dss]) )
 
 # load data
+ds_files = []
 for x_dir_mt in x_dirs:
-    x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
+    xdmsplit = x_dir_mt.split('/')
+    opt.data_scat = '/'.join(xdmsplit[-2:])
     ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
+    ds_files.append(ds_mt_r_path)
+    x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
     if not os.path.exists(ds_mt_r_path):
         dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
         compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+    # else:
+    #     dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False)
+    #     print(x_dir_mt)
+    #     print(len(dataset_mt_r))
 
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
@@ -120,7 +128,6 @@ for dti in range(4):
 
     x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
     x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
-    x_files_tr_t = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x not in x_files_tr_v_ind]
 
     # set some parameters --- if not enough gpu memory, reduce batch_size
     opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
@@ -129,19 +136,10 @@ for dti in range(4):
     opt.cuda = 'cuda:0'
 
     # create datasets
-    n = 5 # split into 5 data sets for saving
-    ds_tr_t_path = os.path.join(opt.data_dir, 'dataset_tr_t_{}.gz'.format(ds_mt))
-    if os.path.exists('{}_{}'.format(ds_tr_t_path,n-1)):
-        dataset_tr_t = compress_pickle.load('{}_{}'.format(ds_tr_t_path, 0), compression="lzma", set_default_extension=False) #gzip
-        for i in range(1, n):
-            dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load('{}_{}'.format(ds_tr_t_path, i), compression="lzma", set_default_extension=False) ) #gzip
-    else:
-        dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr_t)
-        dataset_tr_ts = split_Data2D(dataset_tr_t, n=n)
-        for i in range(n):
-            dataset_tr_t_ = copy.deepcopy(dataset_tr_ts[i])
-            compress_pickle.dump(dataset_tr_t_, '{}_{}'.format(ds_tr_t_path, i), compression="lzma", set_default_extension=False) #gzip
-        del(dataset_tr_ts)
+    ds_files_tr = [x for x in ds_files if dss[dti] not in x]
+    dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
+    for i in range(1, len(ds_files_tr)):
+        dataset_tr_t = merge_Data2D( dataset_tr_t, compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False) ) #gzip
 
     ds_tr_v_path = os.path.join(opt.data_dir, 'dataset_tr_v_{}.gz'.format(ds_mt))
     if os.path.exists(ds_tr_v_path):
