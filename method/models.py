@@ -56,7 +56,7 @@ def metafreeze_model(model, opt):
             param.requires_grad = True
     
     if opt.model == 'unet':
-        for param in model.backbone.encoder[4].parameters():
+        for param in model.backbone.encoder[3].parameters():
             param.requires_grad = True
         for param in model.backbone.decoder[0].parameters():
             param.requires_grad = True
