@@ -58,7 +58,7 @@ def parse_options():
     
     # meta train/test
     parser.add_argument('--data_scat', type=str, default='pregnancy/07_FoxP3CD25_CD4Tcell', help='meta: dataset/scatterplot folders')
-    parser.add_argument('--shot_dir', type=str, default='data/x_2Ddensity_euclidean_rankkmed', help='meta: directory with shot names as filenames')
+    parser.add_argument('--shot_dir', type=str, default='data/2D/x_2Ddensity_euclidean_rankkmed', help='meta: directory with shot names as filenames')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='meta: number of support samples')
     parser.add_argument('--meta_batch_size', type=int, default=1, metavar='meta_batch_size',

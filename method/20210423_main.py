@@ -157,7 +157,7 @@ for dti in range(4):
 
     # create dataloaders
     dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                batch_size=2, drop_last=True, #shuffle=True, 
+                                batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                 num_workers=opt.num_workers)
     dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                                 batch_size=opt.batch_size, drop_last=False, shuffle=False,
@@ -172,9 +172,8 @@ for dti in range(4):
     # train and validate
     opt.epochs = 100
     opt.save_freq = 10
+    opt.tb_dir = os.path.join(opt.data_dir.replace('/data/','/tensorboard/'), 'method/{}/{}_pretrain'.format(opt.model, dss[dti]))
     acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
-    losses_train = np.asarray(losses.vals)
-    np.savetxt(os.path.join(opt.data_dir.replace('data','results'), 'method/{}/{}_pretrainlosses.csv'.format(opt.model, dss[dti])), losses_train, delimiter=',')
 
 
     # ## DISTILL: work in progress ##################################
@@ -199,30 +198,30 @@ for dti in range(4):
             xdmsplit = x_dir_mt.split('/')
             opt.data_scat = '/'.join(xdmsplit[-2:])
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
-
+            
             # get n-shot samples
             opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
             opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots) + '.csv.gz')
             x_files_mt_t = pd.read_csv(opt.shot_dir)
             # file handling HERE!!!
             x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
-
+            
             # get test samples
             x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
-
-
+            
+            
             ## META-TRAIN #################################################
             # set some parameters --- if not enough gpu memory, reduce batch_size
             opt.num_workers = 32
             opt.batch_size = 32
             opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
             opt.cuda = 'cuda:0'
-
+            
             # create datasets
             dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
             dataset_mt_v = dataset_mt_t
             dataset_mt_v.transform = transform_dict['B']
-
+            
             # create dataloaders
             dataloader_mt_t = DataLoader(dataset=dataset_mt_t, sampler=ids(dataset_mt_t), 
                                         batch_size=opt.batch_size, drop_last=True, # shuffle=True, 
@@ -230,34 +229,34 @@ for dti in range(4):
             dataloader_mt_v = DataLoader(dataset=dataset_mt_v, sampler=ids(dataset_mt_v), 
                                         batch_size=len(dataset_mt_v), drop_last=False, shuffle=False, 
                                         num_workers=opt.num_workers)
-
+            
             # load model
             model = create_model(opt).cuda()
             ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
             model.load_state_dict(ckpt['model'])
-
+            
             optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
-
+            
             # train and validate
             opt.epochs = 50
             opt.save_freq = 50
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
-
-
+            acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
+            
+            
             ## META-TEST ##############################################
-            # create datasets
+            # load datasets
             ds_mt_r_path = os.path.join(opt.data_dir, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
             dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
             dataset_mt_r.transform = transform_dict['B']
-
+            
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
                                             batch_size=1, shuffle=False, drop_last=False,
                                             num_workers=1)
-
+            
             model.eval()
             total_r = len(dataset_mt_r)
-            res_dir = os.path.join(opt.data_dir.replace('data','results'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
+            res_dir = os.path.join(opt.data_dir.replace('/data/','/results/'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
             os.makedirs(res_dir, exist_ok=True)
             # acc = []
             for idx, (inp, target, i, xdir, xfn) in enumerate(dataloader_mt_r):
@@ -267,21 +266,24 @@ for dti in range(4):
                 res = model.inference(inp, img_metas, rescale=False)
                 res = res.squeeze()
                 res_vals, res_ind = torch.max(res, 0)
-                res_ind = res_ind.cpu().detach().numpy() 
-
+                res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+                
                 res_file = os.path.join(res_dir, xfn[0]) # ends with gz so auto compress
-
-                xdisc = xdir.replace('x_2Ddenscat', 'x_2Ddiscrete')
-                x2discrete = pd.read_csv(xdisc, header=None).values.tolist()
-                yres = [res[xy[1]-1, xy[2]-1] for xy in x2discrete]
-                yres = pd.DataFrame(data=yres, index=None, columns=None)
-                yres.to_csv(res_file, index=False, header=False, compression='gzip')
-
-                val_acc, val_loss = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
-                # acc.append([xfn[0], val_acc])
-
-                print('{}/{}: acc({}) loss({})'.format(int(i)+1, total_r, val_acc, val_loss))
-
+                res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                # a = pd.read_csv(res_file, header=None)
+                
+                # xdisc = xdir[0].replace('x_2Ddenscat', 'x_2Ddiscrete')
+                # x2discrete = pd.read_csv(xdisc, header=None).values.tolist()
+                # yres = [res[xy[1]-1, xy[2]-1] for xy in x2discrete]
+                # yres = pd.DataFrame(data=yres, index=None, columns=None)
+                # yres.to_csv(res_file, index=False, header=False, compression='gzip')
+                
+                # val_acc, val_loss = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
+                # # acc.append([xfn[0], val_acc])
+                # 
+                # print('{}\t{}/{}: acc({}) loss({})'.format(idx, int(i)+1, total_r, val_acc, val_loss))
+                print('shots:{}\t{}'.format(n_shots, idx))
+            
             # acct = pd.DataFrame(acc,columns=['filename','pixelacc'])
             # acc_file = os.path.join(opt.data_dir, 'accpixel_{}.csv.gz'.format(opt.data_scat.replace('/','_')))
             # acct.to_csv(acc_file, header=True, index=False, compression='gzip')
