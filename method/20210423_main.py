@@ -117,7 +117,7 @@ for dti in range(4):
     ds_mt = dss[dti]
     opt.model_folder = '{}_{}'.format(mf, ds_mt)
     os.makedirs(opt.model_folder, exist_ok=True)
-    
+
     # train/metatrain data sets denscats folder paths
 
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 

@@ -133,12 +133,15 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
         losses.update(loss, inp.size(0))
         top1.update(acc1, inp.size(0))
         
-        torch.cuda.empty_cache()
-        # gc.collect()
-        
         # ===================backward=====================
         optimizer.zero_grad()
         ls['decode.loss_lovasz'].backward()
+        
+        del(inp)
+        del(target)
+        torch.cuda.empty_cache()
+        # gc.collect()
+        
         optimizer.step()
         
         # ===================meters=====================
