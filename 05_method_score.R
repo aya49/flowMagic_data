@@ -7,15 +7,15 @@
 
 
 ## set directory, load packages, set parallel ####
-no_cores <- 15#parallel::detectCores() - 5
+no_cores <- 32#parallel::detectCores() - 5
 # root <- "/home/ayue/projects/flowMagic_data"
 # install.packages("devtools")
 root <- "/home/aya43/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
-
+future::plan(future::multisession, workers=no_cores) # for furrr
 
 ## input ####
-m2_dir <- paste0(results_dir,"/method"); 
+m2_dir <- paste0(results_dir,"/2D/method"); 
 
 
 ## load inputs ####
@@ -43,14 +43,19 @@ for (dc_dir_ in dc2_dirs) {
   dc_files <- list.files(dc_dir_, full.names=TRUE)
 
   li <- loop_ind_f(dc_files, no_cores)
-  bests <- plyr::ldply(li, function(dc_fs) plyr::ldply(dc_fs, function(dc_f) {
-    predicted <- read.csv(dc_f, header=FALSE)[,1]
-    actual_f <- stringr::str_split(predicted,"/")[[1]]
-    suppressWarnings({
-        actual_f <- paste0(actual_f[is.na(sapply(actual_f, as.numeric))], collapse="/")
-    })
-    actual_f <- paste0(gs_xr(dc_f,"y","raw"),".gz")
-    actual <- data.table::fread(actual_f, data.table=FALSE)
+  bests <- furrr::map(li, function(dc_fs) plyr::ldply(dc_fs, function(dc_f) {
+    x2predicted <- read.csv(dc_f, header=FALSE)
+    
+    x2discrete_file <- gsub("results","data",gsub("method[/]setr[/]1","x_2Ddiscrete", dc_f))
+    x2discrete <- read.csv(x2discrete_file, header=FALSE)
+    
+    ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])
+    
+    # yactual_file <- gsub("results","data",gsub("method[/]setr[/]1","y_vector_", dc_f))
+    # yactual <- read.csv(yactual_file, header=FALSE)[,1]
+    
+    yactualfull_file <- gsub("results","raw",gsub("method[/]setr[/]1","y", dc_f))
+    actual <- read.csv(yactualfull_file, check.names=FALSE)
     cpops <- colnames(actual)
     
     # get meta data
@@ -58,7 +63,7 @@ for (dc_dir_ in dc2_dirs) {
     path_stuff <- stringr::str_split(dc_f,"/")[[1]]
     di <- which(path_stuff=="method")
     method <- path_stuff[di+1]
-    shots <- path_stuff[di+2]
+    shots <- as.numeric(path_stuff[di+2])
     dset <- path_stuff[di+3]
     scat <- path_stuff[di+4]
     fname <- gsub(".csv.gz","",path_stuff[length(path_stuff)])
@@ -70,11 +75,12 @@ for (dc_dir_ in dc2_dirs) {
         dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
         train_no=shots, fcs=fname, 
         train=NA
-      ), f1score(actual[,cpopi]==1, predicted==cpopi)) ### +1 ?????
+      ), f1score(actual[,cpopi]==1, ypred==cpopi)) ### +1 ?????
     })
-  }), .parallel=TRUE)
+  }))
+  bests <- Reduce(rbind, bests)
   bests <- bests[,colnames(bests)!=".id"]
-  score_file <- paste0(gs_xr_(dc_dir_,method),".csv.gz") ### ????
+  score_file <- paste0(gs_xr_(dc_dir_,"method"),".csv.gz") ### ????
   dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
   write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
   time_output(start1)

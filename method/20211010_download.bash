@@ -33,7 +33,7 @@ wget http://vault.sfu.ca/index.php/s/MzA6acXFQYNCO91/download -O x_2Dcontour.zip
 unzip x_2Dcontour.zip
 rm x_2Dcontour.zip
 
-wget http://vault.sfu.ca/index.php/s/09lBvEI1w1ao5KD/downloads -O x_2Ddenscat_euclidean_rankkmed.zip
+wget http://vault.sfu.ca/index.php/s/09lBvEI1w1ao5KD/download -O x_2Ddenscat_euclidean_rankkmed.zip
 unzip x_2Ddenscat_euclidean_rankkmed.zip
 rm x_2Ddenscat_euclidean_rankkmed.zip
 

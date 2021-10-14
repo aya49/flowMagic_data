@@ -110,11 +110,14 @@ for x_dir_mt in x_dirs:
 
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
+mf = opt.model_folder
 for dti in range(4):
     # dti = 0 ##
     ds_tr = [x for i, x in enumerate(dss) if i!=dti]
     ds_mt = dss[dti]
-
+    opt.model_folder = '{}_{}'.format(mf, ds_mt)
+    os.makedirs(opt.model_folder, exist_ok=True)
+    
     # train/metatrain data sets denscats folder paths
 
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
@@ -166,11 +169,15 @@ for dti in range(4):
     # initialize model
     model = create_model(opt).cuda()
     # sum(p.numel() for p in model.parameters())
+    ## TEMP
+    ckpt = torch.load(os.path.join(mf, '{}_last.pth'.format(opt.model)))
+    model.load_state_dict(ckpt['model'])
+
 
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
 
     # train and validate
-    opt.epochs = 100
+    opt.epochs = 200
     opt.save_freq = 10
     opt.tb_dir = os.path.join(opt.data_dir.replace('/data/','/tensorboard/'), 'method/{}/{}_pretrain'.format(opt.model, dss[dti]))
     acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, optimizer=optimizer) # pt.preload_model = True
@@ -190,6 +197,7 @@ for dti in range(4):
     ## META #######################################################
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
+    opt.shot_dir = '/home/aya43/flowMagic_data/data/2D/x_2Ddenscat_euclidean_rankkmed'
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         # n_shots = 10
         opt.n_shots = n_shots
@@ -201,13 +209,14 @@ for dti in range(4):
             
             # get n-shot samples
             opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
-            opt.shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots) + '.csv.gz')
-            x_files_mt_t = pd.read_csv(opt.shot_dir)
+            shot_dir = os.path.join(opt.shot_dir, opt.data_scat, str(opt.n_shots))
+            x_files_mt_t_ = os.listdir(shot_dir)
+            x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
             # file handling HERE!!!
-            x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
+            # x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
             
-            # get test samples
-            x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
+            # # get test samples
+            # x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
             
             
             ## META-TRAIN #################################################
@@ -223,15 +232,16 @@ for dti in range(4):
             dataset_mt_v.transform = transform_dict['B']
             
             # create dataloaders
-            dataloader_mt_t = DataLoader(dataset=dataset_mt_t, sampler=ids(dataset_mt_t), 
+            dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
                                         batch_size=opt.batch_size, drop_last=True, # shuffle=True, 
                                         num_workers=opt.num_workers)
-            dataloader_mt_v = DataLoader(dataset=dataset_mt_v, sampler=ids(dataset_mt_v), 
+            dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
                                         batch_size=len(dataset_mt_v), drop_last=False, shuffle=False, 
                                         num_workers=opt.num_workers)
             
             # load model
-            model = create_model(opt).cuda()
+            if 'model' not in locals():
+                model = create_model(opt).cuda()
             ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
             model.load_state_dict(ckpt['model'])
             
