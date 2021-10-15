@@ -38,3 +38,4 @@ model = dict(
     train_cfg=dict(mode='whole'),
     test_cfg=dict(mode='whole')
 )
+evaluation = dict(metric='mIoU')

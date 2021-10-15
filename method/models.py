@@ -5,7 +5,9 @@ from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
 from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
-def model_unet_(opt):
+import segmentation_models_pytorch as smp
+
+def model_unet(opt):
     model = smp.Unet(
         encoder_name="resnet18",        # encoder
         encoder_depth=opt.depth,
@@ -13,10 +15,9 @@ def model_unet_(opt):
         in_channels=len(opt.x_2D),      # model input channels (1 for gray-scale images, 3 for RGB, etc.)
         classes=opt.n_class,            # model output channels (number of classes in your dataset)
     )
-
     return model
 
-def model_unet(opt):
+def model_unet_(opt):
     cfg = mmcv.Config.fromfile('model/unet_cfg.py')
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/unet_cfg.py')
     

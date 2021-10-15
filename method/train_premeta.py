@@ -15,7 +15,9 @@ from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning
 
 from models import metafreeze_model
 
-def validate(val_loader, model, opt):
+import segmentation_models_pytorch as smp
+
+def valid_epoch(val_loader, model, opt):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -169,6 +171,27 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     
+    if opt.model != 'setr':
+        optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
+        loss = smp.losses.LovaszLoss(mode='multiclass')
+        metrics = [smp.utils.metrics.IoU(threshold=0.5),]
+        
+        train_epoch_ = smp.utils.train.TrainEpoch(
+            model, 
+            loss=loss, 
+            metrics=metrics, 
+            optimizer=optimizer,
+            device=torch.device('cuda:0'),
+            verbose=True,
+        )
+        valid_epoch_ = smp.utils.train.ValidEpoch(
+            model, 
+            loss=loss, 
+            metrics=metrics, 
+            device=torch.device('cuda:0'),
+            verbose=True,
+        )
+    
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
@@ -207,18 +230,23 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         
         print("==> training")
         time1 = time.time()
-        model.train()
         if opt.mode == 'meta':
             model = metafreeze_model(model, opt)
-        train_acc, train_loss, losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
+        if opt.model == 'setr':
+            model.train()
+            train_acc, train_loss, losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
+        else:
+            train_logs  = train_epoch_.run(train_loader)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
         
-        model.eval()
-        val_acc, val_loss = validate(val_loader=val_loader, model=model, opt=opt)
+
+        if opt.model == 'setr':
+            model.eval()
+            val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
         
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)

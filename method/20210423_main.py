@@ -60,6 +60,8 @@ from models import create_model
 from util import prep_input
 from train_premeta import train, validate
 
+import segmentation_models_pytorch as smp
+
 print("cuda available")
 print(torch.cuda.is_available())
 
@@ -117,7 +119,7 @@ for dti in range(4):
     ds_mt = dss[dti]
     opt.model_folder = '{}_{}'.format(mf, ds_mt)
     os.makedirs(opt.model_folder, exist_ok=True)
-
+    
     # train/metatrain data sets denscats folder paths
 
     x_dirs_tr = nomac( flatx([[os.path.join(opt.data_dir, opt.x_2D[0], ds, sc) for 
@@ -175,7 +177,7 @@ for dti in range(4):
 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
-
+    
     # train and validate
     opt.epochs = 200
     opt.save_freq = 10

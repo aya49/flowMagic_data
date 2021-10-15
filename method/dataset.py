@@ -97,6 +97,8 @@ class Data2D(Dataset):
         self.y_files = y_files            # data set files: y_2D
 
         self.data_dir = opt.data_dir
+        
+        self.loadxy = opt.model !='setr'
 
         if opt.preload_data: # or len(x_files) < 200 # *** change
             self.x = []
@@ -211,6 +213,8 @@ class Data2D(Dataset):
             xi, yi = self.transform(xi, yi)
         # yi = yi.squeeze()
         
+        if self.loadxy:
+            return xi, yi
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
 # making this a separater function to split up Data2D into smaller chunks for saving
