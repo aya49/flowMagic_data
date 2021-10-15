@@ -29,7 +29,7 @@ class Data2D(Dataset):
         mode: "pretrain", "distill", "meta" (meta="train" or "test")
         * folder structure: data_dir > x_2Ddenscat/x_2Dcontour/y_2D > dataset > scatterplot > sample.csv.gz
         """
-        
+         
         # lambda to flatten lists without importing functions...
         flatx = lambda x: [i for row in x for i in row]
         
@@ -75,6 +75,7 @@ class Data2D(Dataset):
             for x2i in range(1, len(opt.x_2D)):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
 
+        self.loadxy = opt.model !='setr'
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
@@ -98,7 +99,6 @@ class Data2D(Dataset):
 
         self.data_dir = opt.data_dir
         
-        self.loadxy = opt.model !='setr'
 
         if opt.preload_data: # or len(x_files) < 200 # *** change
             self.x = []
