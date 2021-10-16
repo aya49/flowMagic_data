@@ -180,14 +180,14 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
             loss=loss, 
             metrics=metrics, 
             optimizer=optimizer,
-            device=torch.device('cuda:0'),
+            device=torch.device('cuda:0' if opt.gpu else 'cpu'),
             verbose=True,
         )
         valid_epoch_ = smp.utils.train.ValidEpoch(
             model, 
             loss=loss, 
             metrics=metrics, 
-            device=torch.device('cuda:0'),
+            device=torch.device('cuda:0' if opt.gpu else 'cpu'),
             verbose=True,
         )
     

@@ -212,6 +212,8 @@ class Data2D(Dataset):
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
         # yi = yi.squeeze()
+        xi = xi.float()
+        yi = yi.float()
         
         if self.loadxy:
             return xi, yi

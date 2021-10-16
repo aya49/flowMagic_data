@@ -3,8 +3,6 @@ import time
 import numpy as np
 
 def prep_input(inp, target, xfn):
-    inp = inp.float()
-    target = target.float()
     if torch.cuda.is_available():
         inp = inp.cuda()
         target = target.cuda()
