@@ -90,7 +90,7 @@ def update_opt(opt):
     
     # experiment name
     opt.model_name = '{}_dim:{}_epoch:{}_lr:{}_decay:{}'.format(
-    opt.model, opt.dim, opt.epochs, opt.learning_rate, opt.weight_decay, opt.transform)
+    opt.model, opt.dim, opt.epochs, opt.learning_rate, opt.weight_decay)
     
     if opt.cosine:
         opt.model_name = '{}_cosine'.format(opt.model_name)

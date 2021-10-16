@@ -16,7 +16,7 @@ nvcc --version # default CUDA 9.1 # CUDA version
 
 # set directory
 import os
-os.chdir("/src/method")
+os.chdir("/home/aya43/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 # basic modules
