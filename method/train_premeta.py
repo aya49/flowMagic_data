@@ -4,18 +4,15 @@ import time
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
+import segmentation_models_pytorch as smp
 
 import gc
 
 import tensorboard_logger as tb_logger
 
 from mmseg.models.losses import lovasz_loss as ll
-
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
-
 from models import metafreeze_model
-
-import segmentation_models_pytorch as smp
 
 def valid_epoch(val_loader, model, opt):
     """One epoch validation"""
@@ -171,7 +168,9 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     
-    if opt.model != 'setr':
+    if opt.model == 'setr':
+        optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
+    else:
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
         loss = smp.losses.LovaszLoss(mode='multiclass')
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
@@ -201,7 +200,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         torch.backends.cudnn.benchmark = True
     
     # tensorboard
-    logger = tb_logger.Logger(logdir=opt.tb_dir, flush_secs=2)
+    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     
     # set cosine annealing scheduler
     if opt.cosine:

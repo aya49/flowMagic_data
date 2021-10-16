@@ -33,9 +33,9 @@ def load_checkpoint(model, save_path):
     model.load_state_dict(model_state['model'])
     return model, model_state['optimizer'], model_state['epoch']
 
-def get_teacher_name(model_path):
+def get_teacher_name(model_dir):
     """parse to get teacher model name"""
-    segments = model_path.split('/')[-2].split('_')
+    segments = model_dir.split('/')[-2].split('_')
     if ':' in segments[0]:
         return segments[0].split(':')[-1]
     else:
