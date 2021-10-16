@@ -97,7 +97,6 @@ def update_opt(opt):
     opt.adam = True  ## USE ADAM
     if opt.adam:
         opt.model_name = '{}_useAdam'.format(opt.model_name)
-    opt.model_name = '{}_{}'.format(opt.model_name, opt.trial)
     
     opt.data_dir = os.path.join(opt.root_dir, opt.data_dir)
     opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name)
