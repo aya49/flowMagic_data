@@ -89,7 +89,7 @@ x_dirs = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for
 # preload data
 if opt.preload_data:
     ds_files = []
-    for x_dir_mt in x_dirs:
+    for x_dir_mt in x_dirs[30:]:
         xdmsplit = x_dir_mt.split('/')
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
@@ -107,12 +107,14 @@ if opt.preload_data:
 # choose the data set 0-3 we use as the metatest data set
 opt.mode = 'pretrain'
 mf = opt.model_folder
+tf = opt.tb_folder
 for dti in range(4):
     # dti = 0 ##
     ds_tr = [x for i, x in enumerate(dss) if i!=dti]
     ds_mt = dss[dti]
     
     opt.model_folder = '{}_{}'.format(mf, ds_mt)
+    opt.tb_folder = '{}_{}'.format(tf, ds_mt)
     os.makedirs(opt.model_folder, exist_ok=True)
     
     # train/metatrain data sets denscats folder paths
@@ -171,7 +173,7 @@ for dti in range(4):
     opt.epochs = 200
     opt.save_freq = 50
     opt.print_freq = 50
-    acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
 
@@ -240,9 +242,9 @@ for dti in range(4):
             optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
             
             # train and validate
-            opt.epochs = 200
+            opt.epochs = 100
             opt.save_freq = 50
-            acc, loss, losses, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
             
             
             ## META-TEST ##############################################

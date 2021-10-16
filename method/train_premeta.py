@@ -163,7 +163,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
         
     print(' * Acc@1 {acc1:.3f}'.format(acc1=top1.avg))
     
-    return top1.avg, losses.avg, losses
+    return top1.avg, losses.avg
 
 
 def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
@@ -172,7 +172,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
     else:
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
-        loss = smp.losses.LovaszLoss(mode='multiclass')
+        loss = smp.losses.LovaszLoss(mode='multiclass') # loss = smp.utils.losses.DiceLoss()
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
         
         train_epoch_ = smp.utils.train.TrainEpoch(
@@ -192,12 +192,13 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         )
     
     if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
         # model = model.cuda()
         # ll.cuda()
+
         
-        torch.backends.cudnn.benchmark = True
     
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
@@ -220,6 +221,8 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     
     print(epoch_)
     
+    acc = []
+    loss = []
     for epoch in range(epoch_ + 1, opt.epochs + 1):
         
         if opt.cosine:
@@ -233,7 +236,7 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
             model = metafreeze_model(model, opt)
         if opt.model == 'setr':
             model.train()
-            train_acc, train_loss, losses = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
+            train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         else:
             train_logs  = train_epoch_.run(train_loader)
         time2 = time.time()
@@ -246,7 +249,12 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
         if opt.model == 'setr':
             model.eval()
             val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
-        
+            acc = acc.append(val_loss)
+            loss = loss.append(val_acc)
+        else:
+            valid_logs = valid_epoch_.run(val_loader)
+            acc = acc.append(valid_logs['dice_loss'])
+            loss = loss.append(valid_logs['iou_score'])
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)
         
@@ -260,4 +268,4 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
     
-    return val_acc, val_loss, losses, model # yes, i return the model because i like seeing it there
+    return acc, loss, model # yes, i return the model because i like seeing it there
