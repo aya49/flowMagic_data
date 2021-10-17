@@ -246,6 +246,8 @@ for dti in range(4):
             opt.save_freq = 50
             acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
             
+            acc_path = os.path.join(opt.model_folder, 'acc.csv')
+            loss_path = os.path.join(opt.model_folder, 'loss.csv')
             
             ## META-TEST ##############################################
             # load datasets

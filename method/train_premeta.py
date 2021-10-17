@@ -63,7 +63,7 @@ def valid_epoch(val_loader, model, opt):
                       'Acc@1 ({acc1:.3f})'.format(
                        idx, len(val_loader), batch_time=batch_time, loss=loss,
                        acc1=acc1))
-
+        
         print(' * Acc@1 {acc1:.3f}'.format(acc1=top1.avg))
     
     return top1.avg, losses.avg
@@ -107,7 +107,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
         #     index = index.cuda() if set_cuda else index
         # else:
         #     inp, target, idx, _ = enum
-
+        
         inp = inp.float()
         inp = inp.cuda() if set_cuda else inp
         target = target.cuda() if set_cuda else target
@@ -166,13 +166,14 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
     return top1.avg, losses.avg
 
 
-def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
+def train(opt, model, train_loader, val_loader, model_t=None):
     
     if opt.model == 'setr':
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
     else:
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
-        loss = smp.losses.LovaszLoss(mode='multiclass') # loss = smp.utils.losses.DiceLoss()
+        # loss = smp.losses.LovaszLoss(mode='multiclass')
+        loss = smp.utils.losses.DiceLoss()
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
         
         train_epoch_ = smp.utils.train.TrainEpoch(
@@ -197,8 +198,8 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
             model = nn.DataParallel(model)
         # model = model.cuda()
         # ll.cuda()
-
-        
+    
+    
     
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
@@ -221,8 +222,8 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     
     print(epoch_)
     
-    acc = []
-    loss = []
+    acc_ = []
+    loss_ = []
     for epoch in range(epoch_ + 1, opt.epochs + 1):
         
         if opt.cosine:
@@ -239,24 +240,33 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
             train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         else:
             train_logs  = train_epoch_.run(train_loader)
+            train_acc = train_logs['dice_loss']
+            train_loss = train_logs['iou_score']
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
         
-
+        
         if opt.model == 'setr':
             model.eval()
             val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
-            acc = acc.append(val_loss)
-            loss = loss.append(val_acc)
         else:
             valid_logs = valid_epoch_.run(val_loader)
-            acc = acc.append(valid_logs['dice_loss'])
-            loss = loss.append(valid_logs['iou_score'])
+            val_acc = valid_logs['dice_loss']
+            val_loss = valid_logs['iou_score']
+            print(val_acc)
+            print(val_loss)
+        
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)
+        if len(acc_) == 0:
+            acc_ = [val_acc]
+            loss_ = [val_loss]
+        else:
+            acc_.extend([val_acc])
+            loss_.extend([val_loss])
         
         # regular saving
         if epoch % opt.save_freq == 0:
@@ -268,4 +278,4 @@ def train(opt, model, train_loader, val_loader, optimizer, model_t=None):
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
     
-    return acc, loss, model # yes, i return the model because i like seeing it there
+    return acc_, loss_, model # yes, i return the model because i like seeing it there
