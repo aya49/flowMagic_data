@@ -77,7 +77,8 @@ class Data2D(Dataset):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
 
         self.loadxy = opt.model !='setr'
-        self.normx = False
+        self.normx = True
+        self.x_3D = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
