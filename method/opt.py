@@ -1,15 +1,14 @@
 import os
 import argparse
-
 import torch
 
 from models import model_names
 
 def parse_options():
-    parser = argparse.ArgumentParser('argument for training')
+    parser = argparse.ArgumentParser()
     
     # train/test stage
-    parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'distill', 'meta'])
+    parser.add_argument('--mode', type=str, default='pretrain', choices=['pretrain', 'meta'])
 
     # root dir
     parser.add_argument('--root_dir', type=str, default='/home/aya43/flowMagic_data', help='root directory')
@@ -21,7 +20,6 @@ def parse_options():
     parser.add_argument('--new_weights', action='store_false', 
                         help="don't preload model to continue training or as final model if file ends in \'_final.pth\')")
     parser.add_argument('--n_class', type=int, default=5, help='max number of classes')
-    # parser.add_argument('--depth', type=int, default=5, help='encoder depth')
     parser.add_argument('--dim', type=int, default=256, help='side length of square image data')
 
     # data
@@ -47,29 +45,11 @@ def parse_options():
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
     
-    # cosine annealing
-    parser.add_argument('--cosine', action='store_true', help='using cosine annealing')
-    
     # meta train/test
     parser.add_argument('--data_scat', type=str, default='pregnancy/07_FoxP3CD25_CD4Tcell', help='meta: dataset/scatterplot folder')
     parser.add_argument('--shot_dir', type=str, default='data/2D/x_2Ddenscat_euclidean_rankkmed', help='meta: directory with shot names as filenames')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='meta: number of meta-training support samples')
-
-    # # distillation
-    # parser.add_argument('--distill', type=str, default='kd', choices=['kd', 'contrast', 'hint', 'attention'])
-    # parser.add_argument('-r', '--gamma', type=float, default=1, help='weight for classification')
-    # parser.add_argument('-a', '--alpha', type=float, default=0, help='weight balance for KD')
-    # parser.add_argument('-b', '--beta', type=float, default=0, help='weight balance for other losses')
-    # 
-    # # KL distillation
-    # parser.add_argument('--kd_T', type=float, default=4, help='temperature for KD distillation')
-    # 
-    # # NCE distillation
-    # parser.add_argument('--feat_dim', default=128, type=int, help='feature dimension')
-    # parser.add_argument('--nce_k', default=16384, type=int, help='number of negative samples for NCE')
-    # parser.add_argument('--nce_t', default=0.07, type=float, help='temperature parameter for softmax')
-    # parser.add_argument('--nce_m', default=0.5, type=float, help='momentum for non-parametric updates')
 
     # ======================================================
     opt = parser.parse_args('') # opt = parser.parse_args() # from console

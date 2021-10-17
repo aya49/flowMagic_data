@@ -204,11 +204,6 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     
-    # set cosine annealing scheduler
-    if opt.cosine:
-        eta_min = opt.learning_rate * (opt.lr_decay_rate ** 3)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, opt.epochs, eta_min, -1)
-    
     # train
     epoch_ = 0
     save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
@@ -226,10 +221,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     loss_ = []
     for epoch in range(epoch_ + 1, opt.epochs + 1):
         
-        if opt.cosine:
-            scheduler.step()
-        else:
-            adjust_learning_rate(epoch, opt, optimizer)
+        adjust_learning_rate(epoch, opt, optimizer)
         
         time1 = time.time()
         if opt.mode == 'meta':

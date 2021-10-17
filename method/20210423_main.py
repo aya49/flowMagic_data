@@ -73,10 +73,8 @@ opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 # some convenient functions
 def nomac(xx):
     return [x for x in xx if '__MACOSX' not in x]
-
 def yegz(xx):
     return [x for x in xx if '.gz' in x]
-
 flatx = lambda x: [i for row in x for i in row]
 
 
@@ -204,12 +202,7 @@ for dti in range(4):
             # x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
             
             
-            ## META-TRAIN #################################################
-            # set some parameters --- if not enough gpu memory, reduce batch_size
-            opt.num_workers = 32
-            opt.batch_size = 32
-            opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
-            
+            ## META-TRAIN #################################################            
             # create datasets
             dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*stimes)
             dataset_mt_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_t)
