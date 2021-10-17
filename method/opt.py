@@ -72,8 +72,6 @@ def update_opt(opt):
     opt.model_name = '{}_dim:{}_epoch:{}_lr:{}_decay:{}'.format(
     opt.model, opt.dim, opt.epochs, opt.learning_rate, opt.weight_decay)
     
-    if opt.cosine:
-        opt.model_name = '{}_cosine'.format(opt.model_name)
     opt.adam = True  ## USE ADAM
     if opt.adam:
         opt.model_name = '{}_useAdam'.format(opt.model_name)
