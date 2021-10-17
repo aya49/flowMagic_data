@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 
 from transform import transform_dict
 
+import random
 import copy
 
 # dataset loader class: torch.utils.data.Dataset
@@ -76,6 +77,7 @@ class Data2D(Dataset):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
 
         self.loadxy = opt.model !='setr'
+        self.normx = True
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
@@ -215,13 +217,17 @@ class Data2D(Dataset):
         xi = xi.float()
         yi = yi.float()
         
+        if self.normx:
+            xi = xi/100
+        
         if self.loadxy:
             return xi, yi
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
 # making this a separater function to split up Data2D into smaller chunks for saving
-def split_Data2D(dataset, n, preload=True):
+def split_Data2D(dataset, n):
     nsize = len(dataset) // n
+    preload = dataset.preload_data
     
     datasets = []
     for i in range(n):
@@ -253,6 +259,9 @@ def split_Data2D(dataset, n, preload=True):
                 dataset.x = dataset.x[nsize:]
             datasets.append(dataseti)
     return datasets
+
+# get random subset of dataset
+# making this a separater function to split up Data2D into smaller chunks for saving
 
 def merge_Data2D(dataset, dataset_, preload=True):
     dataset.x_dirs.extend(dataset_.x_dirs)

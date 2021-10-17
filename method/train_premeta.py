@@ -231,7 +231,6 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         else:
             adjust_learning_rate(epoch, opt, optimizer)
         
-        print("==> training")
         time1 = time.time()
         if opt.mode == 'meta':
             model = metafreeze_model(model, opt)
@@ -243,11 +242,9 @@ def train(opt, model, train_loader, val_loader, model_t=None):
             train_acc = train_logs['dice_loss']
             train_loss = train_logs['iou_score']
         time2 = time.time()
-        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
-        
         
         if opt.model == 'setr':
             model.eval()
@@ -256,8 +253,6 @@ def train(opt, model, train_loader, val_loader, model_t=None):
             valid_logs = valid_epoch_.run(val_loader)
             val_acc = valid_logs['dice_loss']
             val_loss = valid_logs['iou_score']
-            print(val_acc)
-            print(val_loss)
         
         logger.log_value('test_acc', val_acc, epoch)
         logger.log_value('test_loss', val_loss, epoch)
@@ -267,6 +262,8 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         else:
             acc_.extend([val_acc])
             loss_.extend([val_loss])
+        
+        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         # regular saving
         if epoch % opt.save_freq == 0:

@@ -51,7 +51,7 @@ from torchsampler import ImbalancedDatasetSampler as ids # pip install https://g
 from opt import parse_options
 from util import prep_input
 from transform import transform_dict
-from dataset import Data2D, merge_Data2D
+from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
 from train_premeta import train
 
@@ -126,9 +126,6 @@ for dti in range(4):
     # split pre-train data set into train (95%) and validation (5%)
     x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
 
-    x_files_tr_v_ind = random.sample(range(0,len(x_files_tr)), int(len(x_files_tr)/20))
-    x_files_tr_v = [x_files_tr[x] for x in range(0,len(x_files_tr)) if x in x_files_tr_v_ind]
-
     ## create datasets ####
     if opt.preload_data:
         ds_files_tr = [x for x in ds_files if dss[dti] not in x]
@@ -142,15 +139,10 @@ for dti in range(4):
         dataset_tr_t.factorize_labels()
         dataset_tr_t.transform = transform_dict['A']
     else:
-        dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr)
+        dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
     
-    ds_tr_v_path = os.path.join(opt.data_folder, 'dataset_tr_v_{}.gz'.format(ds_mt))
-    if os.path.exists(ds_tr_v_path):
-        dataset_tr_v = compress_pickle.load(ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
-    else:
-        dataset_tr_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_tr_v)
-        compress_pickle.dump(dataset_tr_v, ds_tr_v_path, compression="lzma", set_default_extension=False) #gzip
-
+    dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
+    
     ## create dataloaders ####
     if opt.model == 'setr':
         dataset_tr_t.loadxy = False
