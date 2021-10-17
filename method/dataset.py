@@ -77,7 +77,7 @@ class Data2D(Dataset):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
 
         self.loadxy = opt.model !='setr'
-        self.normx = True
+        self.normx = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
@@ -216,6 +216,10 @@ class Data2D(Dataset):
         
         if self.normx:
             xi = xi/100
+        if self.x_3D:
+            dimsize = xi.shape[1]
+            xj = torch.zeros(1, dimsize, dimsize)
+            xi = torch.cat((xi, xj))
         
         # experiment: add data/scat to data
         xi[0][0][0] = self.x_dirs_factor[i]
