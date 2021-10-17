@@ -208,9 +208,6 @@ class Data2D(Dataset):
         # if 'meta' in self.mode:
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
 
-        # experiment: add data/scat to data
-        xi[0][0][0] = self.x_dirs_factor[i]
-
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
         # yi = yi.squeeze()
@@ -220,6 +217,9 @@ class Data2D(Dataset):
         if self.normx:
             xi = xi/100
         
+        # experiment: add data/scat to data
+        xi[0][0][0] = self.x_dirs_factor[i]
+
         if self.loadxy:
             return xi, yi
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
