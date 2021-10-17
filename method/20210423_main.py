@@ -73,8 +73,10 @@ opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 # some convenient functions
 def nomac(xx):
     return [x for x in xx if '__MACOSX' not in x]
+
 def yegz(xx):
     return [x for x in xx if '.gz' in x]
+
 flatx = lambda x: [i for row in x for i in row]
 
 
@@ -160,7 +162,7 @@ for dti in range(4):
     # model.load_state_dict(ckpt['model'])
     
     # train and validate
-    opt.epochs = 200
+    opt.epochs = 10000
     opt.save_freq = 50
     opt.print_freq = 50
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
