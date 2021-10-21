@@ -267,7 +267,7 @@ def train(opt, model, train_loader, val_loader, model_t=None):
             np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
             acc_file = os.path.join(opt.model_folder, 'acc.csv')
             np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
-
+    
     # save the last model
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)

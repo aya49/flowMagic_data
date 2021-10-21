@@ -48,7 +48,7 @@ from torch.utils.data import DataLoader
 # from torchviz import make_dot # creates an image of the model
 from torchsampler import ImbalancedDatasetSampler as ids # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 
-from opt import parse_options
+from opt import parse_options, update_opt
 from util import prep_input
 from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
@@ -165,6 +165,7 @@ for dti in range(4):
     opt.epochs = 1000
     opt.save_freq = 50
     opt.print_freq = 50
+    opt = update_opt(opt)
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
@@ -183,6 +184,7 @@ for dti in range(4):
     ## META #######################################################
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
+    mf_ = opt.model_folder
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots
         stimes = 100//n_shots
@@ -228,12 +230,15 @@ for dti in range(4):
             optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
             
             # train and validate
-            opt.epochs = 100
+            opt.epochs = 1000
             opt.save_freq = 50
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, optimizer=optimizer) # pt.preload_model = True
+            opt = update_opt(opt)
+            opt.model_folder = '{}_{}_{}'.format(mf_, xdmsplit[-1], opt.mode)
+            os.makedirs(opt.model_folder, exist_ok=True)
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
             
-            acc_path = os.path.join(opt.model_folder, 'acc.csv')
-            loss_path = os.path.join(opt.model_folder, 'loss.csv')
+            # acc_path = os.path.join(opt.model_folder, 'acc.csv')
+            # loss_path = os.path.join(opt.model_folder, 'loss.csv')
             
             ## META-TEST ##############################################
             # load datasets
