@@ -141,12 +141,12 @@ for dti in range(4):
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
     
-    dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
-    
-    ## create dataloaders ####
     if opt.model == 'setr':
         dataset_tr_t.loadxy = False
-        dataset_tr_v.loadxy = False
+
+    dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
+    dataset_tr_v.transform = transform_dict['B']
+    
     dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
                                 batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                 num_workers=opt.num_workers)

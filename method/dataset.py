@@ -267,6 +267,26 @@ def split_Data2D(dataset, n):
 
 # get random subset of dataset
 # making this a separater function to split up Data2D into smaller chunks for saving
+def subset_Data2D(dataset, n):
+    n_inds = random.sample(range(len(dataset)), n)
+    preload = dataset.preload_data
+    
+    dataseti = copy.deepcopy(dataset)
+    dataseti.x_dirs = [dataseti.x_dirs[i] for i in n_inds]
+    dataseti.x_dirs_factor = [dataseti.x_dirs_factor[i] for i in n_inds]
+    dataseti.x_filenames = [dataseti.x_filenames[i] for i in n_inds]
+    if len(dataset.x_2D)>1:
+        for j in range(len(dataset.x_2D)):
+            dataseti.x_files[j] = [dataseti.x_files[j][i] for i in n_inds]
+    else:
+        dataseti.x_files = [dataseti.x_files[i] for i in n_inds]
+    dataseti.y_files = [dataseti.y_files[i] for i in n_inds]
+    
+    if preload:
+        dataseti.y = [dataseti.y[i] for i in n_inds]
+        dataseti.x = [dataseti.x[i] for i in n_inds]
+    
+    return dataseti
 
 def merge_Data2D(dataset, dataset_, preload=True):
     dataset.x_dirs.extend(dataset_.x_dirs)
