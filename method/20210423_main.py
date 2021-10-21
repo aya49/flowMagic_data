@@ -162,7 +162,7 @@ for dti in range(4):
     # model.load_state_dict(ckpt['model'])
     
     # train and validate
-    opt.epochs = 10000
+    opt.epochs = 1000
     opt.save_freq = 50
     opt.print_freq = 50
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
@@ -194,10 +194,9 @@ for dti in range(4):
             
             # get n-shot samples
             opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
-            shot_folder = os.path.join(opt.shot_folder, opt.data_scat, str(opt.n_shots))
+            shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
             x_files_mt_t_ = os.listdir(shot_folder)
             x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
-            # file handling HERE!!!
             # x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
             
             # # get test samples
