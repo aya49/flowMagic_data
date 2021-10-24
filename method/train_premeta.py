@@ -177,6 +177,9 @@ def train(opt, model, train_loader, val_loader, model_t=None):
         loss = smp.utils.losses.DiceLoss()
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
         
+        if opt.mode == 'meta':
+            model = metafreeze_model(model, opt)
+            
         train_epoch_ = smp.utils.train.TrainEpoch(
             model, 
             loss=loss, 
@@ -221,14 +224,12 @@ def train(opt, model, train_loader, val_loader, model_t=None):
     acc_ = []
     loss_ = []
     for epoch in range(epoch_ + 1, opt.epochs + 1):
-        
         adjust_learning_rate(epoch, opt, optimizer)
         
         time1 = time.time()
-        if opt.mode == 'meta':
-            model = metafreeze_model(model, opt)
         if opt.model == 'setr':
             model.train()
+            model = metafreeze_model(model, opt)
             train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         else:
             train_logs  = train_epoch_.run(train_loader)

@@ -184,7 +184,6 @@ for dti in range(4):
     ## META #######################################################
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
-    mf_ = opt.model_folder
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots
         stimes = 100//n_shots
@@ -224,16 +223,15 @@ for dti in range(4):
             # load model
             if 'model' not in locals():
                 model = create_model(opt).cuda()
-            ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
+            # ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
+            ckpt = torch.load(os.path.join(opt.model_folder, 'ckpt_epoch_700.pth'))
             model.load_state_dict(ckpt['model'])
-            
-            optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
             
             # train and validate
             opt.epochs = 1000
             opt.save_freq = 50
             opt = update_opt(opt)
-            opt.model_folder = '{}_{}_{}'.format(mf_, xdmsplit[-1], opt.mode)
+            opt.model_folder = '{}_{}_{}'.format(mf, xdmsplit[-1], opt.mode)
             os.makedirs(opt.model_folder, exist_ok=True)
             acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
             

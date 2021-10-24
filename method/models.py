@@ -47,20 +47,18 @@ def create_model(opt):
 
 def metafreeze_model(model, opt):
     # freeze
-    for param in model.parameters():
-        param.requires_grad = False
+    for p in model.parameters():
+        p.requires_grad = False
     
     if opt.model == 'setr':
-        for param in model.backbone.layers[6].parameters():
-            param.requires_grad = True
-        for param in model.backbone.layers[7].parameters():
-            param.requires_grad = True
+        for p in model.backbone.layers[6].parameters():
+            p.requires_grad = True
+        for p in model.backbone.layers[7].parameters():
+            p.requires_grad = True
     
     if opt.model == 'unet':
-        for param in model.encoder.layer4.parameters():
-            param.requires_grad = True
-        for param in model.decoder.blocks[0].parameters():
-            param.requires_grad = True
+        for p in model.decoder.parameters():
+            p.requires_grad = True
     
     return model
         
