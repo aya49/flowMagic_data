@@ -222,7 +222,12 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
     print(epoch_)
     
     acc_, acc, loss_, loss = [], [], [], []
+    epoch0 = 0
     for epoch in range(epoch_ + 1, opt.epochs + 1):
+        if epoch % epochx == 0:
+            epoch0 += 1
+        
+        # train
         adjust_learning_rate(epoch, opt, optimizer)
         
         time1 = time.time()
@@ -238,32 +243,36 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
         
         logger.log_value('train_acc', train_acc, epoch)
         logger.log_value('train_loss', train_loss, epoch)
-        
-        if opt.model == 'setr':
-            model.eval()
-            val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
-        else:
-            valid_logs = valid_epoch_.run(val_loader)
-            val_acc = valid_logs['dice_loss']
-            val_loss = valid_logs['iou_score']
-        
-        logger.log_value('test_acc', val_acc, epoch)
-        logger.log_value('test_loss', val_loss, epoch)
         if len(acc_) == 0:
-            acc_ = [val_acc]
-            loss_ = [val_loss]
             acc = [train_acc]
             loss = [train_loss]
         else:
-            acc_.extend([val_acc])
-            loss_.extend([val_loss])
             acc.extend([train_acc])
             loss.extend([train_loss])
         
-        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
+        # validate
+        if epoch % epochx == 0:
+            if opt.model == 'setr':
+                model.eval()
+                val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
+            else:
+                valid_logs = valid_epoch_.run(val_loader)
+                val_acc = valid_logs['dice_loss']
+                val_loss = valid_logs['iou_score']
+            
+            logger.log_value('test_acc', val_acc, epoch)
+            logger.log_value('test_loss', val_loss, epoch)
+            if len(acc_) == 0:
+                acc_ = [val_acc]
+                loss_ = [val_loss]
+            else:
+                acc_.extend([val_acc])
+                loss_.extend([val_loss])
+            
+            print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         # regular saving
-        if epoch % opt.save_freq == 0:
+        if (epoch0 % opt.save_freq == 0) or epoch == opt.epochs:
             print('==> Saving...')
             save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
@@ -277,6 +286,7 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
             np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
             acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
             np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
+        
     
     # save the last model
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
