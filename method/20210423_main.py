@@ -186,7 +186,6 @@ for dti in range(4):
     opt.mode = 'meta'
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots
-        stimes = 100//n_shots
         for x_dir_mt in x_dirs_mt:
             # x_dir_mt = x_dirs_mt[0]
             xdmsplit = x_dir_mt.split('/')
@@ -206,7 +205,7 @@ for dti in range(4):
             
             ## META-TRAIN #################################################            
             # create datasets
-            dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*stimes)
+            dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
             dataset_mt_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_t)
             if opt.model == 'setr':
                 dataset_mt_t.loadxy = False
@@ -233,7 +232,7 @@ for dti in range(4):
             opt = update_opt(opt)
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochx=1000//n_shots) # pt.preload_model = True
             
             # acc_path = os.path.join(opt.model_folder, 'acc.csv')
             # loss_path = os.path.join(opt.model_folder, 'loss.csv')
