@@ -194,7 +194,7 @@ for dti in range(4):
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
             
             # get n-shot samples
-            opt.model_name_meta = '{}_METAdatascat:{}_METAshots:{}'.format(opt.model_name, opt.data_scat, opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+            opt.model_name_meta = '{}_{}_{}_METAshots:{}'.format(opt.model_name, xdmsplit[-2], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
             shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
             x_files_mt_t_ = os.listdir(shot_folder)
             x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
@@ -231,7 +231,7 @@ for dti in range(4):
             opt.epochs = 1000
             opt.save_freq = 50
             opt = update_opt(opt)
-            opt.model_folder = '{}_{}_{}'.format(mf, xdmsplit[-1], opt.mode)
+            opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
             acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
             

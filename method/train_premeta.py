@@ -167,7 +167,7 @@ def train_epoch(epoch, train_loader, model, optimizer, opt):
     return top1.avg, losses.avg
 
 
-def train(opt, model, train_loader, val_loader, model_t=None):
+def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
     
     if opt.model == 'setr':
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005)
