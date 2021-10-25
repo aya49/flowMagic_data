@@ -264,7 +264,7 @@ for dti in range(4):
             if 'model' not in locals():
                 model = create_model(opt).cuda()
             # ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
-            ckpt = torch.load(os.path.join(opt.model_folder, 'ckpt_epoch_700.pth'))
+            ckpt = torch.load(os.path.join(opt.model_folder, 'ckpt_epoch_1000.pth'))
             model.load_state_dict(ckpt['model'])
             
             # train and validate

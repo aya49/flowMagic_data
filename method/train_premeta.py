@@ -269,10 +269,10 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
                 acc_.extend([val_acc])
                 loss_.extend([val_loss])
             
-            print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
+        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
         
         # regular saving
-        if (epoch0 % opt.save_freq == 0) or epoch == opt.epochs:
+        if epoch % opt.save_freq == 0:
             print('==> Saving...')
             save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
@@ -291,5 +291,15 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
     # save the last model
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
+    
+    loss_file = os.path.join(opt.model_folder, 'loss.csv')
+    np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
+    loss_file = os.path.join(opt.model_folder, 'loss_train.csv')
+    np.savetxt(loss_file, loss, delimiter=', ', fmt="% s")
+    
+    acc_file = os.path.join(opt.model_folder, 'acc.csv')
+    np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
+    acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
+    np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
     
     return acc_, loss_, model # yes, i return the model because i like seeing it there
