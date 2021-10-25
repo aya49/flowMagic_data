@@ -103,6 +103,44 @@ if opt.preload_data:
         #     print(x_dir_mt)
         #     print(len(dataset_mt_r))
 
+## PRE-TRAIN ALL #############################################
+opt.mode = 'pretrain'
+mf = opt.model_folder
+ds_files_tr = [x for x in ds_files]
+for i in range(len(ds_files_tr)):
+    dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
+    print('{}: {}'.format(str(i).zfill(2), dscat))
+    
+    dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+    tl = len(dataset_tr_t)
+    
+    dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
+    dataset_tr_v.transform = transform_dict['B']
+    
+    dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                                batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                                num_workers=opt.num_workers)
+    dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                                batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                                num_workers=opt.num_workers)
+    ## initialize model ####
+    if i == 0:
+        model = create_model(opt).cuda()
+    
+    # train and validate
+    opt.epochs = 200000//tl
+    opt.save_freq = 20000//tl
+    opt.print_freq = 20000//tl
+    opt = update_opt(opt)
+    
+    opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
+    os.makedirs(opt.model_folder, exist_ok=True)
+    
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochx=10000//tl) # pt.preload_model = True
+    # for par in model.parameters():
+    #     print(par)
+
+
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
 opt.mode = 'pretrain'
@@ -166,6 +204,8 @@ for dti in range(4):
     opt.save_freq = 50
     opt.print_freq = 50
     opt = update_opt(opt)
+    # opt.model_folder = '{}_noclass'.format(opt.model_folder)
+    # os.makedirs(opt.model_folder, exist_ok=True)
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
@@ -184,6 +224,7 @@ for dti in range(4):
     ## META #######################################################
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
+    opt.learning_rate = 0.0005
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots
         for x_dir_mt in x_dirs_mt:
@@ -227,12 +268,12 @@ for dti in range(4):
             model.load_state_dict(ckpt['model'])
             
             # train and validate
-            opt.epochs = 1000
-            opt.save_freq = 50
+            opt.epochs = 10000//n_shots
+            opt.save_freq = 100//n_shots
             opt = update_opt(opt)
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochx=1000//n_shots) # pt.preload_model = True
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochx=100//n_shots) # pt.preload_model = True
             
             # acc_path = os.path.join(opt.model_folder, 'acc.csv')
             # loss_path = os.path.join(opt.model_folder, 'loss.csv')
