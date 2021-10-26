@@ -112,7 +112,7 @@ for i in range(len(ds_files_tr)):
     print('{}: {}'.format(str(i).zfill(2), dscat))
     
     dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
-    dataset_tr_t.ybig = True
+    # dataset_tr_t.ybig = True
     tl = len(dataset_tr_t)
     
     dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)

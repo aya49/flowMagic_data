@@ -214,7 +214,10 @@ class Data2D(Dataset):
         
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
-        # yi = yi.squeeze()
+            
+        if self.ysqueeze:
+            yi = yi.squeeze()
+            
         xi = xi.float()
         yi = yi.float()
         
