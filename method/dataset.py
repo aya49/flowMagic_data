@@ -10,6 +10,7 @@ from transform import transform_dict
 import random
 import copy
 
+
 # dataset loader class: torch.utils.data.Dataset
 # overwrite class methods:
 # - __len__ so that len(dataset) returns the size of the dataset. READ CSV HERE
@@ -181,14 +182,14 @@ class Data2D(Dataset):
         self.x_dirs_factor = x_dirs_factor.tolist()
     
     def __getitem__(self, i):
-
+        
         if self.preload_data:
             xi = self.x[i]
             yi = self.y[i]
             # if 'meta' in self.mode:
             #     ydi = self.ydiscrete[i]
             #     yvi = self.yvector[i]
-
+        
         else:
             xi = []
             for x2i in range(len(self.x_2D)):
@@ -200,7 +201,7 @@ class Data2D(Dataset):
             # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
             # for yc in range(torch.max(i).int()):
             #     yi[yc, yi0 == (yc + 1)] = 1
-
+            
             # if 'meta' in self.mode:
             #     ydi0 = torch.tensor(pd.read_csv(self.ydiscrete_files[i], header=None).values)
             #     ydi = ydi0.squeeze()
@@ -210,7 +211,7 @@ class Data2D(Dataset):
         
         # if 'meta' in self.mode:
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
-
+        
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
         # yi = yi.squeeze()

@@ -111,9 +111,14 @@ for i in range(len(ds_files_tr)):
     dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
     print('{}: {}'.format(str(i).zfill(2), dscat))
     
-    dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=[])
-    dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
-    dataset_tr_t = merge_Data2D(dataset_tr_t, dataset_tr_t_)
+    dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+    
+    dataset_tr_t = Data2D(dataset_tr_t)
+    compress_pickle.dump(dataset_tr_t, ds_files_tr[i], compression="lzma", set_default_extension=False) #gzip
+    
+    
+    
+    
     tl = len(dataset_tr_t)
     
     
