@@ -115,7 +115,6 @@ for i in range(len(ds_files_tr)):
     dataset_tr_t.ybig = True
     tl = len(dataset_tr_t)
     
-    
     dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
     dataset_tr_v.transform = transform_dict['B']
     
@@ -125,6 +124,7 @@ for i in range(len(ds_files_tr)):
     dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                                 batch_size=opt.batch_size, drop_last=False, shuffle=False,
                                 num_workers=opt.num_workers)
+    
     ## initialize model ####
     if i == 0:
         model = create_model(opt).cuda()
