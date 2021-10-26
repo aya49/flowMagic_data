@@ -80,6 +80,7 @@ class Data2D(Dataset):
         self.normx = True
         self.x_3D = False
         self.addclass = False
+        self.ybig = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
@@ -226,9 +227,13 @@ class Data2D(Dataset):
         # experiment: add data/scat to data
         if self.addclass:
             xi[0][0][0] = self.x_dirs_factor[i]
-
+        
+        if self.ybig: # 3D y tensor
+            yi = tensor2D3D(yi)
+            
         if self.loadxy:
             return xi, yi
+        
         return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
 # making this a separater function to split up Data2D into smaller chunks for saving
@@ -308,3 +313,11 @@ def merge_Data2D(dataset, dataset_, preload=True):
     return dataset
 
 
+def tensor2D3D(m):
+    H, W = m.shape
+    C = int(torch.max(m))
+    r = torch.zeros(C+1, H, W)
+    for i in range(C):
+        r[i][m[0][0]==i] = 1
+    
+    return r
