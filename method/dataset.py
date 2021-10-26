@@ -315,7 +315,7 @@ def merge_Data2D(dataset, dataset_, preload=True):
 
 
 def tensor2D3D(m):
-    H, W = m.shape
+    H, W = m.shape[-2:]
     C = int(torch.max(m))
     r = torch.zeros(C+1, H, W)
     for i in range(C):
