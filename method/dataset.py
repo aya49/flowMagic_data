@@ -230,7 +230,7 @@ class Data2D(Dataset):
             xi[0][0][0] = self.x_dirs_factor[i]
         
         if self.ybig: # 3D y tensor
-            yi = tensor2D3D(yi)
+            yi = tensor2D3D(yi, self.n_class)
             
         if self.loadxy:
             return xi, yi
