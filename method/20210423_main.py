@@ -134,7 +134,7 @@ for i in range(len(ds_files_tr)):
     # train and validate
     opt.epochs = 100000//tl
     opt.save_freq = 10000//tl
-    opt.print_freq = 1000//tl
+    opt.print_freq = 5000//tl
     opt = update_opt(opt)
     
     opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)

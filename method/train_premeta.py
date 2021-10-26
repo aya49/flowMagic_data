@@ -70,10 +70,10 @@ def valid_epoch(val_loader, model, opt, lossfunc, accmetric, verbose=True):
             
             if idx == ldl-1 and verbose:
                 print('Validate [{0}/{1}]: '
-                      'time {batch_time.val:.2f} ({batch_time.avg:.2f}) | '
-                      'loss ({loss:.3f}) | '
-                      'acc {acc1:.3f} ({acca:.3f})'.format(
-                       idx, ldl, batch_time=batch_time, loss=loss,
+                      'loss {loss:.3f} ({lossa:.3f})\t'
+                      'acc {acc1:.3f} ({acca:.3f})\t'
+                      'time {batch_time.val:.2f} ({batch_time.avg:.2f})'.format(
+                       idx, ldl, batch_time=batch_time, loss=loss, lossa=losses.avg,
                        acc1=acc1, acca=top1.avg))
     
     return top1.avg, losses.avg
@@ -142,12 +142,12 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         # print info
         if idx == ldl-1 and verbose:
             print('Epoch [{0}][{1}/{2}]: '
-                  'time {batch_time.val:.2f} ({batch_time.avg:.2f}) | '
-                  'load {data_time.val:.2f} ({data_time.avg:.2f}) | '
-                  'loss ({loss:.3f}) | '
-                  'acc {acc1:.3f} ({acca:.3f})'.format(
+                  'loss {loss:.3f} ({lossa:.3f})\t'
+                  'acc {acc1:.3f} ({acca:.3f})\t'
+                  'time {batch_time.val:.2f} ({batch_time.avg:.2f})\t'
+                  'load {data_time.val:.2f}'.format(
                   epoch, idx, ldl-1, batch_time=batch_time,
-                  data_time=data_time, loss=loss, acc1=acc1, acca=top1.avg))
+                  data_time=data_time, acc1=acc1, acca=top1.avg, loss=loss, lossa=losses.avg))
             sys.stdout.flush()
     
     return top1.avg, losses.avg
