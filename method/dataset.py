@@ -230,7 +230,7 @@ class Data2D(Dataset):
             xi[0][0][0] = self.x_dirs_factor[i]
         
         if self.ybig: # 3D y tensor
-            yi = tensor2D3D(yi, self.n_class)
+            yi = tensor2D3D(m=yi, C=self.n_class)
             
         if self.loadxy:
             return xi, yi
@@ -318,7 +318,7 @@ def tensor2D3D(m, C):
     H, W = m.shape[-2:]
     # C = int(torch.max(m))
     C_ = int(torch.max(m))
-    r = torch.zeros(C+1, H, W)
+    r = torch.zeros(C, H, W)
     for i in range(C_+1):
         r[i][m[0][0]==i] = 1
     
