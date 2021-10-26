@@ -225,6 +225,7 @@ for dti in range(4):
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
     opt.learning_rate = 0.0005
+    mff = opt.model_folder
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots
         for x_dir_mt in x_dirs_mt:
@@ -247,28 +248,29 @@ for dti in range(4):
             ## META-TRAIN #################################################            
             # create datasets
             dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
-            dataset_mt_v = Data2D(opt, transform=transform_dict['B'], x_files=x_files_mt_t)
+            dataset_mt_v = dataset_mt_t
+            dataset_mt_v.transform = transform_dict['B']
             if opt.model == 'setr':
                 dataset_mt_t.loadxy = False
                 dataset_mt_v.loadxy = False
             
             # create dataloaders
             dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
-                                        batch_size=opt.batch_size, drop_last=True, # shuffle=True, 
+                                        batch_size=min(len(dataset_mt_t), opt.batch_size), drop_last=True, # shuffle=True, 
                                         num_workers=opt.num_workers)
             dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
-                                        batch_size=len(dataset_mt_v), drop_last=False, shuffle=False, 
+                                        batch_size=min(len(dataset_mt_v), opt.batch_size), drop_last=False, shuffle=False, 
                                         num_workers=opt.num_workers)
             
             # load model
             if 'model' not in locals():
                 model = create_model(opt).cuda()
             # ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
-            ckpt = torch.load(os.path.join(opt.model_folder, 'ckpt_epoch_1000.pth'))
+            ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
             model.load_state_dict(ckpt['model'])
             
             # train and validate
-            opt.epochs = 10000//n_shots
+            opt.epochs = 5000//n_shots
             opt.save_freq = 100//n_shots
             opt = update_opt(opt)
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
@@ -283,8 +285,9 @@ for dti in range(4):
             ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
             dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
             dataset_mt_r.transform = transform_dict['B']
-            if opt.model == 'setr':
-                dataset_mt_r.loadxy = False
+            # if opt.model == 'setr':
+            #     dataset_mt_r.loadxy = False
+            dataset_mt_r.loadxy = False
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
@@ -296,18 +299,23 @@ for dti in range(4):
             res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
             os.makedirs(res_dir, exist_ok=True)
             # acc = []
+            
             for idx, stuff in enumerate(dataloader_mt_r):
+                (inp, target, i, xdir, xfn) = stuff
+                
                 if opt.model == 'setr':
-                    (inp, target, i, xdir, xfn) = stuff
                     inp, target, img_metas = prep_input(inp, target, xfn)
                 else:
-                    (inp, target) = stuff
                     if torch.cuda.is_available():
                         inp = inp.cuda()
-                        target = target.cuda()
+                        # target = target.cuda()
                 # inference and score
                 
-                res = model.inference(inp, img_metas, rescale=False)
+                if opt.model == 'setr':
+                    res = model.inference(inp, img_metas, rescale=False)
+                else:
+                    res = model.predict(inp)
+                
                 res = res.squeeze()
                 res_vals, res_ind = torch.max(res, 0)
                 res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())

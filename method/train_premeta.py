@@ -174,7 +174,7 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
     else:
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
         # loss = smp.losses.LovaszLoss(mode='multiclass')
-        loss = smp.utils.losses.DiceLoss()
+        loss = smp.utils.losses.DiceLoss(mode='multiclass')
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
         
         if opt.mode == 'meta':
