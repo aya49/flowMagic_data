@@ -59,6 +59,11 @@ def valid_epoch(val_loader, model, opt, lossfunc, accmetric, verbose=True):
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
             
+            del(inp)
+            del(target)
+            torch.cuda.empty_cache()
+            # gc.collect()
+            
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
