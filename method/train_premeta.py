@@ -15,6 +15,7 @@ from mmseg.models.losses import lovasz_loss as ll
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 from models import metafreeze_model
 
+
 def valid_epoch(val_loader, model, opt):
     """One epoch validation"""
     batch_time = AverageMeter()
@@ -174,8 +175,8 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
     else:
         optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
         # loss = smp.losses.LovaszLoss('multiclass') 
-        # loss = smp.losses.DiceLoss('multiclass')
-        loss = smp.losses.JaccardLoss(mode='multiclass', from_logits=False)
+        loss = smp.utils.losses.DiceLoss('multiclass')
+        # loss = pt.losses.JaccardLoss(mode='multiclass', from_logits=False)
         metrics = [smp.utils.metrics.IoU(threshold=0.5),]
         
         if opt.mode == 'meta':
@@ -238,7 +239,7 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
             train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, opt=opt)
         else:
             train_logs  = train_epoch_.run(train_loader)
-            train_acc = train_logs['jaccard_loss']
+            train_acc = train_logs['dice_loss']
             train_loss = train_logs['iou_score']
         time2 = time.time()
         
@@ -258,7 +259,7 @@ def train(opt, model, train_loader, val_loader, model_t=None, epochx=1):
                 val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt)
             else:
                 valid_logs = valid_epoch_.run(val_loader)
-                val_acc = valid_logs['jaccard_loss']
+                val_acc = valid_logs['dice_loss']
                 val_loss = valid_logs['iou_score']
             
             logger.log_value('test_acc', val_acc, epoch)
