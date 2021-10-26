@@ -106,7 +106,7 @@ if opt.preload_data:
 ## PRE-TRAIN ALL #############################################
 opt.mode = 'pretrain'
 mf = opt.model_folder
-ds_files_tr = [x for x in ds_files].sort()
+ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 for i in range(len(ds_files_tr)):
     dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
@@ -134,13 +134,13 @@ for i in range(len(ds_files_tr)):
     # train and validate
     opt.epochs = 100000//tl
     opt.save_freq = 10000//tl
-    opt.print_freq = 10000//tl
+    opt.print_freq = 1000//tl
     opt = update_opt(opt)
     
     opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
     os.makedirs(opt.model_folder, exist_ok=True)
     
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochx=5000//tl) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochv=opt.print_freq, epochs=opt.save_freq) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
 
@@ -176,7 +176,6 @@ for dti in range(4):
         for i in range(1, len(ds_files_tr)):
             print(ds_files_tr[i])
             dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
-            dataset_tr_t_.factorize_labels()
             dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
         dataset_tr_t.factorize_labels()
         dataset_tr_t.transform = transform_dict['A']
@@ -204,9 +203,9 @@ for dti in range(4):
     # model.load_state_dict(ckpt['model'])
     
     # train and validate
-    opt.epochs = 1000
-    opt.save_freq = 50
-    opt.print_freq = 50
+    opt.epochs = 100
+    opt.save_freq = 5
+    opt.print_freq = 5
     opt = update_opt(opt)
     # opt.model_folder = '{}_noclass'.format(opt.model_folder)
     # os.makedirs(opt.model_folder, exist_ok=True)
@@ -279,7 +278,7 @@ for dti in range(4):
             opt = update_opt(opt)
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochx=100//n_shots) # pt.preload_model = True
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochv=100//n_shots) # pt.preload_model = True
             
             # acc_path = os.path.join(opt.model_folder, 'acc.csv')
             # loss_path = os.path.join(opt.model_folder, 'loss.csv')
