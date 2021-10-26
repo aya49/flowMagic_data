@@ -106,13 +106,15 @@ if opt.preload_data:
 ## PRE-TRAIN ALL #############################################
 opt.mode = 'pretrain'
 mf = opt.model_folder
-ds_files_tr = [x for x in ds_files]
+ds_files_tr = [x for x in ds_files].sort()
+ds_files_tr.sort()
 for i in range(len(ds_files_tr)):
     dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
     print('{}: {}'.format(str(i).zfill(2), dscat))
     
     dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
     # dataset_tr_t.ybig = True
+    dataset_tr_t.ysqueeze = False
     tl = len(dataset_tr_t)
     
     dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
@@ -130,15 +132,15 @@ for i in range(len(ds_files_tr)):
         model = create_model(opt).cuda()
     
     # train and validate
-    opt.epochs = 200000//tl
-    opt.save_freq = 20000//tl
-    opt.print_freq = 20000//tl
+    opt.epochs = 100000//tl
+    opt.save_freq = 10000//tl
+    opt.print_freq = 10000//tl
     opt = update_opt(opt)
     
     opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
     os.makedirs(opt.model_folder, exist_ok=True)
     
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochx=10000//tl) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochx=5000//tl) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
 
