@@ -128,7 +128,7 @@ for i in range(len(ds_files_tr)):
                                 num_workers=opt.num_workers)
     
     ## initialize model ####
-    if i == 0:
+    if 'model' not in locals(): #if i == 0:
         model = create_model(opt).cuda()
     
     # train and validate
@@ -140,7 +140,7 @@ for i in range(len(ds_files_tr)):
     opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
     os.makedirs(opt.model_folder, exist_ok=True)
     
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, epochv=opt.print_freq, epochs=opt.save_freq) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
 
@@ -181,6 +181,7 @@ for dti in range(4):
         dataset_tr_t.transform = transform_dict['A']
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
+    dataset_tr_t.ysqueeze = False
     
     if opt.model == 'setr':
         dataset_tr_t.loadxy = False
@@ -205,7 +206,7 @@ for dti in range(4):
     # train and validate
     opt.epochs = 100
     opt.save_freq = 5
-    opt.print_freq = 5
+    opt.print_freq = 1
     opt = update_opt(opt)
     # opt.model_folder = '{}_noclass'.format(opt.model_folder)
     # os.makedirs(opt.model_folder, exist_ok=True)

@@ -149,7 +149,6 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
 
 
 def train(opt, model, train_loader, val_loader, model_t=None, 
-          epochv=1, epochs=5, # validate/print/save every epochv/p/s epochs
           optimizer=None, lossfunc=None, accmetric=None,
           overwrite=True):
     
@@ -189,7 +188,6 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
         # model = model.cuda()
-        lossfunc.cuda()
     
     # initialize tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
@@ -220,7 +218,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, 
                                             model=model, opt=opt, 
                                             optimizer=optimizer, lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%epochv==0)
+                                            verbose=epoch%opt.print_freq==0)
         # else:
         #     train_logs  = train_epoch_.run(train_loader)
         #     train_acc = train_logs['dice_loss']
@@ -237,7 +235,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             loss.extend([train_loss])
         
         # validate
-        if epoch % epochv == 0:
+        if epoch % opt.print_freq == 0:
             # if opt.model == 'setr':
             model.eval()
             val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt,
