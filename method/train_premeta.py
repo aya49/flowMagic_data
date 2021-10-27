@@ -16,7 +16,7 @@ from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning
 from models import metafreeze_model
 
 # one epoch validate
-def valid_epoch(val_loader, model, opt, lossfunc, accmetric, verbose=True):
+def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -68,12 +68,13 @@ def valid_epoch(val_loader, model, opt, lossfunc, accmetric, verbose=True):
             batch_time.update(time.time() - end)
             end = time.time()
             
-            if idx == ldl-1 and verbose:
-                print('Validate [{0}/{1}]: '
+            # if idx == ldl-1 and verbose:
+            if verbose:
+                print('Valid [{0}][{1}/{2}]\t'
                       'loss {loss:.3f} ({lossa:.3f})\t'
                       'acc {acc1:.3f} ({acca:.3f})\t'
                       'time {batch_time.val:.2f} ({batch_time.avg:.2f})'.format(
-                       idx, ldl, batch_time=batch_time, loss=loss, lossa=losses.avg,
+                       epoch, idx, ldl, batch_time=batch_time, loss=loss, lossa=losses.avg,
                        acc1=acc1, acca=top1.avg))
     
     return top1.avg, losses.avg
@@ -140,8 +141,9 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         end = time.time()
         
         # print info
-        if idx == ldl-1 and verbose:
-            print('Epoch [{0}][{1}/{2}]: '
+        # if idx == ldl-1 and verbose:
+        if verbose:
+            print('Epoch [{0}][{1}/{2}]\t'
                   'loss {loss:.3f} ({lossa:.3f})\t'
                   'acc {acc1:.3f} ({acca:.3f})\t'
                   'time {batch_time.val:.2f} ({batch_time.avg:.2f})\t'
@@ -206,7 +208,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         ckpts = [x for x in os.listdir(opt.model_folder) if 'ckpt' in x]
         ckpts.sort()
         if '000' not in ckpts[-1]:
-            model, optimizer, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
+            model, _, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
     
     # train: for each epoch
     acc_, acc, loss_, loss = [], [], [], []
@@ -222,7 +224,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         time1 = time.time()
         train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, 
                                             model=model, opt=opt, 
-                                            optimizer=optimizer, lossfunc=lossfunc, accmetric=accmetric,
+                                            optimizer=optimizer, 
+                                            lossfunc=lossfunc, accmetric=accmetric,
                                             verbose=epoch%opt.print_freq==0)
         # else:
         #     train_logs  = train_epoch_.run(train_loader)
@@ -243,7 +246,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         if epoch % opt.print_freq == 0:
             # if opt.model == 'setr':
             model.eval()
-            val_acc, val_loss = valid_epoch(val_loader=val_loader, model=model, opt=opt,
+            val_acc, val_loss = valid_epoch(epoch=epoch, val_loader=val_loader, 
+                                            model=model, opt=opt,
                                             lossfunc=lossfunc, accmetric=accmetric)
             # else:
             #     valid_logs = valid_epoch_.run(val_loader)

@@ -48,7 +48,7 @@ for (dc_dir_ in dc2_dirs) {
         for (dc_f in dc_fs) {
             x2predicted <- read.csv(dc_f, header=FALSE)
             
-            x2discrete_file <- gsub("results","data",gsub("method[/]setr[/]1","x_2Ddiscrete", dc_f))
+            x2discrete_file <- gsub("results","data",gsub("method[/][a-z]+[/][0-9]+","x_2Ddiscrete", dc_f))
             x2discrete <- read.csv(x2discrete_file, header=FALSE)
             
             ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])
@@ -56,7 +56,7 @@ for (dc_dir_ in dc2_dirs) {
             # yactual_file <- gsub("results","data",gsub("method[/]setr[/]1","y_vector_", dc_f))
             # yactual <- read.csv(yactual_file, header=FALSE)[,1]
             
-            yactualfull_file <- gsub("results","raw",gsub("method[/]setr[/]1","y", dc_f))
+            yactualfull_file <- gsub("results","raw",gsub("method[/][a-z]+[/][0-9]+","y", dc_f))
             actual <- read.csv(yactualfull_file, check.names=FALSE)
             cpops <- colnames(actual)
             

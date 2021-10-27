@@ -113,11 +113,11 @@ class Data2D(Dataset):
             goodi = []
             xyl = len(self.x_files[0])
             for i in range(xyl):
-                print(i)
+                print(i, end=' ')
                 try:
                     xil = []
                     for x2i in range(len(self.x_2D)):
-                        xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[x2i], self.x_2D[0]), header=None).values))
+                        xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values))
                     xil = torch.stack(xil)
                     self.x.append(xil)
 
@@ -328,3 +328,4 @@ def tensor2D3D(m, C):
         r[i][m==i] = 1
     
     return r
+

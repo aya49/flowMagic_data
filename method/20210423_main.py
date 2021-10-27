@@ -34,6 +34,7 @@ import trace
 import inspect # inspect.getfullargspec(function) or signature # get function arguments
 from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
+from matplotlib import pyplot as plt
 # print to file
 # orig_stdout = sys.stdout
 # f = open('model_setr.txt', 'w')
@@ -49,7 +50,7 @@ from torch.utils.data import DataLoader
 from torchsampler import ImbalancedDatasetSampler as ids # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 
 from opt import parse_options, update_opt
-from util import prep_input
+from util import prep_input, visualize
 from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
@@ -94,8 +95,8 @@ if opt.preload_data:
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
         ds_files.append(ds_mt_r_path)
-        x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
         if not os.path.exists(ds_mt_r_path):
+            x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
             dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
             compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
         # else:
@@ -252,7 +253,7 @@ for dti in range(4):
             ## META-TRAIN #################################################            
             # create datasets
             dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
-            dataset_mt_v = dataset_mt_t
+            dataset_mt_v = copy.deepcopy(dataset_mt_t)
             dataset_mt_v.transform = transform_dict['B']
             if opt.model == 'setr':
                 dataset_mt_t.loadxy = False
@@ -288,6 +289,7 @@ for dti in range(4):
             # load datasets
             ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
             dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+            dataset_mt_r.ysqueeze = False
             dataset_mt_r.transform = transform_dict['B']
             # if opt.model == 'setr':
             #     dataset_mt_r.loadxy = False
@@ -320,12 +322,17 @@ for dti in range(4):
                 else:
                     res = model.predict(inp)
                 
+                del(inp)
+                torch.cuda.empty_cache()
+                
                 res = res.squeeze()
-                res_vals, res_ind = torch.max(res, 0)
+                res_vals, res_ind = torch.max(res, 0) # 3D to 2D
+                res_ind[inp]
                 res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
                 
                 res_file = os.path.join(res_dir, xfn[0]) # ends with gz so auto compress
                 res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                
                 # a = pd.read_csv(res_file, header=None)
                 
                 # xdisc = xdir[0].replace('x_2Ddenscat', 'x_2Ddiscrete')

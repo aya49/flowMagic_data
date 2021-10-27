@@ -2,6 +2,19 @@ import torch
 import time
 import numpy as np
 
+from matplotlib import pyplot as plt
+
+def visualize(save_file, **images):
+    n = len(images)
+    plt.figure(figsize=(16, 5))
+    for i, (name, image) in enumerate(images.items()):
+        plt.subplot(1, n, i + 1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(' '.join(name.split('_')).title())
+        plt.imshow(image)
+    plt.savefig(save_file)
+
 def prep_input(inp, target, xfn):
     if torch.cuda.is_available():
         inp = inp.cuda()
