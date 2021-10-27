@@ -82,7 +82,7 @@ class Data2D(Dataset):
         self.x_3D = False
         self.addclass = False
         self.ybig = False
-        self.ysqueeze = True
+        self.ysqueeze = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
