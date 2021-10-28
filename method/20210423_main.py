@@ -134,7 +134,7 @@ for i in range(len(ds_files_tr)):
         model = create_model(opt).cuda()
     
     # train and validate
-    opt.epochs = 100000//tl
+    opt.epochs = 50000//tl
     opt.save_freq = 10000//tl
     opt.print_freq = 10000//tl
     opt = update_opt(opt)
@@ -156,7 +156,11 @@ for i in range(len(ds_files_tr)):
                                  batch_size=opt.batch_size, shuffle=False, drop_last=False,
                                  num_workers=opt.num_workers)
     
+    OLD_STDOUT = sys.stdout
+    sys.stdout = open("scratch.txt", 'w')
     model.eval()
+    close("scratch.txt")
+    sys.stdout = OLD_STDOUT
     total_r = len(dataset_mt_r)
     res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}SEQFULL_/{}'.format(opt.model, opt.data_scat))
     os.makedirs(res_dir, exist_ok=True)
