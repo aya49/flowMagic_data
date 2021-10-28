@@ -112,11 +112,11 @@ bests <- furrr::map(li, function(dc_fs) {
         y2D_ <- which(y2D>0, arr.ind=TRUE)
         y2D_c <- apply(y2D_, 1, function(x) y2D[x[1],x[2]])
         
-        plot(x2predicted_, main=fname, col=colours[x2predicted_c], cex=.5, pch=16)
+        plot(x2predicted_, main=fname, col=colours[x2predicted_c], cex=.55, pch=16)
         for (cpopi in seq_len(cl)) {
             cpii <- which(y2D_c==cpopi)
-            y2D_chull <- chull(y2D_[cpii,])
-            y2D_[cpii[append(y2D_chull, y2D_chull[1])],]
+            y2D_chulli <- chull(y2D_[cpii,])
+            y2D_chull <- y2D_[cpii[append(y2D_chulli, y2D_chulli[1])],]
             lines(y2D_chull, lwd=2, col=colours[cpopi])
             lines(y2D_chull, lwd=2, lty=3, col="black")
         }

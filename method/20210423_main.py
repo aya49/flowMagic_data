@@ -139,7 +139,7 @@ for i in range(len(ds_files_tr)):
     opt.print_freq = 10000//tl
     opt = update_opt(opt)
     
-    opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
+    opt.model_folder = '{}_SEQ:{}_{}_'.format(mf, str(i).zfill(2), dscat)
     os.makedirs(opt.model_folder, exist_ok=True)
     
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=False) # pt.preload_model = True
@@ -158,7 +158,7 @@ for i in range(len(ds_files_tr)):
     
     model.eval()
     total_r = len(dataset_mt_r)
-    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}SEQFULL/{}'.format(opt.model, opt.data_scat))
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}SEQFULL_/{}'.format(opt.model, opt.data_scat))
     os.makedirs(res_dir, exist_ok=True)
     # acc = []
     
@@ -253,7 +253,7 @@ opt.print_freq = 1
 opt = update_opt(opt)
 opt.model_folder = mf
 os.makedirs(opt.model_folder, exist_ok=True)
-acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=False) # pt.preload_model = True
 # for par in model.parameters():
 #     print(par)
 
