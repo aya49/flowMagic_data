@@ -96,6 +96,7 @@ if opt.preload_data:
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
         ds_files.append(ds_mt_r_path)
         if not os.path.exists(ds_mt_r_path):
+            # print(x_dir_mt)
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
             dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
             compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
@@ -104,7 +105,7 @@ if opt.preload_data:
         #     print(x_dir_mt)
         #     print(len(dataset_mt_r))
 
-## PRE-TRAIN ALL #############################################
+## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
 mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
@@ -135,15 +136,249 @@ for i in range(len(ds_files_tr)):
     # train and validate
     opt.epochs = 100000//tl
     opt.save_freq = 10000//tl
-    opt.print_freq = 5000//tl
+    opt.print_freq = 10000//tl
     opt = update_opt(opt)
     
     opt.model_folder = '{}_SEQ:{}_{}'.format(mf, str(i).zfill(2), dscat)
     os.makedirs(opt.model_folder, exist_ok=True)
     
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=False) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
+    
+    ####### since we're at it, might as well test #######
+    dataset_mt_r = dataset_tr_t
+    dataset_mt_r.transform = transform_dict['B']
+    dataset_mt_r.loadxy = False
+    
+    # create dataloaders
+    dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
+                                 batch_size=opt.batch_size, shuffle=False, drop_last=False,
+                                 num_workers=opt.num_workers)
+    
+    model.eval()
+    total_r = len(dataset_mt_r)
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}SEQFULL/{}'.format(opt.model, opt.data_scat))
+    os.makedirs(res_dir, exist_ok=True)
+    # acc = []
+    
+    print("inferencing ==>")
+    for idx, stuff in enumerate(dataloader_mt_r):
+        (inp, target, i, xdir, xfn) = stuff
+        
+        if opt.model == 'setr':
+            inp, target, img_metas = prep_input(inp, target, xfn)
+            res = model.inference(inp, img_metas, rescale=False)
+        else:
+            if torch.cuda.is_available():
+                inp = inp.cuda()
+                # target = target.cuda()
+            res = model.predict(inp)
+        
+        
+        for xfi in range(len(xfn)):
+            res_ = res[xfi].squeeze()
+            res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
+            res_ind[inp[xfi][0].squeeze()==0] = 0
+            res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+            
+            res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
+            res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+        
+        del(inp)
+        del(res)
+        torch.cuda.empty_cache()
+
+## PRE-TRAIN ALL #############################################
+opt.mode = 'pretrain'
+mf = opt.model_folder
+tf = opt.tb_folder
+
+ds_tr = dss
+ds_mt = dss
+
+opt.model_folder = '{}_{}'.format(mf, ds_mt)
+opt.tb_folder = '{}_{}'.format(tf, ds_mt)
+os.makedirs(opt.model_folder, exist_ok=True)
+
+# train/metatrain data sets denscats folder paths
+x_dirs_tr = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+            sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_tr]) )
+x_dirs_mt = x_dirs_tr
+
+# split pre-train data set into train (95%) and validation (5%)
+x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
+
+## create datasets ####
+if opt.preload_data:
+    ds_files_tr = ds_files
+    dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
+    dataset_tr_t.factorize_labels()
+    for i in range(1, len(ds_files_tr)):
+        print(ds_files_tr[i])
+        dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+        dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
+    
+    dataset_tr_t.factorize_labels()
+    dataset_tr_t.transform = transform_dict['A']
+else:
+    dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
+
+dataset_tr_t.ysqueeze = False
+
+if opt.model == 'setr':
+    dataset_tr_t.loadxy = False
+
+dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
+dataset_tr_v.transform = transform_dict['B']
+
+dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                            batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                            num_workers=opt.num_workers)
+dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                            batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                            num_workers=opt.num_workers)
+
+## initialize model ####
+model = create_model(opt).cuda()
+# sum(p.numel() for p in model.parameters())
+## TEMP
+# ckpt = torch.load(os.path.join(mf, '{}_last.pth'.format(opt.model)))
+# model.load_state_dict(ckpt['model'])
+
+# train and validate
+opt.epochs = 100
+opt.save_freq = 5
+opt.print_freq = 1
+opt = update_opt(opt)
+opt.model_folder = mf
+os.makedirs(opt.model_folder, exist_ok=True)
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
+# for par in model.parameters():
+#     print(par)
+
+# ## DISTILL: work in progress ##################################
+# if opt.mode == 'distill':
+#     # load model
+#     model   = create_model(opt.model, opt.n_class, opt.dim)
+#     model_t = create_model(opt.model, opt.n_class, opt.dim)
+#     ckpt = torch.load(opt.model_dir, map_location="cuda:0" if torch.cuda.is_available() else "cpu")
+#     model_t.load_state_dict(torch.load(ckpt)['model'])
+
+#     train(opt, model, dataloader_tr, model_t)
+        
+
+## META #######################################################
+## if opt.mode == 'meta':
+opt.mode = 'meta'
+opt.learning_rate = 0.0005
+mff = mf
+for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
+    opt.n_shots = n_shots
+    for x_dir_mt in x_dirs_mt:
+        # x_dir_mt = x_dirs_mt[0]
+        xdmsplit = x_dir_mt.split('/')
+        opt.data_scat = '/'.join(xdmsplit[-2:])
+        x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
+        
+        # get n-shot samples
+        opt.model_name_meta = '{}_{}_{}_METAshots:{}'.format(opt.model_name, xdmsplit[-2], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+        shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
+        x_files_mt_t_ = os.listdir(shot_folder)
+        x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
+        # x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
+        
+        # # get test samples
+        # x_files_mt_r = list(set(x_files_mt) - set(x_files_mt_t))
+        
+        
+        ## META-TRAIN #################################################            
+        # create datasets
+        dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
+        dataset_mt_v = copy.deepcopy(dataset_mt_t)
+        dataset_mt_v.transform = transform_dict['B']
+        if opt.model == 'setr':
+            dataset_mt_t.loadxy = False
+            dataset_mt_v.loadxy = False
+        
+        # create dataloaders
+        dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
+                                    batch_size=min(len(dataset_mt_t), opt.batch_size), drop_last=True, # shuffle=True, 
+                                    num_workers=opt.num_workers)
+        dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
+                                    batch_size=min(len(dataset_mt_v), opt.batch_size), drop_last=False, shuffle=False, 
+                                    num_workers=opt.num_workers)
+        
+        # load model
+        if 'model' not in locals():
+            model = create_model(opt).cuda()
+        # ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
+        ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
+        model.load_state_dict(ckpt['model'])
+        
+        # train and validate
+        opt.epochs = 5000//n_shots
+        opt.save_freq = 100//n_shots
+        opt = update_opt(opt)
+        opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
+        os.makedirs(opt.model_folder, exist_ok=True)
+        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochv=100//n_shots) # pt.preload_model = True
+        
+        # acc_path = os.path.join(opt.model_folder, 'acc.csv')
+        # loss_path = os.path.join(opt.model_folder, 'loss.csv')
+        
+        ## META-TEST ##############################################
+        # load datasets
+        ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
+        dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+        dataset_mt_r.transform = transform_dict['B']
+        dataset_mt_r.loadxy = False
+        
+        # create dataloaders
+        dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
+                            batch_size=opt.batch_size, shuffle=False, drop_last=False,
+                            num_workers=opt.num_workers)
+
+        
+        model.eval()
+        total_r = len(dataset_mt_r)
+        res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
+        os.makedirs(res_dir, exist_ok=True)
+        # acc = []
+        
+        print("inferencing ==>")
+        for idx, stuff in enumerate(dataloader_mt_r):
+            (inp, target, i, xdir, xfn) = stuff
+            
+            if opt.model == 'setr':
+                inp, target, img_metas = prep_input(inp, target, xfn)
+            else:
+                if torch.cuda.is_available():
+                    inp = inp.cuda()
+                    # target = target.cuda()
+            # inference and score
+            
+            if opt.model == 'setr':
+                res = model.inference(inp, img_metas, rescale=False)
+            else:
+                res = model.predict(inp)
+            
+            for xfi in range(len(xfn)):
+                res_ = res[xfi].squeeze()
+                res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
+                res_ind[inp[xfi][0].squeeze()==0] = 0
+                res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+                
+                res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
+                res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+            
+            del(inp)
+            del(res)
+            torch.cuda.empty_cache()
+            
+            print('shots:{}\t{}'.format(n_shots, idx))
+
+
 
 
 ## PRE-TRAIN #################################################
@@ -182,6 +417,7 @@ for dti in range(4):
         dataset_tr_t.transform = transform_dict['A']
     else:
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
+    
     dataset_tr_t.ysqueeze = False
     
     if opt.model == 'setr':
@@ -209,8 +445,8 @@ for dti in range(4):
     opt.save_freq = 5
     opt.print_freq = 1
     opt = update_opt(opt)
-    # opt.model_folder = '{}_noclass'.format(opt.model_folder)
-    # os.makedirs(opt.model_folder, exist_ok=True)
+    opt.model_folder = '{}_{}'.format(mf, dss[dti])
+    os.makedirs(opt.model_folder, exist_ok=True)
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
@@ -289,16 +525,14 @@ for dti in range(4):
             # load datasets
             ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
             dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
-            dataset_mt_r.ysqueeze = False
             dataset_mt_r.transform = transform_dict['B']
-            # if opt.model == 'setr':
-            #     dataset_mt_r.loadxy = False
             dataset_mt_r.loadxy = False
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                            batch_size=1, shuffle=False, drop_last=False,
-                                            num_workers=1)
+                                batch_size=opt.batch_size, shuffle=False, drop_last=False,
+                                num_workers=opt.num_workers)
+
             
             model.eval()
             total_r = len(dataset_mt_r)
@@ -306,6 +540,7 @@ for dti in range(4):
             os.makedirs(res_dir, exist_ok=True)
             # acc = []
             
+            print("inferencing ==>")
             for idx, stuff in enumerate(dataloader_mt_r):
                 (inp, target, i, xdir, xfn) = stuff
                 
@@ -322,30 +557,21 @@ for dti in range(4):
                 else:
                     res = model.predict(inp)
                 
+                for xfi in range(len(xfn)):
+                    res_ = res[xfi].squeeze()
+                    res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
+                    res_ind[inp[xfi][0].squeeze()==0] = 0
+                    res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+                    
+                    res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
+                    res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                
                 del(inp)
+                del(res)
                 torch.cuda.empty_cache()
                 
-                res = res.squeeze()
-                res_vals, res_ind = torch.max(res, 0) # 3D to 2D
-                res_ind[inp]
-                res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
-                
-                res_file = os.path.join(res_dir, xfn[0]) # ends with gz so auto compress
-                res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
-                
-                # a = pd.read_csv(res_file, header=None)
-                
-                # xdisc = xdir[0].replace('x_2Ddenscat', 'x_2Ddiscrete')
-                # x2discrete = pd.read_csv(xdisc, header=None).values.tolist()
-                # yres = [res[xy[1]-1, xy[2]-1] for xy in x2discrete]
-                # yres = pd.DataFrame(data=yres, index=None, columns=None)
-                # yres.to_csv(res_file, index=False, header=False, compression='gzip')
-                
-                # val_acc, val_loss = validate(val_loader=dataloader_mt_r, model=model, opt=opt)
-                # # acc.append([xfn[0], val_acc])
-                # 
-                # print('{}\t{}/{}: acc({}) loss({})'.format(idx, int(i)+1, total_r, val_acc, val_loss))
                 print('shots:{}\t{}'.format(n_shots, idx))
+            
             
             # acct = pd.DataFrame(acc,columns=['filename','pixelacc'])
             # acc_file = os.path.join(opt.data_folder, 'accpixel_{}.csv.gz'.format(opt.data_scat.replace('/','_')))

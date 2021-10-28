@@ -16,7 +16,7 @@ from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning
 from models import metafreeze_model
 
 # one epoch validate
-def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True):
+def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True, verboselast=True):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -69,19 +69,19 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True
             end = time.time()
             
             # if idx == ldl-1 and verbose:
-            if verbose:
+            if verbose and (verboselast and idx==ldl-1):
                 print('Valid [{0}][{1}/{2}]\t'
                       'loss {loss:.3f} ({lossa:.3f})\t'
                       'acc {acc1:.3f} ({acca:.3f})\t'
                       'time {batch_time.val:.2f} ({batch_time.avg:.2f})'.format(
-                       epoch, idx, ldl, batch_time=batch_time, loss=loss, lossa=losses.avg,
+                       epoch, idx, ldl-1, batch_time=batch_time, loss=loss, lossa=losses.avg,
                        acc1=acc1, acca=top1.avg))
     
     return top1.avg, losses.avg
 
 
 # One epoch training
-def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, verbose=True):
+def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, verbose=True, verboselast=True):
     
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -142,7 +142,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         # print info
         # if idx == ldl-1 and verbose:
-        if verbose:
+        if verbose and (verboselast and idx==ldl-1):
             print('Epoch [{0}][{1}/{2}]\t'
                   'loss {loss:.3f} ({lossa:.3f})\t'
                   'acc {acc1:.3f} ({acca:.3f})\t'
