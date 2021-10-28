@@ -69,7 +69,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True
             end = time.time()
             
             # if idx == ldl-1 and verbose:
-            if verbose and (verboselast and idx==ldl-1):
+            if verbose and (idx!=ldl-1 or not verboselast):
                 print('Valid [{0}][{1}/{2}]\t'
                       'loss {loss:.3f} ({lossa:.3f})\t'
                       'acc {acc1:.3f} ({acca:.3f})\t'
@@ -142,7 +142,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         # print info
         # if idx == ldl-1 and verbose:
-        if verbose and (verboselast and idx==ldl-1):
+        if verbose and (idx!=ldl-1 or not verboselast):
             print('Epoch [{0}][{1}/{2}]\t'
                   'loss {loss:.3f} ({lossa:.3f})\t'
                   'acc {acc1:.3f} ({acca:.3f})\t'
