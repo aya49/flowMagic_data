@@ -17,7 +17,7 @@ from models import metafreeze_model
 
 def less0_classes(classes, max_class):
     if classes=='less0' and max_class>1:
-        return [x+1 for x in range()] 
+        return [x+1 for x in range(max_class)] 
     if classes=='less0':
         return 'present'
     return classes
