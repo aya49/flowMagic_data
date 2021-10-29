@@ -71,6 +71,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             
             del(inp)
             del(target)
+            del(output)
             torch.cuda.empty_cache()
             # gc.collect()
             
@@ -145,6 +146,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         del(inp)
         del(target)
+        del(output)
         torch.cuda.empty_cache()
         # gc.collect()
         
