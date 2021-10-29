@@ -56,7 +56,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             else:
                 output = model(inp)
                 loss = lossfunc(output, target, classes=classes)
-                acc1 = accmetric(output[:][1:], target[:][1:]) # hard coded to for less0
+                acc1 = accmetric(output[:][1:], target[:][1:]) if classes='less0' else accmetric(output, target) # hard coded to for less0
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -125,7 +125,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         else:
             output = model(inp)
             loss = lossfunc(output, target, classes=classes)
-            acc1 = accmetric(output[:][1:], target[:][1:]) # hard coded to for less0
+            acc1 = accmetric(output[:][1:], target[:][1:]) if classes='less0' else accmetric(output, target) # hard coded to for less0
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))
