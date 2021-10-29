@@ -30,7 +30,7 @@ model = dict(
         in_index=(0, 1, 2, 3),
         dropout_ratio=0,
         mla_channels=128,
-        num_classes=5, ##
+        num_classes=6, ##
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)

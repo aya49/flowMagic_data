@@ -19,7 +19,7 @@ def parse_options():
     parser.add_argument('--model_dir', type=str, default='model', help='model directory')
     parser.add_argument('--new_weights', action='store_false', 
                         help="don't preload model to continue training or as final model if file ends in \'_final.pth\')")
-    parser.add_argument('--n_class', type=int, default=5, help='max number of classes')
+    parser.add_argument('--n_class', type=int, default=6, help='max number of classes')
     parser.add_argument('--dim', type=int, default=256, help='side length of square image data')
 
     # data
@@ -42,7 +42,7 @@ def parse_options():
     parser.add_argument('--learning_rate', type=float, default=0.05, help='learning rate')
     parser.add_argument('--lr_decay_epochs', type=str, default='60,80', help='delimited list of where to decay lr')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1, help='decay rate for learning rate')
-    parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
+    parser.add_argument('--weight_decay', type=float, default=5e-2, help='weight decay')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
     
     # meta train/test

@@ -55,6 +55,7 @@ from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
 from train_premeta import train
+from util import load_checkpoint
 
 ## number of model parameters
 # sum(p.numel() for p in model.parameters())
@@ -105,49 +106,82 @@ if opt.preload_data:
         #     print(x_dir_mt)
         #     print(len(dataset_mt_r))
 
+x_dirs = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+         sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in dss]) )
+x_dirs.sort()
+
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
+baseline = True
+basemeta = True
+n_shots = 10
+opt.n_shots = n_shots
 mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 for i in range(len(ds_files_tr)):
     dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
-    print('{}: {}'.format(str(i).zfill(2), dscat))
     
-    dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+    if basemeta:
+        xdmsplit = x_dirs[i].split('/')
+        opt.data_scat = '/'.join(xdmsplit[-2:])
+        x_files_mt = yegz(nomac( [os.path.join(x_dirs[i], f) for f in os.listdir(x_dirs[i])] ))
+        
+        # get n-shot samples
+        shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
+        x_files_mt_t_ = os.listdir(shot_folder)
+        x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
+        
+        dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
+        dataset_tr_v = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+        if opt.model == 'setr':
+            dataset_tr_t.loadxy = False
+            dataset_tr_v.loadxy = False
+    else:
+        dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+        if opt.model == 'setr':
+            dataset_tr_t.loadxy = False
+        dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
+    
     # dataset_tr_t.ybig = True
     dataset_tr_t.ysqueeze = False
     tl = len(dataset_tr_t)
-    
-    dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
     dataset_tr_v.transform = transform_dict['B']
     
-    dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                                num_workers=opt.num_workers)
-    dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                                batch_size=opt.batch_size, drop_last=False, shuffle=False,
-                                num_workers=opt.num_workers)
+    # get classes
     
-    ## initialize model ####
-    if 'model' not in locals(): #if i == 0:
-        model = create_model(opt).cuda()
-    
-    # train and validate
-    opt.epochs = 50000//tl
-    opt.save_freq = 10000//tl
-    opt.print_freq = 10000//tl
-    opt = update_opt(opt)
-    
-    opt.model_folder = '{}_SEQ:{}_{}_'.format(mf, str(i).zfill(2), dscat)
+    opt.model_folder = '{}_{}{}:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat)
+    print('{}: {}'.format(str(i).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
-    
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=False) # pt.preload_model = True
-    # for par in model.parameters():
-    #     print(par)
+    if True:
+        dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                                    batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                                    num_workers=opt.num_workers)
+        dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                                    batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                                    num_workers=opt.num_workers)
+        
+        ## initialize model ####
+        if 'model' not in locals(): #if i == 0:
+            model = create_model(opt).cuda()
+            model_sate = model.state_dict() if opt.n_gpu <= 1 else model.module.state_dict()
+        elif baseline:
+            model.load_state_dict(model_sate)
+        
+        # train and validate
+        opt.epochs = 100000//tl
+        opt.save_freq = 10000//tl
+        opt.print_freq = 10000//tl
+        opt = update_opt(opt)
+        
+        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
+        # for par in model.parameters():
+        #     print(par)
+    else:
+        model, _, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
     
     ####### since we're at it, might as well test #######
-    dataset_mt_r = dataset_tr_t
+    dataset_mt_r = dataset_tr_v if basemeta else dataset_tr_t
     dataset_mt_r.transform = transform_dict['B']
     dataset_mt_r.loadxy = False
     
@@ -156,19 +190,15 @@ for i in range(len(ds_files_tr)):
                                  batch_size=opt.batch_size, shuffle=False, drop_last=False,
                                  num_workers=opt.num_workers)
     
-    OLD_STDOUT = sys.stdout
-    sys.stdout = open("scratch.txt", 'w')
     model.eval()
-    close("scratch.txt")
-    sys.stdout = OLD_STDOUT
     total_r = len(dataset_mt_r)
-    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}SEQFULL_/{}'.format(opt.model, opt.data_scat))
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '0', dscat))
     os.makedirs(res_dir, exist_ok=True)
     # acc = []
     
     print("inferencing ==>")
     for idx, stuff in enumerate(dataloader_mt_r):
-        (inp, target, i, xdir, xfn) = stuff
+        (inp, target, _, xdir, xfn) = stuff
         
         if opt.model == 'setr':
             inp, target, img_metas = prep_input(inp, target, xfn)

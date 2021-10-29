@@ -31,8 +31,8 @@ gs_xr_ <- function(x,y) gs_xr(x,y,"scores")
 
 # # get train samples
 # trs <- gs_xr(dc2_dir,"x_2Ddensity_euclidean_rankkmed")
-
 wi <- hi <- 10
+
 
 ## START ####
 start <- Sys.time()
@@ -60,17 +60,26 @@ for (dc_files_ in dc_files) {
 size <- 400
 bests <- furrr::map(li, function(dc_fs) {
     best <- NULL
-    png(file=paste0(lpf_fold,"/",i,".png"), width=wi*size, height=hi*size)
-    par(mfcol=c(hi,wi))
     
-    yactualfull_file <- gsub("results","raw",gsub("method[/][a-z]+[/][0-9]+","y", dc_fs[1]))
-    if (!file.exists(yactualfull_file))
-        yactualfull_file <- gsub("results","raw",gsub("method[/][a-z]+","y", dc_fs[1]))
+    yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method/[a-z]+[A-Z]*[_]*/[0-9]+"),"y", dc_fs[1]))
+    if (is.na(yactualfull_file))
+        yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method[/][a-z]+[A-Z]*[_]*"),"y", dc_fs[1]))
+    dset <- stringr::str_extract_all(yactualfull_file, "[a-zA-Z2]+")[[1]]
+    dset <- dset[which(dset=="y")+1]
+    yactualfull_file <- gsub(paste0(dset,"_"),paste0(dset,"/"),yactualfull_file)
+    
     actual <- read.csv(yactualfull_file, check.names=FALSE)
     cpops <- colnames(actual)[colnames(actual)!="other"]
     colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
     
-    for (dc_f in dc_fs) {
+    png_file <- paste0(gsub(
+        "raw","plots",
+        gsub("/y/", paste0("/all",stringr::str_extract(
+            dc_fs[1], ifelse(grepl("setr", dc_fs[1]), "[/]unet[a-z]*[A-Z]*[/]*[0-9]*[/]", "[/]unet[a-z]*[A-Z]*[/]*[0-9]*[/]"))), yactualfull_file)),".png")
+    dir.create(folder_name(png_file), showWarnings=FALSE, recursive=TRUE)
+    png(png_file, width=wi*size, height=hi*size)
+    par(mfcol=c(hi,wi))
+    for (dc_f in dc_fs[1:10]) {
         x2predicted <- read.csv(dc_f, header=FALSE)
         
         # get meta data
@@ -80,30 +89,40 @@ bests <- furrr::map(li, function(dc_fs) {
         method <- path_stuff[di+1]
         shots <- as.numeric(path_stuff[di+2])
         if (is.na(shots)) di <- di - 1
-        dset <- path_stuff[di+3]
-        scat <- path_stuff[di+4]
+        dscat <- path_stuff[di+3]
+        dscats <- stringr::str_split(dscat, "_")[[1]]
+        dset <- dscats[1]
+        scat <- paste0(dscats[-1],collapse="_")
         fname <- gsub(".csv.gz","",path_stuff[length(path_stuff)])
         
-        x2discrete_file <- gsub("results","data",gsub(paste0("method[/][a-z]+", ifelse(is.na(shots),"","[/][0-9]+")),"x_2Ddiscrete", dc_f))
+        x2discrete_file <- gsub("results","data",
+                                gsub(stringr::str_extract(dc_f,"method[/][a-zA-Z_]+[/]*[0-9]*[/]"),"x_2Ddiscrete/", dc_f))
+        x2discrete_file <- gsub(dscat, paste0(dset,"/",scat), x2discrete_file)
         x2discrete <- read.csv(x2discrete_file, header=FALSE)
         
         ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])
         
-        yactualfull_file <- gsub("results","raw",gsub(paste0("method[/][a-z]+", ifelse(is.na(shots),"","[/][0-9]+")),"y", dc_f))
+        yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method/[a-z]+[A-Z]*[_]*/[0-9]+"),"y", dc_fs[1]))
+        if (is.na(yactualfull_file))
+            yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method[/][a-z]+[A-Z]*[_]*"),"y", dc_fs[1]))
+        dset <- stringr::str_extract_all(yactualfull_file, "[a-zA-Z2]+")[[1]]
+        dset <- dset[which(dset=="y")+1]
+        yactualfull_file <- gsub(paste0(dset,"_"),paste0(dset,"/"), yactualfull_file)
+        
         actual <- read.csv(yactualfull_file, check.names=FALSE)
         cpops <- colnames(actual)[colnames(actual)!="other"]
         cl <- length(cpops)
 
-        ## score each cpop ####
-        a <- plyr::ldply(seq_len(ncol(actual)), function(cpopi) { 
-            cbind(data.frame(
-                method=method,
-                dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
-                train_no=shots, fcs=fname, 
-                train=NA
-            ), f1score(actual[,cpopi]==1, ypred==cpopi)) ### +1 ?????
-        })
-        best <- rbind(best, a)
+        # ## score each cpop ####
+        # a <- plyr::ldply(seq_len(cl), function(cpopi) { 
+        #     cbind(data.frame(
+        #         method=method,
+        #         dataset=dset, scatterplot=scat, cpop=cpops[cpopi], 
+        #         train_no=shots, fcs=fname, 
+        #         train=NA
+        #     ), f1score(actual[,cpopi]==1, ypred==cpopi)) ### +1 ?????
+        # })
+        # best <- rbind(best, a)
         
         # plot
         x2predicted_ <- which(x2predicted>0, arr.ind=TRUE)
@@ -123,8 +142,8 @@ bests <- furrr::map(li, function(dc_fs) {
         legend("topright", legend=cpops, col=colours, 
                lty=rep(1,cl), lwd=rep(2,cl))
         
-        
     }
+    graphics.off()
     return(best)
 })
 bests <- Reduce(rbind, bests)

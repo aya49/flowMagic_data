@@ -27,7 +27,7 @@ model = dict(
         channels=8,
         dilations=(1, 6, 12, 16),
         dropout_ratio=0.1,
-        num_classes=5, ##
+        num_classes=6, ##
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(type='LovaszLoss', loss_type='multi_class', per_image=True)

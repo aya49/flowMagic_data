@@ -16,7 +16,7 @@ from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning
 from models import metafreeze_model
 
 # one epoch validate
-def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True, verboselast=True):
+def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='present', verbose=True, verboselast=True):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -45,6 +45,8 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True
                 inp = inp.cuda()
                 target = target.cuda()
             
+            classes = [x+1 for x in range(int(target.max()))] if classes=='less0' else classes
+            
             # =================== inference =====================
             if opt.model == 'setr':
                 scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
@@ -53,8 +55,8 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True
                 loss = float(scores['decode.loss_lovasz'])
             else:
                 output = model(inp)
-                loss = lossfunc(output, target)
-                acc1 = accmetric(output, target)
+                loss = lossfunc(output, target, classes=classes)
+                acc1 = accmetric(output[:][1:], target[:][1:]) # hard coded to for less0
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -82,7 +84,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, verbose=True
 
 
 # One epoch training
-def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, verbose=True, verboselast=True):
+def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, classes='present', verbose=True, verboselast=True):
     
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -109,6 +111,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         else:
             (inp, target) = stuff
         
+        classes = [x+1 for x in range(int(target.max()))] if classes=='less0' else classes
+        
         if torch.cuda.is_available():
             inp = inp.cuda()
             target = target.cuda()
@@ -120,8 +124,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
             acc1 = ls['decode.acc_seg']
         else:
             output = model(inp)
-            loss = lossfunc(output, target)
-            acc1 = accmetric(output, target)
+            loss = lossfunc(output, target, classes=classes)
+            acc1 = accmetric(output[:][1:], target[:][1:]) # hard coded to for less0
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))
@@ -159,7 +163,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
 
 def train(opt, model, train_loader, val_loader, model_t=None, 
           optimizer=None, lossfunc=None, accmetric=None,
-          overwrite=True):
+          overwrite=True, classes='present'):
     
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005) if optimizer==None else optimizer
     lossfunc = lovasz_softmax if lossfunc==None else lossfunc
@@ -211,9 +215,14 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         ckpts.sort()
         if '000' not in ckpts[-1]:
             model, _, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, ckpts[-1]))
+        loss_ = np.loadtxt(os.path.join(opt.model_folder, 'loss.csv'), delimiter=',').tolist()
+        loss = np.loadtxt(os.path.join(opt.model_folder, 'loss_train.csv'), delimiter=',').tolist()
+        acc_ = np.loadtxt(os.path.join(opt.model_folder, 'acc.csv'), delimiter=',').tolist()
+        acc = np.loadtxt(os.path.join(opt.model_folder, 'acc_train.csv'), delimiter=',').tolist()
+    else:
+        acc_, acc, loss_, loss = [], [], [], []
     
     # train: for each epoch
-    acc_, acc, loss_, loss = [], [], [], []
     for epoch in range(epoch_ + 1, opt.epochs + 1):
         
         adjust_learning_rate(epoch, opt, optimizer)
@@ -226,7 +235,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         time1 = time.time()
         train_acc, train_loss = train_epoch(epoch=epoch, train_loader=train_loader, 
                                             model=model, opt=opt, 
-                                            optimizer=optimizer, 
+                                            optimizer=optimizer, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
                                             verbose=epoch%opt.print_freq==0)
         # else:
@@ -249,7 +258,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             # if opt.model == 'setr':
             model.eval()
             val_acc, val_loss = valid_epoch(epoch=epoch, val_loader=val_loader, 
-                                            model=model, opt=opt,
+                                            model=model, opt=opt, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric)
             # else:
             #     valid_logs = valid_epoch_.run(val_loader)
@@ -269,7 +278,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         
         # regular saving
         if epoch % opt.save_freq == 0:
-            print('==> Saving...')
+            print('==> Saving... {}'.format(opt.model_folder))
             save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
             
