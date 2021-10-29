@@ -120,7 +120,7 @@ mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 for i in range(len(ds_files_tr)):
-    dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','')
+    dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     if basemeta:
         xdmsplit = x_dirs[i].split('/')
@@ -149,8 +149,12 @@ for i in range(len(ds_files_tr)):
     dataset_tr_v.transform = transform_dict['B']
     
     # get classes
+    opt.epochs = 100000//tl
+    opt.save_freq = 10000//tl
+    opt.print_freq = 10000//tl
+    opt = update_opt(opt)
     
-    opt.model_folder = '{}_{}{}:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat)
+    opt.model_folder = '{}_{}{}:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat.replace('/','_'))
     print('{}: {}'.format(str(i).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     if True:
@@ -168,17 +172,15 @@ for i in range(len(ds_files_tr)):
         elif baseline:
             model.load_state_dict(model_sate)
         
-        # train and validate
-        opt.epochs = 100000//tl
-        opt.save_freq = 10000//tl
-        opt.print_freq = 10000//tl
-        opt = update_opt(opt)
-        
+        # train and validate        
         acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     else:
         model, _, epoch_ = load_checkpoint(model, os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
+    
+    if not baseline:
+        continue
     
     ####### since we're at it, might as well test #######
     dataset_mt_r = dataset_tr_v if basemeta else dataset_tr_t
@@ -192,7 +194,7 @@ for i in range(len(ds_files_tr)):
     
     model.eval()
     total_r = len(dataset_mt_r)
-    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '0', dscat))
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '/0', dscat))
     os.makedirs(res_dir, exist_ok=True)
     # acc = []
     
@@ -481,7 +483,7 @@ for dti in range(4):
     opt = update_opt(opt)
     opt.model_folder = '{}_{}'.format(mf, dss[dti])
     os.makedirs(opt.model_folder, exist_ok=True)
-    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v) # pt.preload_model = True
+    acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
     # for par in model.parameters():
     #     print(par)
 
@@ -499,7 +501,7 @@ for dti in range(4):
     ## META #######################################################
     ## if opt.mode == 'meta':
     opt.mode = 'meta'
-    opt.learning_rate = 0.0005
+    # opt.learning_rate = 0.0005
     mff = opt.model_folder
     for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         opt.n_shots = n_shots

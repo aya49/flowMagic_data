@@ -15,6 +15,14 @@ from lovasz_losses import lovasz_softmax, iou
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 from models import metafreeze_model
 
+def less0_classes(classes, target):
+    max_class = int(target.max())
+    if classes=='less0' and max_class>1:
+        return [x+1 for x in range()] 
+    if classes=='less0':
+        return 'present'
+    return classes
+
 # one epoch validate
 def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='present', verbose=True, verboselast=True):
     """One epoch validation"""
@@ -45,7 +53,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                 inp = inp.cuda()
                 target = target.cuda()
             
-            classes = [x+1 for x in range(int(target.max()))] if classes=='less0' else classes
+            classes = less0_classes(classes, target)
             
             # =================== inference =====================
             if opt.model == 'setr':
@@ -111,7 +119,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         else:
             (inp, target) = stuff
         
-        classes = [x+1 for x in range(int(target.max()))] if classes=='less0' else classes
+        classes = less0_classes(classes, target)
         
         if torch.cuda.is_available():
             inp = inp.cuda()
