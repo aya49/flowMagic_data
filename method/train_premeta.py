@@ -161,12 +161,12 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         printoutput = verbose and idx==ldl-1 if verboselast else verbose
         if printoutput:
             print('Epoch [{0}][{1}/{2}]\t'
-                  'loss {loss:.3f} ({lossa:.3f})\t'
+                  'loss {loss:.4f} ({lossa:.3f})\t'
                   'acc {acc1:.3f} ({acca:.3f})\t'
-                  'time {batch_time.val:.2f} ({batch_time.avg:.2f})\t'
-                  'load {data_time.val:.2f}'.format(
+                  'time {batch_time.val:.2f} ({batch_time.avg:.2f})'.format(
                   epoch, idx, ldl-1, batch_time=batch_time,
-                  data_time=data_time, acc1=acc1, acca=top1.avg, loss=loss, lossa=losses.avg))
+                  data_time=data_time, # 'load {data_time.val:.2f}'
+                  acc1=acc1, acca=top1.avg, loss=loss, lossa=losses.avg))
             sys.stdout.flush()
     
     return top1.avg, losses.avg
