@@ -15,8 +15,7 @@ from lovasz_losses import lovasz_softmax, iou
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 from models import metafreeze_model
 
-def less0_classes(classes, target):
-    max_class = int(target.max())
+def less0_classes(classes, max_class):
     if classes=='less0' and max_class>1:
         return [x+1 for x in range()] 
     if classes=='less0':
@@ -53,6 +52,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                 inp = inp.cuda()
                 target = target.cuda()
             
+            max_class = int(target.max())
             classes = less0_classes(classes, target)
             
             # =================== inference =====================
@@ -64,7 +64,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             else:
                 output = model(inp)
                 loss = lossfunc(output, target, classes=classes)
-                acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' else accmetric(output, target) # hard coded to for less0
+                acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' and max_class>1 else accmetric(output, target) # hard coded to for less0
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -119,7 +119,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         else:
             (inp, target) = stuff
         
-        classes = less0_classes(classes, target)
+        max_class = int(target.max())
+        classes = less0_classes(classes, max_class)
         
         if torch.cuda.is_available():
             inp = inp.cuda()
@@ -133,7 +134,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         else:
             output = model(inp)
             loss = lossfunc(output, target, classes=classes)
-            acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' else accmetric(output, target) # hard coded to for less0
+            acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' and max_class>1 else accmetric(output, target) # hard coded to for less0
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))
