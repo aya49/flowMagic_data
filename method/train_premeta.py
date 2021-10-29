@@ -53,7 +53,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                 target = target.cuda()
             
             max_class = int(target.max())
-            classes = less0_classes(classes, target)
+            classes = less0_classes(classes, max_class)
             
             # =================== inference =====================
             if opt.model == 'setr':
