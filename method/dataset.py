@@ -17,7 +17,7 @@ import copy
 # - __getitem__ to support indexing such that dataset[i] can be used to get i th sample. READ IMAGES HERE
 # our data set is a dict {'image': image, 'landmarks': landmarks} + optional argument transform for any preprocessing
 class Data2D(Dataset):
-  
+    
     def __init__(self, opt, transform=None, x_dirs=None, x_files=None):
         """
         args:
@@ -69,14 +69,14 @@ class Data2D(Dataset):
         # factorize data/scatterplot
         x_dirs_unique, x_dirs_factor = np.unique(np.array(x_dirs), return_inverse=True)
         x_dirs_factor = x_dirs_factor.tolist()
-
+        
         y_files = [x_file.replace(opt.x_2D[0], opt.y_2D[0]) for x_file in x_files]
-
+        
         if len(opt.x_2D) > 1:
             x_files = [x_files]
             for x2i in range(1, len(opt.x_2D)):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
-
+        
         self.loadxy = opt.model !='setr'
         self.normx = True
         self.x_3D = False
@@ -88,28 +88,29 @@ class Data2D(Dataset):
         self.mode = opt.mode
         self.x_2D = opt.x_2D
         self.y_2D = opt.y_2D
-
+        
         # if self.mode == 'metatest':
         #     self.ycell = list([])
         #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]
         #    self.yvector_files = [x_file.replace(opt.x_2D[0], opt.y_2D[2]) for x_file in x_files[0]]
-
+        
         self.transform = transform
         self.n_class = opt.n_class
-
+        
         # these could be  @property; def x_dirs ...
         self.x_dirs = x_dirs              # scatterplot ("class")
         self.x_dirs_factor = x_dirs_factor
         self.x_filenames = [os.path.basename(x) for x in x_files[0]]
         self.x_files = x_files            # list of data set files: x_2D[0]
         self.y_files = y_files            # data set files: y_2D
-
+        
         self.data_dir = opt.data_dir
         
-
+        
         if opt.preload_data: # or len(x_files) < 200 # *** change
             self.x = []
             self.y = []
+            self.y_ = []
             goodi = []
             xyl = len(self.x_files[0])
             for i in range(xyl):
@@ -123,6 +124,10 @@ class Data2D(Dataset):
 
                     yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     self.y.append(yi)
+                    
+                    yi_ = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
+                    self.y_.append(yi_)
+                    
                     goodi.append(i)
                 except:
                     print("error")
@@ -146,14 +151,14 @@ class Data2D(Dataset):
                 else:
                     self.x_files = [x_files[i] for i in goodi]
                 self.y_files = [y_files[i] for i in goodi]
-
+            
             # if round(i/xyl, 2) == prog:
             #     print('{prog} ')
             #     prog += .05
 
             self.x = torch.stack(self.x)
             self.y = torch.stack(self.y)
-            
+            self.y_ = torch.stack(self.y_)
         
         # if 'meta' in self.mode:
         #     self.ydiscrete = list([])
@@ -167,8 +172,8 @@ class Data2D(Dataset):
         #         yi0 = torch.tensor(pd.read_csv(self.yvector_files[i], header=None).values)
         #         yi = yi0.squeeze()
         #         self.yvector.append(yi)
-
-
+    
+    
     def __len__(self):
         return len(self.x_files[0])
     
@@ -187,6 +192,7 @@ class Data2D(Dataset):
         if self.preload_data:
             xi = self.x[i]
             yi = self.y[i]
+            yi_ = self.y_[i]
             # if 'meta' in self.mode:
             #     ydi = self.ydiscrete[i]
             #     yvi = self.yvector[i]
@@ -199,6 +205,7 @@ class Data2D(Dataset):
             # xi = torch.cat(xil, dim=0).squeeze_()
             
             yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
+            yi_ = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
             # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
             # for yc in range(torch.max(i).int()):
             #     yi[yc, yi0 == (yc + 1)] = 1
@@ -215,12 +222,15 @@ class Data2D(Dataset):
         
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
+            xi, yi, yi_ = self.transform(xi, yi, yi_)
             
         if self.ysqueeze:
             yi = yi.squeeze()
-            
+            yi_ = yi_.squeeze()
+        
         xi = xi.float()
         yi = yi.float()
+        yi_ = yi_.float()
         
         if self.normx:
             xi = xi/100
@@ -235,11 +245,12 @@ class Data2D(Dataset):
         
         if self.ybig: # 3D y tensor
             yi = tensor2D3D(m=yi, C=self.n_class)
+            yi_ = tensor2D3D(m=yi_, C=self.n_class)
             
         if self.loadxy:
-            return xi, yi
+            return xi, yi, yi_
         
-        return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
+        return xi, yi, yi_, i, self.x_dirs[i], self.x_filenames[i]
 
 # making this a separater function to split up Data2D into smaller chunks for saving
 def split_Data2D(dataset, n):

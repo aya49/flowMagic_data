@@ -87,11 +87,12 @@ dss = nomac( os.listdir(os.path.join(opt.data_folder, opt.x_2D[0])) )
 
 x_dirs = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
                 sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in dss]) )
+x_dirs.sort()
 
 # preload data
 if opt.preload_data:
     ds_files = []
-    for x_dir_mt in x_dirs:
+    for x_dir_mt in x_dirs[0:4]:
         xdmsplit = x_dir_mt.split('/')
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
