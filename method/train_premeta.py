@@ -12,14 +12,17 @@ import gc
 import tensorboard_logger as tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
+from Diceloss import dice_loss
+from dataset import tensor2D3D_
+
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 from models import metafreeze_model
 
 def less0_classes(classes, max_class):
-    if classes=='less0' and max_class>1:
-        return [x+1 for x in range(max_class)] 
-    if classes=='less0':
-        return 'present'
+    if max_class>1 and classes=='less0':
+        return list(range(1,max_class+1))
+    elif classes=='present':
+        return list(range(0,max_class+1))
     return classes
 
 # one epoch validate
@@ -63,8 +66,11 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                 loss = float(scores['decode.loss_lovasz'])
             else:
                 output = model(inp)
-                loss = lossfunc(output, target, classes=classes)
-                acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' and max_class>1 else accmetric(output, target) # hard coded to for less0
+                # loss = lossfunc(output, target, classes=classes)
+                lossfunc = dice_loss()
+                target = tensor2D3D_(target,6).cuda()
+                loss = lossfunc.forward(output[:,classes], target[:,classes])
+                acc1 = accmetric(output[:,classes], target[:,classes])
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -134,8 +140,11 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
             acc1 = ls['decode.acc_seg']
         else:
             output = model(inp)
-            loss = lossfunc(output, target, classes=classes)
-            acc1 = accmetric(output[:][1:], target[:][1:]) if classes=='less0' and max_class>1 else accmetric(output, target) # hard coded to for less0
+            # loss = lossfunc(output, target, classes=classes)
+            lossfunc = dice_loss()
+            target = tensor2D3D_(target,6).cuda()
+            loss = lossfunc.forward(output[:,classes], target[:,classes])
+            acc1 = accmetric(output[:,classes], target[:,classes])
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))

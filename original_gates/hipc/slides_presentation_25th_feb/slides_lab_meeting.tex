@@ -1,0 +1,789 @@
+\documentclass[utopia,hyperref={colorlinks,citecolor=DeepPink4,urlcolor=blue}]{beamer}
+%% il primo argomento opzionale ovvero utopia, definisce il tipo di fonts da usare.
+%%  LaTeX enables typesetting of hyperlinks, useful when the resulting format is PDF, and the hyperlinks can be followed. It does so using the package hyperref. 
+%%  If you load it, you will have the possibility to include interactive external links and all your internal references will be turned to hyperlinks.
+% con citecolor scelgo il colore delle citazione,con urlcolor scelgo il colore degli url
+% infine la classe del nostro documento è beamer,ovvero una presentazione 
+\usepackage{etex}
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+   % \frametitle{ \thesection}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+%\usetheme{seahorse}
+\usecolortheme{seahorse}
+\usepackage{textpos}
+\usepackage{setspace}
+\usepackage[normalem]{ulem}
+
+%\usepackage{beamerthemeshadow}
+\beamertemplateballtoc
+\beamertemplateballitem
+\setbeamertemplate{blocks}[rounded][shadow=true] 
+
+\usenavigationsymbolstemplate{}
+
+\newenvironment{proenv}{\only{\setbeamercolor{local structure}{fg=green}}}{}
+\newenvironment{conenv}{\only{\setbeamercolor{local structure}{fg=red}}}{}
+\newcommand{\btVFill}{\vskip0pt plus 1filll}
+
+
+\usepackage[export]{adjustbox} % for aligning figures
+%\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor,soul,lipsum}
+
+
+\usepackage{cleveref}
+
+%% creo dei comandi personalizzati,in questo caso creo il comando per fare un oggetto nero e un comando per fare un oggetto arancione.
+\newcommand*\MyBitem{%
+  \item[\color{black}\scalebox{0.9}{\textbullet}]}
+%\newcommand*\MyOitem{%
+%  \item[\color{orange}\scalebox{0.9}{\textbullet}]}
+\newcommand*\MyOitem{%
+  \item[\color{orange}}
+
+\usepackage{rotating}
+\usepackage{multirow}
+
+\usepackage{ulem}
+\usepackage[T1]{fontenc}
+%\usepackage[utf8]{inputenc}
+\usepackage{subfigure}
+\usepackage{longtable}
+
+\usepackage[english]{babel}
+\long\def\symbolfootnote[#1]#2{\begingroup \def\thefootnote{\fnsymbol{footnote}}\footnote[#1]{#2}\endgroup}
+\definecolor{light-gray}{gray}{0.85}
+
+\definecolor{ngray}{rgb}{0.8,0.8,0.8}
+\definecolor{nngray}{rgb}{0.5,0.5,0.5}
+
+
+
+
+
+\beamertemplateballitem
+%\setbeamertemplate{blocks}[rounded][shadow=true] 
+%\usecolortheme[RGB={68,131,209}]{structure} 
+\usenavigationsymbolstemplate{}
+
+
+\usepackage{enumerate}
+
+
+
+\definecolor{Black}{RGB}{0,0,0}
+\definecolor{TtlRed}{RGB}{202,0,0}
+\setbeamercolor{frametitle}{fg = Black}
+\setbeamercolor{author}{fg = Black}
+%\setbeamercolor{title}{fg = TtlRed}
+\setbeamercolor{item}{fg = Black}
+\setbeamercolor{subitem}{fg = Black}
+\setbeamercolor{subsubitem}{fg = Black}
+\setbeamercolor{description item}{fg = Black}
+\setbeamercolor{caption}{fg = Black}
+\setbeamercolor{caption name}{fg = Black}
+\setbeamercolor{normal text}{fg = Black}
+\usefonttheme{professionalfonts}
+\setbeamerfont{title}{size = \Huge}
+\setbeamerfont{author}{size = \LARGE}
+\setbeamerfont{frametitle}{size = \huge} %default
+\setbeamerfont{frametitle}{size = \large} %Ryan's fit
+\setbeamerfont{ModuleInFooter}{size = \large, family={\fontfamily{phv}}}
+\setbeamerfont{DotCaInFooter}{size = \footnotesize, family={\fontfamily{phv}}}
+\setbeamerfont{BioinformaticsFooter}{size = \large, family={\fontfamily{phv}}}
+\setbeamertemplate{itemize items}[default]
+\setbeamertemplate{enumerate items}[default]
+\setbeamertemplate{footline}[frame number]
+\setbeamerfont{page number in head/foot}{size=\scriptsize}
+
+\title{HIPC project automated pipeline}
+\subtitle{Myeloid and B cells panel}
+
+\author[]{Sebastiano Montante, Mehrnoush Malek, Ryan Brinkman}
+
+
+\hypersetup{
+  urlbordercolor = {0 1 0},
+}
+
+\usepackage{verbatim}
+\date{}
+%\usepackage{subcaption} not compatible with beamer
+%% fine del preamble
+\begin{document}
+%% mettiamo il contenuto di \title subtitle \author in questo punto del documento(costituira' la prima slide) grazie a \frame{\titlepage }
+%% quindi la prima slide e' la slide del titolo,prima della prima sezione
+\frame[noframenumbering]{
+  \titlepage
+}
+
+%% vedi schema latex per spiegazione di questi due comandi 
+\makeatother
+\makeatletter
+
+\setbeamertemplate{background canvas}{ 
+}
+\setbeamertemplate{frametitle}[default][center]
+
+\section{B cells pipeline}
+\begin{frame}
+\frametitle{Gating Strategy B cells}
+ \begin{center}
+   \includegraphics[width=100mm]{Images/Gating_strategy_Bcells.png}
+ \end{center}
+\end{frame}
+%% I followed strictly the gating strategy provided.....
+\subsection{B cells Gambia}
+\begin{frame}
+\frametitle{Very bad correlation plot!}
+\framesubtitle{B cells Gambia}
+ \begin{center}
+   \includegraphics[width=95mm]{Images/Correlation_plot_complete.png}
+ \end{center}
+ 
+\end{frame}
+% So I have spent three weeks to analyze every flowjo file one by one...
+
+\begin{frame}
+\frametitle{CD19.20pos and CD19.20neg}
+
+\begin{columns}[T]
+	\column{60mm}
+		\begin{figure}
+		    \includegraphics[width=60mm]{Images/corr_plot_cd1920pos.png}
+		    \scriptsize CD19.20Pos
+		\end{figure}	
+	\column{60mm}
+		\begin{figure}
+			\includegraphics[width=60mm]{Images/corr_plot_cd1920neg.png}
+			\scriptsize CD19.20neg
+		\end{figure}
+
+\end{columns}
+ 
+\end{frame}
+% the two populations depend each other.
+
+\begin{frame}
+\frametitle{Gates comparison CD19CD20 gate}
+\centerline{\large The correct gate is between the two populations}
+\centerline{\large The manual gate is in the wrong position}
+\begin{columns}[T]
+	\column{45mm}
+		\begin{figure}
+		    \includegraphics[width=40mm]{Images/Gating_strategy_Cd1920_gate.png}
+		    \\
+		    \scriptsize Gating Strategy Gate CD19CD20
+		\end{figure}	
+	\column{45mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Specimen_003_D5_D05.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{45mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/D5_gate_CD1920_flowJo.png}
+			\\
+			\scriptsize Manual Gate
+		\end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates comparison CD19CD20 gate}
+	\framesubtitle{Other examples}
+\centerline{\Large The manual gates are just copied and pasted}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/Correct_flowJo_Gates_CD19CD20_B5.png}
+		    \scriptsize Correct Manual gate
+		    \scriptsize y CD19pos20pos lower boundary: 2000
+		\end{figure}	
+	\column{35mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Gates_flowJo_CD19CD20_B9.png}
+			\scriptsize Wrong Manual Gate
+			\scriptsize y CD19pos20pos lower boundary: 2000
+		\end{figure}
+	\column{35mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Gates_flowJo_CD19CD20_D6.png}
+			\scriptsize Wrong Manual Gate
+			\scriptsize y CD19pos20pos lower boundary: 2000
+		\end{figure}
+\end{columns}
+\end{frame}
+% According to the corr plot of this population I'm taking low percentage of negative,but this is due to the fact that they have enlarged the gates of negative in comparison to the gating strategy. 
+
+
+\begin{frame}
+\frametitle{Correlation plots: CD10CD27 Gate}
+\begin{columns}[T]
+	\column{60mm}
+		\begin{figure}
+		    \includegraphics[width=60mm]{Images/corr_plot_cd10pos27_gate_Bcells_gambia.png}
+		    \scriptsize CD10posCD27 Gate
+		\end{figure}	
+	\column{60mm}
+		\begin{figure}
+			\includegraphics[width=60mm]{Images/Corr_plot_CD10neg27_Bcells_Gambia.png}
+			\scriptsize CD10negCD27 Gate
+		\end{figure}
+\end{columns}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Gates comparison CD10CD27 Gate}
+\centerline{\large The automated gate takes the correct proportion}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/Gating_strategy_CD10CD27_Gate.png}
+		    \scriptsize Gating Strategy CD10CD27 Gate
+		\end{figure}	
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Specimen_003_D5_D05_CD10CD27_gate.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/D5_flowJo_Gate_CD10CD27_Bcells_Gambia.png}
+			\scriptsize Manual Gate
+		\end{figure}
+
+\end{columns}
+\bigskip
+\smallskip
+\centerline{\large The manual gate is completely altered}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Gates comparison CD10CD27 Gate}
+\framesubtitle{Other examples}
+\centerline{\Large The manual gates are just copied and pasted}
+\begin{columns}[T]
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=30mm]{Images/C1_FlowJo_Gate_CD10CD27_Bcells_Gambia.png}
+		    \scriptsize Correct manual Gate\\
+		    \scriptsize y CD10neg27neg lower boundary: -598
+		\end{figure}	
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/D4_flowJo_Gate_CD10CD27_Bcells_Gambia.png}
+			\scriptsize Wrong Manual Gate\\
+			\scriptsize y CD10neg27neg lower boundary: -598
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/D3_FlowJo_Gate_CD10CD27_Bcells_Gambia.png}
+			\scriptsize Wrong Manual Gate\\
+			\scriptsize y CD10neg27neg lower boundary: -598
+		\end{figure}
+\end{columns}
+\end{frame}
+
+% There are a lot of samples wrongly gated,I have counted about 8 but I have not analyzed all flow Jo files yet,so they can be more.
+% It seems that all gates for all sample are just copied and pasted.
+
+
+
+\begin{frame}
+\frametitle{Correlation plots: IGM/IGD Gate}
+
+
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/corr_plot_IGM+IGD+_Bcells_Gambia.png}
+		    \scriptsize IGM+IGD+ population
+		\end{figure}	
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Corr_plot_IGD-IGm+_BCells_Gambia.png}
+			\scriptsize IGM+IGD- population
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Corr_plot_IGD+IGM-_bcells_Gambia.png}
+			\scriptsize IGM-IGD+ population
+		\end{figure}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Corr_plot_IGD-IGM-_bcells_Gambia.png}
+			\scriptsize IGM-IGD- population
+		\end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates comparison IGMIGD Gate}
+\centerline{The automated gate respects the gating strategy}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/Gating_strategy_IGMIGD_Gate_Bcells_Gambia.png}
+		    \scriptsize Gating Strategy IGMIGD Gate
+		\end{figure}	
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Specimen_002_C5_C05_IGMIGD_gate_Bcells_Gambia.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/C5_flowJo_Gate_IGMIGD_Bcells_Gambia.png}
+			\scriptsize Manual Gate
+		\end{figure}
+
+\end{columns}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Gates comparison IGMIGD Gate}
+\framesubtitle{Other examples:}
+
+\begin{columns}[T]
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/Specimen_002_B4_B04_IGMIGD_gate_Bcells_Gambia.png}
+		    \scriptsize Automated Gate
+		\end{figure}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/B4_flowJo_IGMIGD_gate_Bcells_Gambia.png}
+		    \scriptsize Manual Gate
+		\end{figure}
+		% flow Jo gates cuts in the center	
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/Specimen_002_C8_C08_IGMIGD_gate_Bcells_Gambia.png} 
+			\scriptsize Automated Gate
+		\end{figure}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/C8_flowjo_IGMIGD_gate_Bcells_Gambia.png}
+			\scriptsize Manual Gate % replace with B12 manual
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/Specimen_002_C6_C06_IGMIGD_gate_Bcells_Gambia.png}
+			\scriptsize Automated Gate 
+		\end{figure}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/C6_flowJo_Gate_IGMIGD_Bcells_Gambia.png}
+			\scriptsize Manual Gate 
+		\end{figure}
+		% flow Jo gates cuts in the center	
+\end{columns}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Gates comparison IGMIGD Gate}
+\framesubtitle{Comparison within the manual gates}
+\centerline{\normalsize The manual gates are just copied and pasted}
+\begin{columns}[b]
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/B4_flowJo_IGMIGD_gate_Bcells_Gambia.png}\\
+		\scriptsize y intersection: 942\\
+		\scriptsize x intersection: 1800 
+		\end{figure}
+	
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/Gating_strategy_IGMIGD_Gate_Bcells_Gambia.png}\\
+		\scriptsize Gating Strategy IGMIGD
+		\end{figure}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/C8_flowjo_IGMIGD_gate_Bcells_Gambia.png}\\
+		\scriptsize y intersection: 942\\
+		\scriptsize x intersection: 1800
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/C6_flowJo_Gate_IGMIGD_Bcells_Gambia.png}\\
+		\scriptsize y intersection: 942\\
+		\scriptsize x intersection: 1800
+		\end{figure}
+
+\end{columns}
+\end{frame}
+% Basically I'm trying to show you that flowJo gates changes a lot(very a lot) among them while the automated gates are costant.
+% This lead to similar pops but different gates because they are just pasted and copied
+
+
+
+\begin{frame}
+\frametitle{Correlation plot with outlier populations removed}
+\framesubtitle{Bcells Gambia}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/correlation_plot_purified.png}
+ \end{center}
+ 
+\end{frame}
+% There are still some outlier due to slightly difference between the flowJo gates and the gating strategy,but less than previous populations
+% PC outlier is due to the fact that the gate is empty(no manual counts in the excel file for PC)
+
+\begin{frame}
+\frametitle{Correlation plot PC population: counts comparison}
+\framesubtitle{Bcells Gambia}
+ \begin{center}
+   \includegraphics[width=70mm]{Images/Corr_plot_pc_gate_Bcells_Gambia.png}
+ \end{center}
+ \centerline{\large The manual PC counts reported are 0 for all samples}
+\end{frame}
+% Probable it is due to the fact that the gates are just pasted and copied and so no cells have been taken by the manual gates
+
+\subsection{B cells PNG }
+\begin{frame}
+\frametitle{Bad correlation plot...}
+\framesubtitle{Bcells PNG}
+ \begin{center}
+   \includegraphics[width=80mm]{Images/Corr_plot_Bcells_PNG_complete.png}
+ \end{center}
+ \btVFill
+ The outlier populations are the same of the B cells Gambia files
+\end{frame}
+
+\begin{frame}
+\frametitle{Correlation plot with outlier populations removed}
+\framesubtitle{Bcells PNG}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/Corr_plot_Bcells_PNG_purified.png}
+ \end{center}
+\end{frame}
+% I have no flowjo files to show you,because it seems that nobody is able to open them(They are made with previous version of flowJo,flowJo 10 is unable to open them)
+% However I suppose that the outliers are due to gates of the flowJo files that are probably different from the gating strategy. Because also in this case I followed strictly the gating strategy. The outlier populations are the same of the B cells Gambia
+
+
+
+\section{Myeloid pipeline}
+\begin{frame}
+\frametitle{Gating Strategy Myeloid}
+ \begin{center}
+   \includegraphics[width=100mm]{Images/Gating_strategy_Myeloid.png}
+ \end{center}
+\end{frame}
+%% I followed strictly the gating strategy provided.....
+
+\subsection{Myeloid Gambia}
+\begin{frame}
+\frametitle{Bad correlation plot...}
+\framesubtitle{Myeloid Gambia}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_complete_myeloid_Gambia.png}
+ \end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Correlation plot: All cells Gate}
+
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_All_cells_gate_myeloid_Gambia.png}
+ \end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison "All cells" gate}
+\centerline{\large The automated gate takes the correct population }
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=45mm]{Images/Gating_Strategy_All_cells_Gate_myeloid.png}
+		    \scriptsize Gating Strategy All cells
+		\end{figure}	
+	\column{45mm}
+		\begin{figure}
+			\includegraphics[width=40mm]{Images/Specimen_001_A1_A01_all_cells_gate_myeloid_Gambia.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{45mm}
+		\begin{figure}
+			\includegraphics[width=40mm]{Images/A01_flowJo_gate_All_cells_myeloid_Gambia.png}
+			\scriptsize Manual Gate
+		\end{figure}
+\end{columns}
+\bigskip
+\centerline{\large The manual gate takes the wrong population}
+\end{frame}
+
+% all flowJo samples gated in this way
+
+
+
+\begin{frame}
+\frametitle{Live cells Gate}
+
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_live_gate_myeloid_Gambia.png}
+ \end{center}
+\end{frame}
+
+% If the all cells gate is altered,the Live gate is altered
+\begin{frame}
+\frametitle{Live cells Gate}
+\framesubtitle{Gates Comparison "All cells" gate}
+\centerline{\Large The all cells gate affects directly the live gate}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=45mm]{Images/Gating_Strategy_Live_Gate_Myeloid.png}
+		    \scriptsize Gating Strategy Live cells
+		\end{figure}	
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Specimen_001_A1_A01_live_gate_myeloid_Gambia.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/A01_flowjo_gate_live_myeloid_Gambia.png}
+			\scriptsize Manual Gate
+		\end{figure}
+\end{columns}
+\bigskip
+\centerline{\Large As consequence, the manual live gate is altered}
+\end{frame}
+
+
+
+% Then the live gate of all samples is gated in this way
+
+% as consequence all samples will have altered proportion,because they take a little part of the bottom population (see altered live gate)
+
+
+\begin{frame}
+\frametitle{Correlation plot: NK Gates}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_cd56dim16pos_gate_myeloid_Gambia.png}
+ \end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison NK gates}
+\centerline{\large The automated gate complies with the gating strategy}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=45mm]{Images/Gating_Strategy_NK_Gate_myeloid.png}
+		    \scriptsize Gating Strategy NK gates
+		\end{figure}	
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/Specimen_001_B1_B01_nk_gates_myeloid_Gambia.png}
+			\scriptsize Automated Gate
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=35mm]{Images/B1_flowJo_gate_nk_gates_myeloid_Gambia.png}
+			\scriptsize Manual Gate
+		\end{figure}
+\end{columns}
+\end{frame}
+% this is valid for all the samples
+
+\begin{frame}
+\frametitle{Gates Comparison NK gates: other examples}
+\centerline{\normalsize The automated gate regulates the boundaries based on the density}
+\begin{columns}[T]
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/Specimen_001_B2_B02_nk_gates_myeloid_Gambia.png}
+		\end{figure}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/B2_flowjo_nk_gates_myeloid_Gambia.png}
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/Specimen_001_B8_B08_nk_gates_myeloid_Gambia.png}
+		\end{figure}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/B8_flowjo_nk_gates_meyloid_Gambia.png}
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+			\includegraphics[width=25mm]{Images/Specimen_001_C7_C07_nk_gates_myeloid_Gambia.png}
+		\end{figure}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/C7_flowJo_Nk_gates_myeloid_Gambia.png}
+		\end{figure}
+
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison NK gates: manual gates comparison}
+\centerline{\normalsize The manual gates are just copied and pasted}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/B2_flowjo_nk_gates_myeloid_Gambia.png}
+		\end{figure}
+		\scriptsize y upper boundary CD16dim16pos: 5700
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/B8_flowjo_nk_gates_meyloid_Gambia.png}
+		\end{figure}
+		\scriptsize y upper boundary CD16dim16pos: 5700
+	\column{40mm}
+		\begin{figure}
+		    \includegraphics[width=35mm]{Images/C7_flowJo_Nk_gates_myeloid_Gambia.png}
+		\end{figure}
+		\scriptsize y upper boundary CD16dim16pos: 5700
+\end{columns}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Correlation plot with outlier populations removed}
+\framesubtitle{Myeloid Gambia}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_purified_myeloid_Gambia.png}
+ \end{center}
+\end{frame}
+
+% There are still some outliers due to little differences in the gates
+
+\begin{frame}
+\frametitle{Correlation plots: Non Granulocytes}
+\framesubtitle{Myeloid Gambia}
+\begin{figure}
+	\centerline{\includegraphics[width=90mm]{Images/corr_plot_nongran_gate_myeloid_Gambia.png}}
+
+\end{figure}		
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison: Non Granulocytes}
+\centerline{The altered manual live gate directly affects the manual granulocytes gate}
+\begin{columns}[T]
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=30mm]{Images/Gating_strategy_gran_gate_myeloid_Gambia.png}
+		    \scriptsize Gating Strategy Granulocytes
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/C3_flowjo_live_gate_myeloid_Gambia.png}
+		    \scriptsize Manual Gate Live 
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/C3_flowJo_gran_gate_myeloid_Gambia.png}
+		    \scriptsize Manual Gate Granulocytes
+		\end{figure}
+	\column{30mm}
+		\begin{figure}
+		    \includegraphics[width=25mm]{Images/Specimen_001_C3_C03_gran_gate_myeloid_Gambia.png}
+		    \scriptsize Automated Gate Granulocytes
+		\end{figure}
+\end{columns}
+\hspace{30mm}
+\centerline{\footnotesize The automated gate follows the gating strategy, the manual  gate is completely different}
+\end{frame}
+% in practice there is a chain of erros, a chain reaction of errors
+
+
+
+\begin{frame}
+\frametitle{Correlation plots:CD11bpos CD16neg Granulocytes}
+\framesubtitle{Myeloid Gambia}	
+\begin{figure}
+	\centerline{\includegraphics[width=90mm]{Images/corr_plot_11bpos16neg_gate_myeloid_Gambia.png}}
+	\scriptsize CD11bpos CD16neg Granulocytes
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison: CD11bpos CD16neg Granulocytes}
+\centerline{The altered granulocytes gate affects the CD11posCD16neg gate}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=40mm]{Images/Gating_strategy_neutro_gate_myeloid.png}
+			\scriptsize Gating Strategy CD11posCD16neg 
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/Specimen_001_C3_C03_neutro_gate_myeloid_Gambia.png}
+			\scriptsize Automated Gate CD11posCD16neg
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/C3_flowjo_neutro_gate_myeloid_Gambia.png}
+			\scriptsize Manual Gate CD11posCD16neg
+		\end{figure}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Correlation plots: Classical Monocytes}
+\framesubtitle{Myeloid Gambia}	
+\begin{figure}
+	\centerline{\includegraphics[width=90mm]{Images/corr_plot_classicalmono_gate_myeloid_Gambia.png}}
+	\scriptsize Classical Monocytes
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Gates Comparison: Classical Monocytes}
+\centerline{Wrong manual counts reported in the Excell sheet:}
+\centerline{3269/7488= 0.436}
+\begin{columns}[T]
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=40mm]{Images/Gating_strategy_classicmono_gate_myeloid.png}
+			\scriptsize Gating Strategy 
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/Specimen_001_B8_B08_classicmono_gate_myeloid_Gambia.png}
+			\scriptsize Automated Gate 
+		\end{figure}
+	\column{40mm}
+		\begin{figure}
+			\includegraphics[width=30mm]{Images/B8_flowJo_gate_classic_mono_meyloid_Gambia.png}
+			\scriptsize Manual Gate 
+		\end{figure}
+\end{columns}	
+		% This is the most extreme outlier indicated in the correlation_plot,however the two gates are identical and correct. In addition the percentage reported in flowJo plot is similar to mine. Checking the execel file I discovered that the percentage reported gives a different result!!!
+		% considering HLADR+ CD14+ Monocytes column: 3269/7488= 0.4365652
+		%considering HLADR+ CD14+ column: 3269/5125= 0.6378537
+		\bigskip
+		\centerline{3269 = counts classical monocytes gate}
+		\centerline{7488 = counts parent population}
+\end{frame}
+
+
+\subsection{Myeloid PNG}
+\begin{frame}
+\frametitle{Bad correlation plot...}
+\framesubtitle{Myeloid PNG}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_complete_myeloid_PNG.png}
+ \end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Still Bad correlation plot...}
+\framesubtitle{Myeloid PNG}
+ \begin{center}
+   \includegraphics[width=90mm]{Images/corr_plot_purified_myeloid_PNG.png}
+ \end{center}
+\end{frame}
+
+\end{document}
+

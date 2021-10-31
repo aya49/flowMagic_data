@@ -112,8 +112,8 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = True
-basemeta = True
+baseline = False
+basemeta = False
 n_shots = 10
 opt.n_shots = n_shots
 mf = opt.model_folder
@@ -287,9 +287,9 @@ opt.epochs = 100
 opt.save_freq = 5
 opt.print_freq = 1
 opt = update_opt(opt)
-opt.model_folder = mf
+opt.model_folder = mf.replace('unet','unetALLDICE')
 os.makedirs(opt.model_folder, exist_ok=True)
-acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=False) # pt.preload_model = True
+acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, overwrite=True) # pt.preload_model = True
 # for par in model.parameters():
 #     print(par)
 
@@ -307,7 +307,6 @@ acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val
 ## META #######################################################
 ## if opt.mode == 'meta':
 opt.mode = 'meta'
-opt.learning_rate = 0.0005
 mff = mf
 for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
     opt.n_shots = n_shots
@@ -468,7 +467,7 @@ for dti in range(4):
     dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
                                 batch_size=opt.batch_size, drop_last=False, shuffle=False,
                                 num_workers=opt.num_workers)
-
+    
     ## initialize model ####
     model = create_model(opt).cuda()
     # sum(p.numel() for p in model.parameters())
@@ -481,7 +480,8 @@ for dti in range(4):
     opt.save_freq = 5
     opt.print_freq = 1
     opt = update_opt(opt)
-    opt.model_folder = '{}_{}'.format(mf, dss[dti])
+    
+    opt.model_folder = '{}_{}'.format(mf.replace('unet','unetDICE'), dss[dti])
     os.makedirs(opt.model_folder, exist_ok=True)
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
     # for par in model.parameters():

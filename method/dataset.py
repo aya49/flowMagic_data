@@ -329,3 +329,14 @@ def tensor2D3D(m, C):
     
     return r
 
+def tensor2D3D_(m, C):
+    m = m.squeeze()
+    N, H, W = m.shape
+    # C = int(torch.max(m))
+    C_ = int(torch.max(m))
+    r = torch.zeros(N, C, H, W)
+    for i in range(C_+1):
+        for j in range(N):
+            r[j][i][m[j]==i] = 1
+    
+    return r
