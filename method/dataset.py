@@ -83,6 +83,7 @@ class Data2D(Dataset):
         self.addclass = False
         self.ybig = False
         self.ysqueeze = False
+        self.ymask = True
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir          # data set root directory
         self.mode = opt.mode
@@ -191,8 +192,11 @@ class Data2D(Dataset):
         
         if self.preload_data:
             xi = self.x[i]
-            yi = self.y[i]
-            yi_ = self.y_[i]
+            if self.ymask:
+                yi_ = self.y_[i]
+            else:
+                yi = self.y[i]
+            
             # if 'meta' in self.mode:
             #     ydi = self.ydiscrete[i]
             #     yvi = self.yvector[i]
@@ -204,8 +208,11 @@ class Data2D(Dataset):
             xi = torch.stack(xi)
             # xi = torch.cat(xil, dim=0).squeeze_()
             
-            yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
-            yi_ = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
+            if self.ymask:
+                yi = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
+            else:
+                yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
+            
             # yi = torch.zeros(self.n_class, yi0.shape[0], yi0.shape[1])
             # for yc in range(torch.max(i).int()):
             #     yi[yc, yi0 == (yc + 1)] = 1
@@ -222,15 +229,12 @@ class Data2D(Dataset):
         
         if self.transform != None:
             xi, yi = self.transform(xi, yi)
-            xi, yi, yi_ = self.transform(xi, yi, yi_)
             
         if self.ysqueeze:
             yi = yi.squeeze()
-            yi_ = yi_.squeeze()
         
         xi = xi.float()
         yi = yi.float()
-        yi_ = yi_.float()
         
         if self.normx:
             xi = xi/100
@@ -245,12 +249,11 @@ class Data2D(Dataset):
         
         if self.ybig: # 3D y tensor
             yi = tensor2D3D(m=yi, C=self.n_class)
-            yi_ = tensor2D3D(m=yi_, C=self.n_class)
             
         if self.loadxy:
-            return xi, yi, yi_
+            return xi, yi
         
-        return xi, yi, yi_, i, self.x_dirs[i], self.x_filenames[i]
+        return xi, yi, i, self.x_dirs[i], self.x_filenames[i]
 
 # making this a separater function to split up Data2D into smaller chunks for saving
 def split_Data2D(dataset, n):

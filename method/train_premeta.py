@@ -37,7 +37,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
         end = time.time()
         for idx, stuff in enumerate(val_loader):
             if opt.model == 'setr':
-                (inp, _, target, i, xdir, xfn) = stuff
+                (inp, target, i, xdir, xfn) = stuff
                 
                 (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
                 img_metas = [{
@@ -48,10 +48,8 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                     'scale_factor': 1.0,
                     'flip': False,
                 } for xfn_ in xfn]
-            elif len(stuff)==2:
-                (inp, target) = stuff
             else:
-                (inp, target, _) = stuff
+                (inp, target) = stuff
             
             if torch.cuda.is_available():
                 inp = inp.cuda()
@@ -114,7 +112,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         data_time.update(time.time() - end)
         
         if opt.model == 'setr':
-            (inp, _, target, i, xdir, xfn) = stuff
+            (inp, target, i, xdir, xfn) = stuff
             
             (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
             img_metas = [{
@@ -125,10 +123,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
                 'scale_factor': 1.0,
                 'flip': False,
             } for xfn_ in xfn]
-        elif len(stuff)==2:
-            (inp, target) = stuff
         else:
-            (inp, target, _) = stuff
+            (inp, target) = stuff
         
         max_class = int(target.max())
         classes = less0_classes(classes, max_class)
