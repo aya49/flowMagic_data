@@ -37,7 +37,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
         end = time.time()
         for idx, stuff in enumerate(val_loader):
             if opt.model == 'setr':
-                (inp, target, i, xdir, xfn) = stuff
+                (inp, _, target, i, xdir, xfn) = stuff
                 
                 (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
                 img_metas = [{
@@ -49,7 +49,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                     'flip': False,
                 } for xfn_ in xfn]
             else:
-                (inp, target) = stuff
+                (inp, _, target) = stuff
             
             if torch.cuda.is_available():
                 inp = inp.cuda()
@@ -66,10 +66,10 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
                 loss = float(scores['decode.loss_lovasz'])
             else:
                 output = model(inp)
-                # loss = lossfunc(output, target, classes=classes)
-                lossfunc = dice_loss()
-                target = tensor2D3D_(target,6).cuda()
-                loss = lossfunc.forward(output[:,classes], target[:,classes])
+                loss = lossfunc(output, target, classes=classes)
+                # lossfunc = dice_loss()
+                # target = tensor2D3D_(target,6).cuda()
+                # loss = lossfunc.forward(output[:,classes], target[:,classes])
                 acc1 = accmetric(output[:,classes], target[:,classes])
             
             losses.update(float(loss), inp.size(0))
@@ -112,7 +112,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         data_time.update(time.time() - end)
         
         if opt.model == 'setr':
-            (inp, target, i, xdir, xfn) = stuff
+            (inp, _, target, i, xdir, xfn) = stuff
             
             (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
             img_metas = [{
@@ -124,7 +124,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
                 'flip': False,
             } for xfn_ in xfn]
         else:
-            (inp, target) = stuff
+            (inp, _, target) = stuff
         
         max_class = int(target.max())
         classes = less0_classes(classes, max_class)
@@ -140,10 +140,10 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
             acc1 = ls['decode.acc_seg']
         else:
             output = model(inp)
-            # loss = lossfunc(output, target, classes=classes)
-            lossfunc = dice_loss()
-            target = tensor2D3D_(target,6).cuda()
-            loss = lossfunc.forward(output[:,classes], target[:,classes])
+            loss = lossfunc(output, target, classes=classes)
+            # lossfunc = dice_loss()
+            # target = tensor2D3D_(target,6).cuda()
+            # loss = lossfunc.forward(output[:,classes], target[:,classes])
             acc1 = accmetric(output[:,classes], target[:,classes])
         
         losses.update(float(loss), inp.size(0))

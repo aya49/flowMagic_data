@@ -92,13 +92,13 @@ x_dirs.sort()
 # preload data
 if opt.preload_data:
     ds_files = []
-    for x_dir_mt in x_dirs[0:4]:
+    for x_dir_mt in x_dirs:
         xdmsplit = x_dir_mt.split('/')
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
         ds_files.append(ds_mt_r_path)
         if not os.path.exists(ds_mt_r_path):
-            # print(x_dir_mt)
+            print(x_dir_mt)
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
             dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
             compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
@@ -113,8 +113,8 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = False
-basemeta = False
+baseline = True
+basemeta = True
 n_shots = 10
 opt.n_shots = n_shots
 mf = opt.model_folder
@@ -155,7 +155,7 @@ for i in range(len(ds_files_tr)):
     opt.print_freq = 10000//tl
     opt = update_opt(opt)
     
-    opt.model_folder = '{}_{}{}:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat.replace('/','_'))
+    opt.model_folder = '{}_{}{}mask:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat.replace('/','_'))
     print('{}: {}'.format(str(i).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     if True:
@@ -195,13 +195,13 @@ for i in range(len(ds_files_tr)):
     
     model.eval()
     total_r = len(dataset_mt_r)
-    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '/0', dscat))
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}mask/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '/0', dscat))
     os.makedirs(res_dir, exist_ok=True)
     # acc = []
     
     print("inferencing ==>")
     for idx, stuff in enumerate(dataloader_mt_r):
-        (inp, target, _, xdir, xfn) = stuff
+        (inp, target, target_, _, xdir, xfn) = stuff
         
         if opt.model == 'setr':
             inp, target, img_metas = prep_input(inp, target, xfn)
@@ -384,7 +384,7 @@ for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         
         print("inferencing ==>")
         for idx, stuff in enumerate(dataloader_mt_r):
-            (inp, target, i, xdir, xfn) = stuff
+            (inp, target, target_, i, xdir, xfn) = stuff
             
             if opt.model == 'setr':
                 inp, target, img_metas = prep_input(inp, target, xfn)
@@ -579,7 +579,7 @@ for dti in range(4):
             
             print("inferencing ==>")
             for idx, stuff in enumerate(dataloader_mt_r):
-                (inp, target, i, xdir, xfn) = stuff
+                (inp, target, target_, i, xdir, xfn) = stuff
                 
                 if opt.model == 'setr':
                     inp, target, img_metas = prep_input(inp, target, xfn)

@@ -93,7 +93,11 @@ bests <- furrr::map(li, function(dc_fs) {
             "results","data", gsub(stringr::str_extract(dc_f,"method[/][a-zA-Z_]+[/][0-9]+[/]"),"x_2Ddiscrete/", dc_f))
         x2discrete <- read.csv(x2discrete_file, header=FALSE)
         
+        y2actual_file <- gsub("x_2Ddiscrete","y_2D_rough",x2discrete_file)
+        y2actual <- read.csv(y2actual_file, header=FALSE)
+        
         ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])
+        yactual <- apply(x2discrete, 1, function(xy) y2actual[xy[1], xy[2]])
         
         yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_f,"method/[a-z]+[A-Z]*/[0-9]+"),"y", dc_f))
         
@@ -108,7 +112,7 @@ bests <- furrr::map(li, function(dc_fs) {
                 dataset=dset, scatterplot=scat, cpop=cpops[cpopi],
                 train_no=shots, fcs=fname,
                 train=NA
-            ), f1score(actual[,cpopi]==1, ypred==cpopi)) ### +1 ?????
+            ), f1score(yactual==cpopi, ypred==cpopi)) ### +1 ?????
         })
         best <- rbind(best, a)
         
