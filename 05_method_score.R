@@ -93,7 +93,7 @@ bests <- furrr::map(li, function(dc_fs) {
             "results","data", gsub(stringr::str_extract(dc_f,"method[/][a-zA-Z_]+[/][0-9]+[/]"),"x_2Ddiscrete/", dc_f))
         x2discrete <- read.csv(x2discrete_file, header=FALSE)
         
-        y2actual_file <- gsub("x_2Ddiscrete","y_2D_rough",x2discrete_file)
+        y2actual_file <- gsub("x_2Ddiscrete","y_2D",x2discrete_file)
         y2actual <- read.csv(y2actual_file, header=FALSE)
         
         ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])

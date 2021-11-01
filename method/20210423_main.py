@@ -473,7 +473,7 @@ for dti in range(4):
     model = create_model(opt).cuda()
     # sum(p.numel() for p in model.parameters())
     ## TEMP
-    # ckpt = torch.load(os.path.join(mf, '{}_last.pth'.format(opt.model)))
+    ckpt = torch.load(os.path.join(mf, '{}_last.pth'.format(opt.model)))
     # model.load_state_dict(ckpt['model'])
     
     # train and validate
@@ -525,7 +525,7 @@ for dti in range(4):
             
             ## META-TRAIN #################################################            
             # create datasets
-            dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t)
+            dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
             dataset_mt_v = copy.deepcopy(dataset_mt_t)
             dataset_mt_v.transform = transform_dict['B']
             if opt.model == 'setr':
@@ -534,26 +534,26 @@ for dti in range(4):
             
             # create dataloaders
             dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
-                                        batch_size=min(len(dataset_mt_t), opt.batch_size), drop_last=True, # shuffle=True, 
+                                        batch_size=min(len(dataset_mt_t.x_files[0]), opt.batch_size), drop_last=True, # shuffle=True, 
                                         num_workers=opt.num_workers)
             dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
-                                        batch_size=min(len(dataset_mt_v), opt.batch_size), drop_last=False, shuffle=False, 
+                                        batch_size=min(len(dataset_mt_v.x_files[0]), opt.batch_size), drop_last=False, shuffle=False, 
                                         num_workers=opt.num_workers)
             
             # load model
             if 'model' not in locals():
                 model = create_model(opt).cuda()
-            # ckpt = torch.load(os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model)))
-            ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
+            ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
+            # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
             model.load_state_dict(ckpt['model'])
             
             # train and validate
-            opt.epochs = 5000//n_shots
-            opt.save_freq = 100//n_shots
+            opt.epochs = 100
+            opt.save_freq = 10
             opt = update_opt(opt)
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
-            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, epochv=100//n_shots) # pt.preload_model = True
+            acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
             
             # acc_path = os.path.join(opt.model_folder, 'acc.csv')
             # loss_path = os.path.join(opt.model_folder, 'loss.csv')
@@ -569,17 +569,20 @@ for dti in range(4):
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
                                 batch_size=opt.batch_size, shuffle=False, drop_last=False,
                                 num_workers=opt.num_workers)
-
+            
             
             model.eval()
             total_r = len(dataset_mt_r)
-            res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
+            res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}DICE3/{}/{}'.format(opt.model, opt.n_shots, opt.data_scat))
             os.makedirs(res_dir, exist_ok=True)
             # acc = []
             
             print("inferencing ==>")
             for idx, stuff in enumerate(dataloader_mt_r):
-                (inp, target, target_, i, xdir, xfn) = stuff
+                if len(stuff) == 5:
+                    (inp, target, i, xdir, xfn) = stuff
+                else:
+                    (inp, target, target_, i, xdir, xfn) = stuff
                 
                 if opt.model == 'setr':
                     inp, target, img_metas = prep_input(inp, target, xfn)

@@ -121,7 +121,7 @@ class Data2D(Dataset):
                         xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values))
                     xil = torch.stack(xil)
                     self.x.append(xil)
-
+                    
                     yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     self.y.append(yi)
                     
@@ -138,7 +138,7 @@ class Data2D(Dataset):
             x_filenames = self.x_filenames
             x_files = self.x_files
             y_files = self.y_files
-
+            
             if isinstance(goodi, int):
                 goodi = [goodi]
             if (len(range(xyl))>len(goodi)):
@@ -155,7 +155,7 @@ class Data2D(Dataset):
             # if round(i/xyl, 2) == prog:
             #     print('{prog} ')
             #     prog += .05
-
+            
             self.x = torch.stack(self.x)
             self.y = torch.stack(self.y)
             self.y_ = torch.stack(self.y_)
