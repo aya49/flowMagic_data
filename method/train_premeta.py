@@ -86,7 +86,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             end = time.time()
             
             # if idx == ldl-1 and verbose:
-            printoutput = verbose and idx==ldl-1 if verboselast else verbose
+            printoutput = verbose and idx>ldl-5 if verboselast else verbose
             if printoutput:
                 print('Valid [{0}][{1}/{2}]\t'
                       'loss {loss:.3f} ({lossa:.3f})\t'
@@ -167,7 +167,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         # print info
         # if idx == ldl-1 and verbose:
-        printoutput = verbose and idx==ldl-1 if verboselast else verbose
+        printoutput = verbose and idx>ldl-5 if verboselast else verbose
         if printoutput:
             print('Epoch [{0}][{1}/{2}]\t'
                   'loss {loss:.4f} ({lossa:.3f})\t'
@@ -184,6 +184,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
 def train(opt, model, train_loader, val_loader, model_t=None, 
           optimizer=None, lossfunc=None, accmetric=None,
           overwrite=True, classes='present'):
+    
+    start = time.time()
     
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005) if optimizer==None else optimizer
     lossfunc = lovasz_softmax if lossfunc==None else lossfunc
@@ -326,5 +328,9 @@ def train(opt, model, train_loader, val_loader, model_t=None,
     np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
     acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
     np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
+    
+    dur = time.time() - start
+    with open(os.path.join(opt.model_folder, 'time.txt'), mode='a') as file:
+        file.write('training/saving time (seconds): %s' % str(dur))
     
     return acc_, loss_, model # i return the model because i like physically seeing it

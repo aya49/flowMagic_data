@@ -101,7 +101,7 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         # # write.table(y2i, file=gzfile(gs_xr(x2_file,"y_vector_")),
         # #             col.names=FALSE, row.names=FALSE, sep=",")
 
-        # y2i <- read.csv(gs_xr(x2_file,"y_vector_"), header=FALSE)[,1]
+        y2i <- read.csv(gs_xr(x2_file,"y_vector_"), header=FALSE)[,1]
         # # discretize x: cell x 2 markers i.e. which pixel each cell is at
         # xr <- range(x2[,1])
         # yr <- range(x2[,2])
@@ -110,11 +110,11 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         # x2discrete[,2] <- ceiling((dimsize-1)*(x2[,2]-yr[1])/(yr[2]-yr[1]))+1
         # x2discrete[x2discrete>dimsize] <- dimsize
         # x2discrete[x2discrete<1] <- 1
-        # x2discrete_ <- as.matrix(x2discrete[!duplicated(x2discrete),,drop=FALSE])
         # write.table(x2discrete, file=gzfile(gs_xr(x2_file,"x_2Ddiscrete")),
         #             col.names=FALSE, row.names=FALSE, sep=",")
         #
-        # x2discrete <- read.csv(gs_xr(x2_file,"x_2Ddiscrete"), header=FALSE)
+        x2discrete <- read.csv(gs_xr(x2_file,"x_2Ddiscrete"), header=FALSE)
+        x2discrete_ <- as.matrix(x2discrete[!duplicated(x2discrete),,drop=FALSE])
         
         # scatterplot
         # grid, reverse y dimension when plotting please!
@@ -228,7 +228,7 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         
         # }, error = function(e) return(i) ) 
         # })
-     }, error = function(e) next ) }
+    }, error = function(e) next ) }
 }, .parallel=TRUE)
 # })
 time_output(start)

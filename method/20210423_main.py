@@ -21,6 +21,7 @@ os.chdir("/home/aya43/flowMagic_data/src/method")
 
 # basic modules
 import sys
+import time
 import random
 
 import copy # for deep copy
@@ -116,6 +117,7 @@ opt.mode = 'pretrain'
 baseline = True
 basemeta = True
 n_shots = 10
+ymask = False
 opt.n_shots = n_shots
 mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
@@ -148,6 +150,9 @@ for i in range(len(ds_files_tr)):
     dataset_tr_t.ysqueeze = False
     tl = len(dataset_tr_t)
     dataset_tr_v.transform = transform_dict['B']
+    if hasattr(dataset_tr_t, 'ymask'):
+        dataset_tr_t.ymask = ymask
+        dataset_tr_v.ymask = ymask
     
     # get classes
     opt.epochs = 100000//tl
@@ -155,7 +160,7 @@ for i in range(len(ds_files_tr)):
     opt.print_freq = 10000//tl
     opt = update_opt(opt)
     
-    opt.model_folder = '{}_{}{}mask:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', str(i).zfill(2), dscat.replace('/','_'))
+    opt.model_folder = '{}_{}{}{}DICE:{}_{}'.format(mf, 'BASE' if baseline else 'SEQ', n_shots if basemeta else '', 'mask' if ymask else '', str(i).zfill(2), dscat.replace('/','_'))
     print('{}: {}'.format(str(i).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     if True:
@@ -195,13 +200,13 @@ for i in range(len(ds_files_tr)):
     
     model.eval()
     total_r = len(dataset_mt_r)
-    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}mask/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', '{}'.format(n_shots) if basemeta else '/0', dscat))
+    res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}{}DICE{}/{}/{}'.format(opt.model, 'BASE' if baseline else 'SEQ', 'mask' if ymask else '', str(n_shots) if basemeta else '0', dscat))
     os.makedirs(res_dir, exist_ok=True)
     # acc = []
     
     print("inferencing ==>")
     for idx, stuff in enumerate(dataloader_mt_r):
-        (inp, target, target_, _, xdir, xfn) = stuff
+        (inp, target, _, xdir, xfn) = stuff
         
         if opt.model == 'setr':
             inp, target, img_metas = prep_input(inp, target, xfn)
@@ -318,7 +323,7 @@ for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
         x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
         
         # get n-shot samples
-        opt.model_name_meta = '{}_{}_{}_METAshots:{}'.format(opt.model_name, xdmsplit[-2], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+        opt.model_name_meta = '{}_{}_{}_METAshots:{}'.format(os.path.split(mff)[-1], xdmsplit[-2], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
         shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
         x_files_mt_t_ = os.listdir(shot_folder)
         x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
@@ -419,6 +424,7 @@ for n_shots in [1, 2, 3, 4, 5, 10, 15, 20]:
 
 ## PRE-TRAIN #################################################
 # choose the data set 0-3 we use as the metatest data set
+ymask = False
 opt.mode = 'pretrain'
 mf = opt.model_folder
 tf = opt.tb_folder
@@ -455,6 +461,8 @@ for dti in range(4):
         dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
     
     dataset_tr_t.ysqueeze = False
+    if hasattr(dataset_tr_t, 'ymask'):
+        dataset_tr_t.ymask = ymask
     
     if opt.model == 'setr':
         dataset_tr_t.loadxy = False
@@ -482,7 +490,7 @@ for dti in range(4):
     opt.print_freq = 1
     opt = update_opt(opt)
     
-    opt.model_folder = '{}_{}'.format(mf.replace('unet','unetDICE'), dss[dti])
+    opt.model_folder = '{}_{}'.format(mf.replace('unet','unetDICE{}'.format('mask' if ymask else '')), dss[dti])
     os.makedirs(opt.model_folder, exist_ok=True)
     acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
     # for par in model.parameters():
@@ -513,7 +521,7 @@ for dti in range(4):
             x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
             
             # get n-shot samples
-            opt.model_name_meta = '{}_{}_{}_METAshots:{}'.format(opt.model_name, xdmsplit[-2], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+            opt.model_name_meta = '{}_{}_METAshots:{}'.format(os.path.split(mff)[-1], xdmsplit[-1], opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
             shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
             x_files_mt_t_ = os.listdir(shot_folder)
             x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
@@ -531,6 +539,9 @@ for dti in range(4):
             if opt.model == 'setr':
                 dataset_mt_t.loadxy = False
                 dataset_mt_v.loadxy = False
+            if hasattr(dataset_mt_t, 'ymask'):
+                dataset_mt_t.ymask = ymask
+                dataset_mt_v.ymask = ymask
             
             # create dataloaders
             dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
@@ -554,7 +565,6 @@ for dti in range(4):
             opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
             os.makedirs(opt.model_folder, exist_ok=True)
             acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
-            
             # acc_path = os.path.join(opt.model_folder, 'acc.csv')
             # loss_path = os.path.join(opt.model_folder, 'loss.csv')
             
@@ -564,6 +574,8 @@ for dti in range(4):
             dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
             dataset_mt_r.transform = transform_dict['B']
             dataset_mt_r.loadxy = False
+            if hasattr(dataset_mt_t, "ymask"):
+                dataset_mt_t.ymask = ymask
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
@@ -579,23 +591,16 @@ for dti in range(4):
             
             print("inferencing ==>")
             for idx, stuff in enumerate(dataloader_mt_r):
-                if len(stuff) == 5:
-                    (inp, target, i, xdir, xfn) = stuff
-                else:
-                    (inp, target, target_, i, xdir, xfn) = stuff
-                
+                (inp, target, i, xdir, xfn) = stuff
                 if opt.model == 'setr':
                     inp, target, img_metas = prep_input(inp, target, xfn)
+                    res = model.inference(inp, img_metas, rescale=False)
                 else:
                     if torch.cuda.is_available():
                         inp = inp.cuda()
                         # target = target.cuda()
-                # inference and score
-                
-                if opt.model == 'setr':
-                    res = model.inference(inp, img_metas, rescale=False)
-                else:
                     res = model.predict(inp)
+                # inference and score
                 
                 for xfi in range(len(xfn)):
                     res_ = res[xfi].squeeze()
