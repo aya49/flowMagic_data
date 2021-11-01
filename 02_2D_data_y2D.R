@@ -63,13 +63,15 @@ rotate.data <- function(data, chans=NULL, theta=NULL, min.max=F) {
 }
 
 raster_chull_mask <- function(xy, allind) {
-    if (nrow(xy)<3) return(rep(FALSE, nrow(allind)))
+    if (nrow(xy)<3) return(duplicated(rbind(allind, xy))[1:nrow(allind)])
     
     # points on convexHull
     idchull <- grDevices::chull(xy)
     
     # create chull polygon {interp}
-    Po <- interp::tri.mesh(xy[idchull, 1], xy[idchull, 2])
+    tryCatch({
+        Po <- interp::tri.mesh(xy[idchull, 1], xy[idchull, 2])
+    },  error = function(e) return(duplicated(rbind(allind, xy))[1:nrow(allind)]))
     interp::in.convex.hull(Po, allind[,1], allind[,2])
 }
 
@@ -99,7 +101,7 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         # load csv
         y2 <- y2o <- as.matrix(data.table::fread(y2_file, data.table=FALSE))
         background <- y2==0
-        gplots::heatmap.2(t(y2)[dimsize:1,], dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        # gplots::heatmap.2(t(y2)[dimsize:1,], dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
         
         if (grepl("HIPCbcell[/]CD10CD27[_]CD19[+]CD20[+][_]", y2_file)) {
             cpop1 <- which(y2o==1, arr.ind=TRUE)
