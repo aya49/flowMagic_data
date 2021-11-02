@@ -15,32 +15,22 @@ def transform_A(x, y, y_=None):
     if deg != 0:
         x = tf.rotate(x, deg)
         y = tf.rotate(y, deg)
-        if y_!=None:
-            y_ = tf.rotate(y_, deg)
     
     # Random resize
     params = tr.RandomResizedCrop.get_params(img=x, scale=(0.8, 1.0), ratio=(0.75, 1.33))
     x = tf.crop(x, *params)
     y = tf.crop(y, *params)
-    if y_!=None:
-        y_ = tf.crop(y_, *params)
     
     x = tresize(x)
     y = tresize(y)
-    if y_!=None:
-        y_ = tresize(y_)
-        return x, y, y_
         
     return x, y
     
 
 # for test
-def transform_B(x, y, y_):
+def transform_B(x, y, y_=None):
     x = tresize(x)
     y = tresize(y)
-    if y_!=None:
-        y_ = tresize(y_)
-        return x, y, y_
     
     return x, y
 
