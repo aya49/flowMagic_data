@@ -38,10 +38,10 @@ for dataset in datasets
     end
     
     for csvfile in csvfiles
-      fname = replace(csvfile,"raw/2D/x"=>"results/2D/GigaSOM_clusters")
-      if isfile(fname)
-        continue
-      end
+      fname = replace(csvfile,"raw/2D/x"=>"results/2D/gigaSOM_clusters")
+      # if isfile(fname)
+      #   continue
+      # end
       
       exprs = DataFrame(load(File(format"CSV", csvfile)))
       # clr = DataFrame(load(File(format"CSV", replace(csvfile,"/x/"=>"/y/"))))

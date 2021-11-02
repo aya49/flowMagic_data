@@ -217,3 +217,32 @@ Find.markers <- function(frame,marker.list)
     channels.ind <- channels.ind[-ind]
   return(channels.ind)
 }
+
+
+## scoring functions ###########################
+
+
+# i gave up on doing all combinations for nD data sets so i'll just use this
+# this is from FlowSOM, it matches clusters to cpops 1 to 1
+f1_score <- function (realClusters, predictedClusters, silent=FALSE) {
+    if (sum(predictedClusters) == 0)
+        return(0)
+    a <- table(realClusters, predictedClusters)
+    p <- t(apply(a, 1, function(x) x/colSums(a)))
+    r <- apply(a, 2, function(x) x/rowSums(a))
+    f <- 2 * r * p/(r + p)
+    f[is.na(f)] <- 0
+    fw <- apply(f, 1, which.max)
+    f <- apply(f, 1, max)
+    p <- sapply(seq_len(nrow(p)), function(i) p[i,fw[i]])
+    r <- sapply(seq_len(nrow(r)), function(i) r[i,fw[i]])
+    
+    rct <- as.vector(table(realClusters))
+    pct <- as.vector(table(predictedClusters)[fw])
+    
+    return(data.frame(
+        precision=p, recall=r, f1=f,
+        true_proportion=rct/length(realClusters),
+        predicted_proportion=pct/length(predictedClusters),
+        true_size=rct, predicted_size=pct))
+}

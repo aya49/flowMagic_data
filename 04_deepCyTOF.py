@@ -128,7 +128,7 @@ for trainNum in [5,10,15,20]:
       trainIndex = np.round(np.linspace(1, len(testIndex) - 1, trainNum)).astype(int)
       trainIndex = dataIndex[trainIndex]
     else:
-      pam_dir = data_dir.replace("raw/2D/x","data/2D/x_2Ddensity_euclidean_rankkmed")
+      pam_dir = data_dir.replace("raw/2D/x","data/2D/x_2Ddenscat_euclidean_rankkmed")#density_euclidean_rankkmed")
       trainIndex = np.array(os.listdir(pam_dir + "/" + str(trainNum)))
     relevantMarkers = np.asarray(range(len(data.columns)))
     mode = 'CSV.GZ'
@@ -223,6 +223,8 @@ for trainNum in [5,10,15,20]:
       end = time.time()
       print(end - start)
       
+      if not os.path.isdir(os.path.dirname(fname)):
+        os.mkdir(os.path.dirname(fname))
       np.savetxt(fname, predLabel, delimiter=',', fmt='%i')
       
       '''

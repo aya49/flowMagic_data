@@ -24,18 +24,18 @@ libr(c(
 ## parallelization ####
 no_cores <- ifelse(exists("no_cores"), no_cores, 1)
 doMC::registerDoMC(no_cores) # for plyr::llply
-# future::plan(future::multisession) # for furrr::future_map
+# future::plan(future::multisession, workers=no_cores) # for furrr::future_map
 
 ## folder_names ####
 raw_dir <- paste0(root, "/raw")
 data_dir <- paste0(root, "/data")
 results_dir <- paste0(root, "/results")
 scores_dir <- paste0(root, "/scores")
-# plots_dir <- paste0(root, "/plots")
+plots_dir <- paste0(root, "/plots")
 
 xn_dir <- paste0(raw_dir,"/nD/x")
 yn_dir <- paste0(raw_dir,"/nD/y")
-plotn_dir <- paste0(raw_dir,"/nD/scatterplots")
+plotn_dir <- paste0(raw_dir,"/scatterplots")
 x2_dir <- paste0(raw_dir,"/2D/x")
 y2_dir <- paste0(raw_dir,"/2D/y")
 thres_dir <- paste0(raw_dir,"/2D/thresholds")
