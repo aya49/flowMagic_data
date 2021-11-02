@@ -149,13 +149,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             
             dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
             dataset_tr_v = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
-            if opt.model == 'setr':
-                dataset_tr_t.loadxy = False
-                dataset_tr_v.loadxy = False
         else:
             dataset_tr_t = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
-            if opt.model == 'setr':
-                dataset_tr_t.loadxy = False
             dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
     elif pretrainmode:
         pretrain = pretrain_all[ii]
@@ -187,12 +182,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             
             # split pre-train data set into train (95%) and validation (5%)
             dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
-            
-        if hasattr(dataset_tr_t, 'ymask'):
-            dataset_tr_t.ymask = ymask
-        if opt.model == 'setr':
-            dataset_tr_t.loadxy = False
-
+        
         dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
         dataset_tr_v.transform = transform_dict['B']
         
@@ -205,11 +195,16 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     
     # dataset_tr_t.ybig = True
     dataset_tr_t.ysqueeze = False
+    dataset_tr_v.ysqueeze = False
     tl = len(dataset_tr_t)
     dataset_tr_v.transform = transform_dict['B']
     if hasattr(dataset_tr_t, 'ymask'):
         dataset_tr_t.ymask = ymask
         dataset_tr_v.ymask = ymask
+    if opt.model == 'setr':
+        dataset_tr_t.loadxy = False
+        dataset_tr_v.loadxy = False
+
     
     # get classes
     opt.epochs = epochs_sample//tl if not pretrainmode else 100
