@@ -291,7 +291,7 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
                 # load model
                 if 'model' not in locals():
                     model = create_model(opt).cuda()
-                ckpt = torch.load(os.path.join(mff_, '{}_last.pth'.format(opt.model)))
+                ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
                 # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
                 model.load_state_dict(ckpt['model'])
                 
