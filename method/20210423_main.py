@@ -114,7 +114,7 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = True
+baseline = False
 basemeta = False
 n_shots_baseline = 10
 
