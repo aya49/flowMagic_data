@@ -130,15 +130,16 @@ mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 epochs_sample = 100000
-for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
+for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     opt.mode = 'pretrain'
+    ds_tr = ''
     
     if baseline:
-        dscat = ds_files_tr[i].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
+        dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
         if basemeta:
-            xdmsplit = x_dirs[i].split('/')
+            xdmsplit = x_dirs[ii].split('/')
             opt.data_scat = '/'.join(xdmsplit[-2:])
-            x_files_mt = yegz(nomac( [os.path.join(x_dirs[i], f) for f in os.listdir(x_dirs[i])] ))
+            x_files_mt = yegz(nomac( [os.path.join(x_dirs[ii], f) for f in os.listdir(x_dirs[ii])] ))
             
             # get n-shot samples
             opt.n_shots = n_shots_baseline
@@ -147,18 +148,18 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
             
             dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
-            dataset_tr_v = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+            dataset_tr_v = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
             if opt.model == 'setr':
                 dataset_tr_t.loadxy = False
                 dataset_tr_v.loadxy = False
         else:
-            dataset_tr_t = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+            dataset_tr_t = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
             if opt.model == 'setr':
                 dataset_tr_t.loadxy = False
             dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
     elif pretrainmode:
-        pretrain = pretrain_all[i]
-        meta = meta_all[i]
+        pretrain = pretrain_all[ii]
+        meta = meta_all[ii]
         ds_tr = [x for i, x in enumerate(dss) if i in pretrain]
         ds_mt = [x for i, x in enumerate(dss) if i in meta]
         
@@ -170,10 +171,12 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         if opt.preload_data:
             ds_files_tr = [x for x in ds_files if any(dsi in x for dsi in [dss[j] for j in pretrain])]
             dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
+            dataset_tr_t.factorize_labels()
             for i in range(1, len(ds_files_tr)):
                 print(ds_files_tr[i])
                 dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
                 dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
+            
             dataset_tr_t.factorize_labels()
             dataset_tr_t.transform = transform_dict['A']
         else:
@@ -185,7 +188,6 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             # split pre-train data set into train (95%) and validation (5%)
             dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
             
-        dataset_tr_t.ysqueeze = False
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
         if opt.model == 'setr':
@@ -210,9 +212,9 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         dataset_tr_v.ymask = ymask
     
     # get classes
-    opt.epochs = epochs_sample//tl
-    opt.save_freq = epochs_sample//tl/10
-    opt.print_freq = epochs_sample//tl/10
+    opt.epochs = epochs_sample//tl if not pretrainmode else 100
+    opt.save_freq = epochs_sample//tl/10 if not pretrainmode else 10
+    opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 10
     opt = update_opt(opt)
     
     opt.model_folder = '{}:{}'.format(
@@ -221,8 +223,8 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
                             '-'.join(ds_tr) if pretrainmode else str(n_shots_baseline))),  
-                        '{}_{}'.format(str(i).zfill(2), dscat.replace('/','_')) if baseline else '')
-    print('{}: {}'.format(str(i).zfill(2), opt.model_folder))
+                        '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
+    print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     
     dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
@@ -252,7 +254,7 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     mff = opt.model_folder
     for n_shot in [n_shots_baseline] if baseline else n_shots:
         opt.n_shots = n_shot
-        for x_dir_mt in [ds_files_tr[i]] if baseline else x_dirs_mt:
+        for x_dir_mt in [ds_files_tr[ii]] if baseline else x_dirs_mt:
             if pretrainmode:
                 xdmsplit = x_dir_mt.split('/')
                 opt.data_scat = '/'.join(xdmsplit[-2:])

@@ -309,6 +309,7 @@ def subset_Data2D(dataset, n):
     dataseti.y_files = [dataseti.y_files[i] for i in n_inds]
     
     if preload:
+        dataseti.y_ = [dataseti.y_[i] for i in n_inds]
         dataseti.y = [dataseti.y[i] for i in n_inds]
         dataseti.x = [dataseti.x[i] for i in n_inds]
     
@@ -326,6 +327,7 @@ def merge_Data2D(dataset, dataset_, preload=True):
     dataset.y_files.extend(dataset_.y_files)
     
     if preload:
+        dataset.y_ = torch.cat((dataset.y_, dataset_.y_), 0)
         dataset.y = torch.cat((dataset.y, dataset_.y), 0)
         dataset.x = torch.cat((dataset.x, dataset_.x), 0)
         
