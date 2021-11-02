@@ -21,7 +21,7 @@ from models import metafreeze_model
 def less0_classes(classes, max_class):
     if max_class>1 and classes=='less0':
         return list(range(1,max_class+1))
-    elif classes=='present':
+    elif classes=='present' | 'less0':
         return list(range(0,max_class+1))
     return classes
 
@@ -183,7 +183,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
 
 def train(opt, model, train_loader, val_loader, model_t=None, 
           optimizer=None, lossfunc=None, accmetric=None,
-          overwrite=True, classes='present'):
+          overwrite=True, classes='less0'):
     
     start = time.time()
     
