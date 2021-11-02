@@ -193,7 +193,7 @@ class Data2D(Dataset):
         if self.preload_data:
             xi = self.x[i]
             if self.ymask:
-                yi_ = self.y_[i]
+                yi = self.y_[i]
             else:
                 yi = self.y[i]
             
