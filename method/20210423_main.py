@@ -114,14 +114,14 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = False
-basemeta = False
+baseline = True
+basemeta = True
 n_shots_baseline = 10
 
-pretrainmode = True
+pretrainmode = False
 pretrain_all = [[1,2,3]]#,[0,2,3],[0,1,3], [0,1,2]] # if not baseline
 meta_all = [[0],[1],[2],[3]] # if not baseline
-n_shots = [10, 15, 5, 20, 1]
+n_shots = [10]
 
 ymask = True
 
@@ -318,8 +318,8 @@ for i in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             
             dataset_mt_r.transform = transform_dict['B']
             dataset_mt_r.loadxy = False
-            if hasattr(dataset_mt_t, "ymask"):
-                dataset_mt_t.ymask = ymask
+            if hasattr(dataset_mt_r, "ymask"):
+                dataset_mt_r.ymask = ymask
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
