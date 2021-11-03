@@ -115,7 +115,7 @@ x_dirs.sort()
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
 baseline = True
-basemeta = False
+basemeta = True
 n_shots_baseline = 10
 
 pretrainmode = not baseline
@@ -359,4 +359,5 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                 del(inp)
                 del(res)
                 torch.cuda.empty_cache()
+    print(mff)
 
