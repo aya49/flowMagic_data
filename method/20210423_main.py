@@ -114,7 +114,7 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = False
+baseline = True
 basemeta = False
 n_shots_baseline = 10
 
@@ -129,8 +129,10 @@ overwrite_pretrain = True
 mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
+
 epochs_sample = 100000
-for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
+epochs_pretrain = 100
+for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)):
     opt.mode = 'pretrain'
     ds_tr = ''
     
@@ -204,20 +206,19 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     if opt.model == 'setr':
         dataset_tr_t.loadxy = False
         dataset_tr_v.loadxy = False
-
     
     # get classes
-    opt.epochs = epochs_sample//tl if not pretrainmode else 100
-    opt.save_freq = epochs_sample//tl/10 if not pretrainmode else 10
-    opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 10
+    opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
+    opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
+    opt.print_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
     opt = update_opt(opt)
     
     opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}DICE-{}'.format(
+                        mf.replace(opt.model, '{}{}{}DICE{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
-                            '-'.join(ds_tr) if pretrainmode else str(n_shots_baseline))),  
+                            '-{}'.format('-'.join(ds_tr)) if pretrainmode else '')),  
                         '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
@@ -247,7 +248,13 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     
     opt.mode = 'meta'
     mff = opt.model_folder
-    for n_shot in [n_shots_baseline] if baseline else n_shots:
+    if baseline and not basemeta:
+        nshots_ = [n_shots_baseline]
+    elif baseline:
+        nshots_ = [0]
+    elif pretrainmode:
+        n_shots_ = n_shots
+    for n_shot in n_shots_:
         opt.n_shots = n_shot
         for x_dir_mt in [ds_files_tr[ii]] if baseline else x_dirs_mt:
             if pretrainmode:
