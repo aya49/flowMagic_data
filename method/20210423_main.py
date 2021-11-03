@@ -249,9 +249,9 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
     opt.mode = 'meta'
     mff = opt.model_folder
     if baseline and not basemeta:
-        nshots_ = [n_shots_baseline]
+        n_shots_ = [n_shots_baseline]
     elif baseline:
-        nshots_ = [0]
+        n_shots_ = [0]
     elif pretrainmode:
         n_shots_ = n_shots
     for n_shot in n_shots_:
