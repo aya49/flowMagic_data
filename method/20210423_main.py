@@ -132,7 +132,7 @@ ds_files_tr.sort()
 
 epochs_sample = 100000
 epochs_pretrain = 100
-for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)):
+for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): #[x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # 
     opt.mode = 'pretrain'
     ds_tr = ''
     if pretrainmode:
