@@ -26,17 +26,17 @@ def model_unet_(opt):
     return model
 
 def model_setr(opt):
-    net = SETRModel(patch_size=(16, 16), 
+    model = SETRModel(patch_size=(32, 32), 
                     in_channels=len(opt.x_2D), 
                     out_channels=opt.n_class, 
-                    hidden_size=1024, 
-                    num_hidden_layers=8, 
-                    num_attention_heads=16, 
-                    decode_features=[512, 256, 128, 64])
+                    hidden_size=512, 
+                    num_hidden_layers=6, 
+                    num_attention_heads=8, 
+                    decode_features=[256, 128, 64, 32])
     t1 = torch.rand(1, 2, 256, 256)
     # print("input: " + str(t1.shape))
-    print("output: " + str(net(t1).shape))
-    return net
+    print("output: " + str(model(t1).shape))
+    return model
 
 def model_setr_(opt):
     cfg = mmcv.Config.fromfile('model/vit_mla_cfg.py')

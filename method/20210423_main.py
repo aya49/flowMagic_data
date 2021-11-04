@@ -154,6 +154,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): #[x for x 
     ## initialize model ####
     if 'model' not in locals(): #if i == 0:
         model = create_model(opt).cuda()
+        # sum(p.numel() for p in model.parameters())
         model_state = model.state_dict() if opt.n_gpu <= 1 else model.module.state_dict()
     elif baseline:
         model.load_state_dict(model_state)

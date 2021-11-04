@@ -23,8 +23,7 @@ dc2_dirs <- list_leaf_dirs(m2_dir)
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
 dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x) grepl("pregnancy", x) &
-    (grepl("[/]unetPRETRAINDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) |
-        grepl("[/]unetBASE[/]", x)))]
+    (grepl("[/]unetPRETRAINDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) ))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
@@ -58,16 +57,18 @@ allind <- which(matrix(0, 256,256)==0, arr.ind=TRUE)
 start <- Sys.time()
 bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     best <- NULL
+    methl <- stringr::str_split(dc_fs[1],"/")[[1]]
+    methi <- which(methl=="method")
+    meth <- paste0(methl[methi:(methi+2)], collapse="[/]")
+    yactualfull_file <- gsub("results","raw",gsub(meth,"y", dc_fs[1]))
     
-    yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method/[a-z]+[A-Z]*/[0-9]+"),"y", dc_fs[1]))
-
     actual <- read.csv(yactualfull_file, check.names=FALSE)
     cpops <- colnames(actual)[colnames(actual)!="other"]
     colours <- RColorBrewer::brewer.pal(max(length(cpops),3), "Dark2")
     
     scores_file <- gsub("raw","scores",
                         gsub("/y/", stringr::str_extract(
-                            dc_fs[1], "[/]unet[a-z]*[A-Z]*[/][0-9]+[/]"), yactualfull_file))
+                            dc_fs[1], paste0(methl[(methi+1):(methi+2)], collapse="[/]")), yactualfull_file))
     png_file <- gsub(".csv.gz",".png", gsub("scores","plots",scores_file))
     print(png_file)
     
@@ -91,7 +92,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
         fname <- gsub(".csv.gz","",path_stuff[length(path_stuff)])
         
         x2discrete_file <- gsub(
-            "results","data", gsub(stringr::str_extract(dc_f,"method[/][a-zA-Z_]+[/][0-9]+[/]"),"x_2Ddiscrete/", dc_f))
+            "results","data", gsub(paste0(methl[methi:(methi+2)], collapse="[/]"), "x_2Ddiscrete", dc_f))
         x2discrete <- read.csv(x2discrete_file, header=FALSE)
         
         y2actual_file <- gsub("x_2Ddiscrete","y_2D",x2discrete_file)
@@ -100,7 +101,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
         ypred <- apply(x2discrete, 1, function(xy) x2predicted[xy[1], xy[2]])
         yactual <- apply(x2discrete, 1, function(xy) y2actual[xy[1], xy[2]])
         
-        yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_f,"method/[a-z]+[A-Z]*/[0-9]+"),"y", dc_f))
+        yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_f,paste0(methl[methi:(methi+2)], collapse="[/]")),"y", dc_f))
         
         actual <- read.csv(yactualfull_file, check.names=FALSE)
         cpops <- colnames(actual)[colnames(actual)!="other"]
@@ -141,7 +142,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     #             sep=',', row.names=FALSE, col.names=TRUE)
 })
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE1.csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_unetPRETRAINDICE-HIPCbcell-sangerP2-HIPCmyeloid.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)
