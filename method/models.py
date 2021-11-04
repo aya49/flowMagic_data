@@ -26,13 +26,14 @@ def model_unet_(opt):
     return model
 
 def model_setr(opt):
-    model = SETRModel(patch_size=(32, 32), 
+    model = SETRModel(patch_size=(16, 16), 
                     in_channels=len(opt.x_2D), 
                     out_channels=opt.n_class, 
                     hidden_size=512, 
-                    num_hidden_layers=6, 
+                    num_hidden_layers=4,
                     num_attention_heads=8, 
                     decode_features=[256, 128, 64, 32])
+    # sum(p.numel() for p in model.parameters())
     t1 = torch.rand(1, 2, 256, 256)
     # print("input: " + str(t1.shape))
     print("output: " + str(model(t1).shape))
