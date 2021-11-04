@@ -215,8 +215,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): #[x for x 
                                         num_workers=opt.num_workers)
         
         # dataset_tr_t.ybig = True
-        dataset_tr_t.ysqueeze = False
-        dataset_tr_v.ysqueeze = False
+        # dataset_tr_t.ysqueeze = False
+        # dataset_tr_v.ysqueeze = False
         tl = len(dataset_tr_t)
         dataset_tr_v.transform = transform_dict['B']
         if hasattr(dataset_tr_t, 'ymask'):
@@ -235,8 +235,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): #[x for x 
         
         # get epochs
         opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
-        opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
-        opt.print_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
+        opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain
+        opt.print_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain
         opt = update_opt(opt)
         
         # train and validate        
