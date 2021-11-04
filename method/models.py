@@ -5,6 +5,7 @@ from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
 from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
+from SETR.transformer_seg import SETRModel, Vit
 import segmentation_models_pytorch as smp
 
 def model_unet(opt):
@@ -25,6 +26,19 @@ def model_unet_(opt):
     return model
 
 def model_setr(opt):
+    net = SETRModel(patch_size=(16, 16), 
+                    in_channels=len(opt.x_2D), 
+                    out_channels=opt.n_class, 
+                    hidden_size=1024, 
+                    num_hidden_layers=8, 
+                    num_attention_heads=16, 
+                    decode_features=[512, 256, 128, 64])
+    t1 = torch.rand(1, 2, 256, 256)
+    # print("input: " + str(t1.shape))
+    print("output: " + str(net(t1).shape))
+    return net
+
+def model_setr_(opt):
     cfg = mmcv.Config.fromfile('model/vit_mla_cfg.py')
     # cfg = mmcv.Config.fromfile('/home/aya43/flowMagic_data/src/method/model/vit_mla_cfg.py')
     

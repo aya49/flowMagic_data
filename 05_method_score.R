@@ -22,6 +22,9 @@ m2_dir <- paste0(results_dir,"/2D/method");
 dc2_dirs <- list_leaf_dirs(m2_dir)
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
+dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x) grepl("pregnancy", x) &
+    (grepl("[/]unetPRETRAINDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) |
+        grepl("[/]unetBASE[/]", x)))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
@@ -35,48 +38,46 @@ wi <- hi <- 10
 size <- 400
 
 
+dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE))
+dc_fls <- lapply(dc_files, function(dc_files_) {
+    if (length(dc_files_)<=wi*hi)
+        return(list(dc_files))
+    li <- list()
+    for (ii in 1:ceiling(length(dc_files_)/(wi*hi))) {
+        num <- min(wi*hi, length(dc_files_))
+        li[[ii]] <- dc_files_[1:num]
+        dc_files_ = dc_files_[-c(1:num)]
+    }
+    return(li)
+})
+dc_fls <- unlist(dc_fls, recursive=FALSE)
+
+allind <- which(matrix(0, 256,256)==0, arr.ind=TRUE)
+
 ## START ####
 start <- Sys.time()
-dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE))
-li <- list()
-lii <- 0
-for (dc_files_ in dc_files) {
-    if (length(dc_files_) < 200) {
-        lii <- lii + 1
-        li[[lii]] <- dc_files
-        next
-    }
-    il <- floor(length(dc_files_)/(wi*hi))
-    for (i in seq_len(il)) {
-        lii <- lii + 1
-        if (i==il) {
-            li[[lii]] <- dc_files_
-            next
-        }
-        li[[lii]] <- dc_files_[1:(wi*hi)]
-        dc_files_ <- dc_files_[-c(1:(wi*hi))]
-    }
-}
-
-bests <- furrr::map(li, function(dc_fs) {
+bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     best <- NULL
     
     yactualfull_file <- gsub("results","raw",gsub(stringr::str_extract(dc_fs[1],"method/[a-z]+[A-Z]*/[0-9]+"),"y", dc_fs[1]))
 
     actual <- read.csv(yactualfull_file, check.names=FALSE)
     cpops <- colnames(actual)[colnames(actual)!="other"]
-    colours <- RColorBrewer::brewer.pal(length(cpops), "Dark2")[seq_len(length(cpops))]
+    colours <- RColorBrewer::brewer.pal(max(length(cpops),3), "Dark2")
     
     scores_file <- gsub("raw","scores",
                         gsub("/y/", stringr::str_extract(
                             dc_fs[1], "[/]unet[a-z]*[A-Z]*[/][0-9]+[/]"), yactualfull_file))
     png_file <- gsub(".csv.gz",".png", gsub("scores","plots",scores_file))
+    print(png_file)
     
     dir.create(folder_name(png_file), showWarnings=FALSE, recursive=TRUE)
-    dir.create(folder_name(scores_file), showWarnings=FALSE, recursive=TRUE)
+    # dir.create(folder_name(scores_file), showWarnings=FALSE, recursive=TRUE)
     png(png_file, width=wi*size, height=hi*size)
     par(mfcol=c(hi,wi))
-    for (dc_f in dc_fs) {
+    for (i in seq_len(length(dc_fs))) { tryCatch({
+        dc_f <- dc_fs[i]
+        cat(i, " ")
         x2predicted <- read.csv(dc_f, header=FALSE)
         
         # get meta data
@@ -118,30 +119,29 @@ bests <- furrr::map(li, function(dc_fs) {
         
         # plot
         x2predicted_ <- which(x2predicted>0, arr.ind=TRUE)
-        x2predicted_c <- apply(x2predicted_, 1, function(x) x2predicted[x[1],x[2]])
-        y2D <- read.csv(gsub("x_2Ddiscrete","y_2D",x2discrete_file), header=FALSE)
-        y2D_ <- which(y2D>0, arr.ind=TRUE)
-        y2D_c <- apply(y2D_, 1, function(x) y2D[x[1],x[2]])
+        x2predicted_c <- apply(x2predicted_, 1, function(xy) x2predicted[xy[1], xy[2]])
         
         plot(x2predicted_, main=fname, col=colours[x2predicted_c], cex=.55, pch=16)
         for (cpopi in seq_len(cl)) {
-            cpii <- which(y2D_c==cpopi)
-            y2D_chulli <- chull(y2D_[cpii,])
-            y2D_chull <- y2D_[cpii[append(y2D_chulli, y2D_chulli[1])],]
+            y2D <- which(y2actual==cpopi, arr.ind=TRUE)
+            if (is.null(y2D) | nrow(y2D)<3) next
+            y2D_chulli <- chull(y2D)
+            y2D_chull <- y2D[append(y2D_chulli, y2D_chulli[1]),]
             lines(y2D_chull, lwd=2, col=colours[cpopi])
             lines(y2D_chull, lwd=2, lty=3, col="black")
         }
         legend("topright", legend=cpops, col=colours, 
                lty=rep(1,cl), lwd=rep(2,cl))
         
-    }
+    }, error = function(e) {
+        print(dc_f)
+    })}
     graphics.off()
-    write.table(best, file=gzfile(scores_file),
-                sep=',', row.names=FALSE, col.names=TRUE)
+    # write.table(best, file=gzfile(scores_file),
+    #             sep=',', row.names=FALSE, col.names=TRUE)
 })
-bests <- Reduce(rbind, bests)
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(dc_dir_,"method"),".csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE1.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)

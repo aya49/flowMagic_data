@@ -121,7 +121,7 @@ n_shots_baseline = 10
 pretrainmode = not baseline
 pretrain_all = [[1,2,3]]#,[0,2,3],[0,1,3], [0,1,2]] # if not baseline
 meta_all = [[0],[1],[2],[3]] # if not baseline
-n_shots = [10]
+n_shots = [15,5,20,1]
 
 ymask = True
 
@@ -135,83 +135,11 @@ epochs_pretrain = 100
 for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)):
     opt.mode = 'pretrain'
     ds_tr = ''
-    
-    if baseline:
-        dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
-        if basemeta:
-            xdmsplit = x_dirs[ii].split('/')
-            opt.data_scat = '/'.join(xdmsplit[-2:])
-            x_files_mt = yegz(nomac( [os.path.join(x_dirs[ii], f) for f in os.listdir(x_dirs[ii])] ))
-            
-            # get n-shot samples
-            opt.n_shots = n_shots_baseline
-            shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
-            x_files_mt_t_ = os.listdir(shot_folder)
-            x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
-            
-            dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
-            dataset_tr_v = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
-        else:
-            dataset_tr_t = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
-            dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
-    elif pretrainmode:
+    if pretrainmode:
         pretrain = pretrain_all[ii]
         meta = meta_all[ii]
         ds_tr = [x for i, x in enumerate(dss) if i in pretrain]
         ds_mt = [x for i, x in enumerate(dss) if i in meta]
-        
-        # train/metatrain data sets denscats folder paths
-        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
-                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
-        
-        ## create datasets ####
-        if opt.preload_data:
-            ds_files_tr = [x for x in ds_files if any(dsi in x for dsi in [dss[j] for j in pretrain])]
-            dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
-            dataset_tr_t.factorize_labels()
-            for i in range(1, len(ds_files_tr)):
-                print(ds_files_tr[i])
-                dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
-                dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
-            
-            dataset_tr_t.factorize_labels()
-            dataset_tr_t.transform = transform_dict['A']
-        else:
-            # train/metatrain data sets denscats folder paths
-            x_dirs_tr = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
-                        sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_tr]) )
-            x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
-            
-            # split pre-train data set into train (95%) and validation (5%)
-            dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
-        
-        dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
-        dataset_tr_v.transform = transform_dict['B']
-        
-        dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                    batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                                    num_workers=opt.num_workers)
-        dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                                    batch_size=opt.batch_size, drop_last=False, shuffle=False,
-                                    num_workers=opt.num_workers)
-    
-    # dataset_tr_t.ybig = True
-    dataset_tr_t.ysqueeze = False
-    dataset_tr_v.ysqueeze = False
-    tl = len(dataset_tr_t)
-    dataset_tr_v.transform = transform_dict['B']
-    if hasattr(dataset_tr_t, 'ymask'):
-        dataset_tr_t.ymask = ymask
-        dataset_tr_v.ymask = ymask
-    if opt.model == 'setr':
-        dataset_tr_t.loadxy = False
-        dataset_tr_v.loadxy = False
-    
-    # get classes
-    opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
-    opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
-    opt.print_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
-    opt = update_opt(opt)
     
     opt.model_folder = '{}:{}'.format(
                         mf.replace(opt.model, '{}{}{}DICE{}'.format(
@@ -223,13 +151,6 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     
-    dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                                num_workers=opt.num_workers)
-    dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                                batch_size=opt.batch_size, drop_last=False, shuffle=False,
-                                num_workers=opt.num_workers)
-    
     ## initialize model ####
     if 'model' not in locals(): #if i == 0:
         model = create_model(opt).cuda()
@@ -238,14 +159,95 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         model.load_state_dict(model_state)
     
     model_path = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
-    if overwrite_pretrain and os.path.exists(model_path):
+    if not overwrite_pretrain and os.path.exists(model_path) and pretrainmode:
         model, _, epoch_ = load_checkpoint(model, model_path)
     else:
+        # load data
+        if baseline:
+            dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
+            if basemeta:
+                xdmsplit = x_dirs[ii].split('/')
+                opt.data_scat = '/'.join(xdmsplit[-2:])
+                x_files_mt = yegz(nomac( [os.path.join(x_dirs[ii], f) for f in os.listdir(x_dirs[ii])] ))
+                
+                # get n-shot samples
+                opt.n_shots = n_shots_baseline
+                shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
+                x_files_mt_t_ = os.listdir(shot_folder)
+                x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
+                
+                dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
+                dataset_tr_v = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
+            else:
+                dataset_tr_t = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
+                dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
+        elif pretrainmode:
+            ## create datasets ####
+            if opt.preload_data:
+                ds_files_tr = [x for x in ds_files if any(dsi in x for dsi in [dss[j] for j in pretrain])]
+                dataset_tr_t = compress_pickle.load(ds_files_tr[0], compression="lzma", set_default_extension=False) #gzip
+                dataset_tr_t.factorize_labels()
+                for i in range(1, len(ds_files_tr)):
+                    print(ds_files_tr[i])
+                    dataset_tr_t_ = compress_pickle.load(ds_files_tr[i], compression="lzma", set_default_extension=False)
+                    dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
+                
+                dataset_tr_t.factorize_labels()
+                dataset_tr_t.transform = transform_dict['A']
+            else:
+                # train/metatrain data sets denscats folder paths
+                x_dirs_tr = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+                            sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_tr]) )
+                x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for f in os.listdir(x_den)] for x_den in x_dirs_tr])]) ))
+                
+                # split pre-train data set into train (95%) and validation (5%)
+                dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
+            
+            dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
+            dataset_tr_v.transform = transform_dict['B']
+            
+            dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                                        batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                                        num_workers=opt.num_workers)
+            dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                                        batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                                        num_workers=opt.num_workers)
+        
+        # dataset_tr_t.ybig = True
+        dataset_tr_t.ysqueeze = False
+        dataset_tr_v.ysqueeze = False
+        tl = len(dataset_tr_t)
+        dataset_tr_v.transform = transform_dict['B']
+        if hasattr(dataset_tr_t, 'ymask'):
+            dataset_tr_t.ymask = ymask
+            dataset_tr_v.ymask = ymask
+        # if opt.model == 'setr':
+        #     dataset_tr_t.loadxy = False
+        #     dataset_tr_v.loadxy = False
+        
+        dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
+                                    batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
+                                    num_workers=opt.num_workers)
+        dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
+                                    batch_size=opt.batch_size, drop_last=False, shuffle=False,
+                                    num_workers=opt.num_workers)
+        
+        # get epochs
+        opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
+        opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
+        opt.print_freq = epochs_sample//tl/10 if not pretrainmode else epochs_pretrain//10
+        opt = update_opt(opt)
+        
         # train and validate        
         acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
+    if pretrainmode:
+        # train/metatrain data sets denscats folder paths
+        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
+
     opt.mode = 'meta'
     mff = opt.model_folder
     if baseline and not basemeta:
@@ -277,9 +279,9 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                 dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
                 dataset_mt_v = copy.deepcopy(dataset_mt_t)
                 dataset_mt_v.transform = transform_dict['B']
-                if opt.model == 'setr':
-                    dataset_mt_t.loadxy = False
-                    dataset_mt_v.loadxy = False
+                # if opt.model == 'setr':
+                #     dataset_mt_t.loadxy = False
+                #     dataset_mt_v.loadxy = False
                 if hasattr(dataset_mt_t, 'ymask'):
                     dataset_mt_t.ymask = ymask
                     dataset_mt_v.ymask = ymask
@@ -338,14 +340,14 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
             for idx, stuff in enumerate(dataloader_mt_r):
                 (inp, target, _, xdir, xfn) = stuff
                 
-                if opt.model == 'setr':
-                    inp, target, img_metas = prep_input(inp, target, xfn)
-                    res = model.inference(inp, img_metas, rescale=False)
-                else:
-                    if torch.cuda.is_available():
-                        inp = inp.cuda()
-                        # target = target.cuda()
-                    res = model.predict(inp)
+                # if opt.model == 'setr':
+                #     inp, target, img_metas = prep_input(inp, target, xfn)
+                #     res = model.inference(inp, img_metas, rescale=False)
+                # else:
+                if torch.cuda.is_available():
+                    inp = inp.cuda()
+                    # target = target.cuda()
+                res = model.predict(inp)
                 
                 for xfi in range(len(xfn)):
                     res_ = res[xfi].squeeze()
@@ -359,5 +361,4 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                 del(inp)
                 del(res)
                 torch.cuda.empty_cache()
-    print(mff)
 

@@ -36,20 +36,20 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
     with torch.no_grad():
         end = time.time()
         for idx, stuff in enumerate(val_loader):
-            if opt.model == 'setr':
-                (inp, target, i, xdir, xfn) = stuff
-                
-                (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
-                img_metas = [{
-                    'img_shape': (H, W, C),
-                    'ori_shape': (H, W, C),
-                    'pad_shape': (H, W, C),
-                    'filename': xfn_,
-                    'scale_factor': 1.0,
-                    'flip': False,
-                } for xfn_ in xfn]
-            else:
-                (inp, target) = stuff
+            # if opt.model == 'setr':
+            #     (inp, target, i, xdir, xfn) = stuff
+            #     
+            #     (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
+            #     img_metas = [{
+            #         'img_shape': (H, W, C),
+            #         'ori_shape': (H, W, C),
+            #         'pad_shape': (H, W, C),
+            #         'filename': xfn_,
+            #         'scale_factor': 1.0,
+            #         'flip': False,
+            #     } for xfn_ in xfn]
+            # else:
+            (inp, target) = stuff
             
             if torch.cuda.is_available():
                 inp = inp.cuda()
@@ -59,18 +59,18 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             classes = less0_classes(classes, max_class)
             
             # =================== inference =====================
-            if opt.model == 'setr':
-                scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-                # assert isinstance(scores, dict)
-                acc1 = float(scores['decode.acc_seg'])
-                loss = float(scores['decode.loss_lovasz'])
-            else:
-                output = model(inp)
-                # loss = lossfunc(output, target, classes=classes)
-                lossfunc = dice_loss()
-                target = tensor2D3D_(target,6).cuda()
-                loss = lossfunc.forward(output[:,classes], target[:,classes])
-                acc1 = accmetric(output[:,classes], target[:,classes])
+            # if opt.model == 'setr':
+            #     scores = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+            #     # assert isinstance(scores, dict)
+            #     acc1 = float(scores['decode.acc_seg'])
+            #     loss = float(scores['decode.loss_lovasz'])
+            # else:
+            output = model(inp)
+            # loss = lossfunc(output, target, classes=classes)
+            lossfunc = dice_loss()
+            target = tensor2D3D_(target,6).cuda()
+            loss = lossfunc.forward(output[:,classes], target[:,classes])
+            acc1 = accmetric(output[:,classes], target[:,classes])
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -111,20 +111,20 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
     for idx, stuff in enumerate(train_loader):
         data_time.update(time.time() - end)
         
-        if opt.model == 'setr':
-            (inp, target, i, xdir, xfn) = stuff
-            
-            (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
-            img_metas = [{
-                'img_shape': (H, W, C),
-                'ori_shape': (H, W, C),
-                'pad_shape': (H, W, C),
-                'filename': xfn_,
-                'scale_factor': 1.0,
-                'flip': False,
-            } for xfn_ in xfn]
-        else:
-            (inp, target) = stuff
+        # if opt.model == 'setr':
+        #     (inp, target, i, xdir, xfn) = stuff
+        #     
+        #     (H, W, C) = (opt.dim, opt.dim, len(opt.x_2D))
+        #     img_metas = [{
+        #         'img_shape': (H, W, C),
+        #         'ori_shape': (H, W, C),
+        #         'pad_shape': (H, W, C),
+        #         'filename': xfn_,
+        #         'scale_factor': 1.0,
+        #         'flip': False,
+        #     } for xfn_ in xfn]
+        # else:
+        (inp, target) = stuff
         
         max_class = int(target.max())
         classes = less0_classes(classes, max_class)
@@ -134,17 +134,17 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
             target = target.cuda()
         
         # =================== forward =====================
-        if opt.model == 'setr':
-            ls = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
-            loss = ls['decode.loss_lovasz']
-            acc1 = ls['decode.acc_seg']
-        else:
-            output = model(inp)
-            # loss = lossfunc(output, target, classes=classes)
-            lossfunc = dice_loss()
-            target = tensor2D3D_(target,6).cuda()
-            loss = lossfunc.forward(output[:,classes], target[:,classes])
-            acc1 = accmetric(output[:,classes], target[:,classes])
+        # if opt.model == 'setr':
+        #     ls = model.forward(inp, img_metas, gt_semantic_seg=target, return_loss=True)
+        #     loss = ls['decode.loss_lovasz']
+        #     acc1 = ls['decode.acc_seg']
+        # else:
+        output = model(inp)
+        # loss = lossfunc(output, target, classes=classes)
+        lossfunc = dice_loss()
+        target = tensor2D3D_(target,6).cuda()
+        loss = lossfunc.forward(output[:,classes], target[:,classes])
+        acc1 = accmetric(output[:,classes], target[:,classes])
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))

@@ -5,9 +5,9 @@
 # root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 setwd(root)
 
-
 ## packages ####
 source("src/helpers.R")
+
 if (!"flowLearn"%in%rownames(installed.packages()))
   devtools::install_github("mlux86/flowLearn")
 libr(c(
