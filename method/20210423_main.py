@@ -115,7 +115,7 @@ x_dirs.sort()
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
 baseline = True
-basemeta = False
+basemeta = True
 n_shots_baseline = 10
 
 pretrainmode = not baseline
@@ -140,6 +140,8 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         meta = meta_all[ii]
         ds_tr = [x for i, x in enumerate(dss) if i in pretrain]
         ds_mt = [x for i, x in enumerate(dss) if i in meta]
+    else:
+        dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     opt.model_folder = '{}:{}'.format(
                         mf.replace(opt.model, '{}{}{}DICE{}'.format(
@@ -165,7 +167,6 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
     else:
         # load data
         if baseline:
-            dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
             if basemeta:
                 xdmsplit = x_dirs[ii].split('/')
                 opt.data_scat = '/'.join(xdmsplit[-2:])
