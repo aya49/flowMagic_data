@@ -30,7 +30,7 @@ def model_setr(opt):
                     in_channels=len(opt.x_2D), 
                     out_channels=opt.n_class, 
                     hidden_size=512, 
-                    num_hidden_layers=4,
+                    num_hidden_layers=6,
                     num_attention_heads=8, 
                     decode_features=[256, 128, 64, 32])
     # sum(p.numel() for p in model.parameters())
@@ -66,9 +66,9 @@ def metafreeze_model(model, opt):
         p.requires_grad = False
     
     if opt.model == 'setr':
-        for p in model.backbone.layers[6].parameters():
+        for p in model.encoder_2D.encoder.layer[5].parameters():
             p.requires_grad = True
-        for p in model.backbone.layers[7].parameters():
+        for p in model.encoder_2D.final_dense.parameters():
             p.requires_grad = True
     
     if opt.model == 'unet':

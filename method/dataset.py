@@ -123,6 +123,7 @@ class Data2D(Dataset):
                     xil = torch.stack(xil)
                     self.x.append(xil)
                     
+                    # yi = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
                     yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     self.y.append(yi)
                     

@@ -23,7 +23,8 @@ dc2_dirs <- list_leaf_dirs(m2_dir)
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
 dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x) grepl("pregnancy", x) &
-    (grepl("[/]unetPRETRAINDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) ))]
+    (grepl("[/]unetPRETRAINmaskDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) |
+        grepl("[/]unetBASEmaskDICE[/]", x) ))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
@@ -67,8 +68,8 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     colours <- RColorBrewer::brewer.pal(max(length(cpops),3), "Dark2")
     
     scores_file <- gsub("raw","scores",
-                        gsub("/y/", stringr::str_extract(
-                            dc_fs[1], paste0(methl[(methi+1):(methi+2)], collapse="[/]")), yactualfull_file))
+                        gsub("/y/", paste0("/", stringr::str_extract(
+                            dc_fs[1], paste0(methl[(methi+1):(methi+2)], collapse="[/]"))), yactualfull_file))
     png_file <- gsub(".csv.gz",".png", gsub("scores","plots",scores_file))
     print(png_file)
     
@@ -142,7 +143,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     #             sep=',', row.names=FALSE, col.names=TRUE)
 })
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_unetPRETRAINDICE-HIPCbcell-sangerP2-HIPCmyeloid.csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_unetBASEandPRETRAINmaskDICE-HIPCbcell-sangerP2-HIPCmyeloid.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)
