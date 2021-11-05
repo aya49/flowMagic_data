@@ -57,7 +57,7 @@ fe <- fe[sapply(gs_xr(x2_files[fe],"y_2D"), function(x) {
 # fe <- fe[sapply(x2_files, function(x2_file) !file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))]
 # fe <- fe[sapply(x2_files[fe], function(x2_file) !file.exists(gs_xr(x2_file,"x_2Ddenscat")))]
 # fe <- fe[!grepl("HIPCmyeloid[/]FSCASSCA_Singlets", x2_files[fe]) & !grepl("HIPCmyeloid[/]viabilitydyeSSCA_Allcells", x2_files[fe])]
-loop_ind <- loop_ind_f(fe, no_cores)
+loop_ind <- loop_ind_f(sample(fe, length(fe), replace=FALSE), no_cores)
 # fe <- fe[plyr::llply(loop_ind, function(ii) 
 #     sapply(ii, function(i) {
 #         a <- data.table::fread(gs_xr(x2_files[i],"x_2Ddenscat"))
@@ -75,8 +75,8 @@ f <- flowCore::read.FCS("/mnt/FCS_local3/backup/Brinkman group/current/Alice/G69
 cat("out of",length(fe),"\n")
 # loop_ind <- loop_ind_f(sample(fe), no_cores)
 # plyr::l_ply(loop_ind, function(ii) {
-# a <- furrr::future_map(loop_ind, function(ii) {
-plyr::l_ply(loop_ind, function(ii) {# tryCatch({
+a <- furrr::future_map(loop_ind, function(ii) {
+# plyr::l_ply(loop_ind, function(ii) {# tryCatch({
     for (i in ii) { tryCatch({
         # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
         x2_file <- x2_files[i]
@@ -229,7 +229,7 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         # }, error = function(e) return(i) ) 
         # })
     }, error = function(e) next ) }
-}, .parallel=TRUE)
+})#, .parallel=TRUE)
 # })
 time_output(start)
 

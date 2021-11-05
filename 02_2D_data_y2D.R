@@ -84,7 +84,7 @@ fe <- fe[sapply(gsub("y_2D",folds[2],y2_files[fe]), function(x) {
     return(FALSE)
 })]
 
-loop_ind <- loop_ind_f(fe, no_cores)
+loop_ind <- loop_ind_f(sample(fe, length(fe), replace=FALSE), no_cores)
 
 y2 <- as.matrix(data.table::fread(y2_files[1], data.table=FALSE))
 allind <- which(y2<10, arr.ind=TRUE)
@@ -93,8 +93,8 @@ y20 <- matrix(0, dimsize, dimsize)
 start <- Sys.time()
 
 cat("out of",length(fe),"\n")
-# a <- furrr::future_map(loop_ind, function(ii) {
-plyr::l_ply(loop_ind, function(ii) {# tryCatch({
+a <- furrr::future_map(loop_ind, function(ii) {
+# plyr::l_ply(loop_ind, function(ii) {# tryCatch({
     for (i in ii) { try({
         print(i)
         # i <- grep("HIPCbcell[/]CD10CD38[_]IGM", y2_files)[1]
@@ -543,6 +543,6 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
                     col.names=FALSE, row.names=FALSE, sep=",")
     }) }
     return()
-}, .parallel=TRUE)
+})#, .parallel=TRUE)
 time_output(start)
 
