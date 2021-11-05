@@ -69,7 +69,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     
     scores_file <- gsub("raw","scores",
                         gsub("/y/", paste0("/", stringr::str_extract(
-                            dc_fs[1], paste0(methl[(methi+1):(methi+2)], collapse="[/]"))), yactualfull_file))
+                            dc_fs[1], paste0(methl[(methi+1):(methi+2)], collapse="/")),"/"), yactualfull_file))
     png_file <- gsub(".csv.gz",".png", gsub("scores","plots",scores_file))
     print(png_file)
     
