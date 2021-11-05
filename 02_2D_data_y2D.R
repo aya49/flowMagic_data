@@ -17,8 +17,9 @@ future::plan(future::multisession, workers=no_cores) # for furrr
 ## output ####
 y2_dir <- paste0(root,"/data/2D/y_2D")
 y2_folds <- list_leaf_dirs(y2_dir)
-folds <- c("y_2D_rough")
-a <- sapply(y2_folds, function(y2_fold) dir.create(gsub('y_2D',folds,y2_fold), recursive=TRUE, showWarnings=FALSE))
+folds <- c("y_2D_", "y_2D_rough")
+a <- sapply(y2_folds, function(y2_fold) dir.create(gsub('y_2D',folds[1],y2_fold), recursive=TRUE, showWarnings=FALSE))
+a <- sapply(y2_folds, function(y2_fold) dir.create(gsub('y_2D',folds[2],y2_fold), recursive=TRUE, showWarnings=FALSE))
 
 
 ## load inputs ####
@@ -63,7 +64,7 @@ rotate.data <- function(data, chans=NULL, theta=NULL, min.max=F) {
 }
 
 raster_chull_mask <- function(xy, allind) {
-    if (nrow(xy)<3) return(duplicated(rbind(allind, xy))[1:nrow(allind)])
+    if (nrow(xy)<3) return(duplicated(rbind(xy, allind))[(nrow(xy)+1):(nrow(allind)+nrow(xy))])
     
     # points on convexHull
     idchull <- grDevices::chull(xy)
@@ -71,13 +72,13 @@ raster_chull_mask <- function(xy, allind) {
     # create chull polygon {interp}
     tryCatch({
         Po <- interp::tri.mesh(xy[idchull, 1], xy[idchull, 2])
-    },  error = function(e) return(duplicated(rbind(allind, xy))[1:nrow(allind)]))
+    },  error = function(e) return(duplicated(rbind(xy, allind))[(nrow(xy)+1):(nrow(allind)+nrow(xy))]))
     interp::in.convex.hull(Po, allind[,1], allind[,2])
 }
 
 ## START ####
 fe <- 1:length(y2_files)
-fe <- fe[sapply(gsub("y_2D",folds,y2_files[fe]), function(x) {
+fe <- fe[sapply(gsub("y_2D",folds[2],y2_files[fe]), function(x) {
     if (!file.exists(x)) return(TRUE)
     if (file.info(x)$size==0) return(TRUE)
     return(FALSE)
@@ -95,11 +96,12 @@ cat("out of",length(fe),"\n")
 # a <- furrr::future_map(loop_ind, function(ii) {
 plyr::l_ply(loop_ind, function(ii) {# tryCatch({
     for (i in ii) { try({
+        print(i)
         # i <- grep("HIPCbcell[/]CD10CD38[_]IGM", y2_files)[1]
         y2_file <- y2_files[i]
         
         # load csv
-        y2 <- y2o <- as.matrix(data.table::fread(y2_file, data.table=FALSE))
+        y2 <- y2o <- read.csv(y2_file, header=FALSE)
         background <- y2==0
         # gplots::heatmap.2(t(y2)[dimsize:1,], dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
         
@@ -528,11 +530,16 @@ plyr::l_ply(loop_ind, function(ii) {# tryCatch({
         }
         y2_ <- y2
         y2[background] <- 0
+        if (sum(y2_)>0 & sum(y2)==0) {
+            y2 = y2o
+            no0ind <- y2>0
+            y2_[no0ind] = y2[no0ind]
+        } 
         sum(y2o!=y2)
         
-        write.table(y2, file=gzfile(y2_file),
+        write.table(y2, file=gzfile(gsub("y_2D", folds[1],y2_file)),
                     col.names=FALSE, row.names=FALSE, sep=",")
-        write.table(y2_, file=gzfile(gsub("y_2D",folds,y2_file)),
+        write.table(y2_, file=gzfile(gsub("y_2D",folds[2],y2_file)),
                     col.names=FALSE, row.names=FALSE, sep=",")
     }) }
     return()

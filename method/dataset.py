@@ -121,8 +121,8 @@ class Data2D(Dataset):
                         xil.append(torch.tensor(pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values))
                     xil = torch.stack(xil)
                     
-                    yi = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
-                    # yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
+                    # yi = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
+                    yi = torch.tensor(pd.read_csv(self.y_files[i], header=None).values).unsqueeze(0)
                     
                     yi_ = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
                     
