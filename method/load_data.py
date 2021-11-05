@@ -82,8 +82,8 @@ if opt.preload_data:
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
         ds_files.append(ds_mt_r_path)
-        if not os.path.exists(ds_mt_r_path):
-            print(x_dir_mt)
-            x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
-            dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
-            compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+        # if not os.path.exists(ds_mt_r_path):
+        print(x_dir_mt)
+        x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
+        dataset_mt_r = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt)
+        compress_pickle.dump(dataset_mt_r, ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
