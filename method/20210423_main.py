@@ -226,7 +226,8 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         # if opt.model == 'setr':
         #     dataset_tr_t.loadxy = False
         #     dataset_tr_v.loadxy = False
-        
+        dataset_mt_t.loadxy = True
+        dataset_mt_v.loadxy = True
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
                                     batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                     num_workers=opt.num_workers)
@@ -284,6 +285,9 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                 # if opt.model == 'setr':
                 #     dataset_mt_t.loadxy = False
                 #     dataset_mt_v.loadxy = False
+                # else:
+                dataset_mt_t.loadxy = True
+                dataset_mt_v.loadxy = True
                 if hasattr(dataset_mt_t, 'ymask'):
                     dataset_mt_t.ymask = ymask
                     dataset_mt_v.ymask = ymask
