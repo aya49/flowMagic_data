@@ -114,8 +114,8 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = False
-basemeta = False
+baseline = True
+basemeta = True
 n_shots_baseline = 10
 
 pretrainmode = not baseline
@@ -353,7 +353,10 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                 if torch.cuda.is_available():
                     inp = inp.cuda()
                     # target = target.cuda()
-                res = model.predict(inp)
+                if opt.model == 'setr':
+                    res = model.forward(inp)
+                else:
+                    res = model.predict(inp)
                 
                 for xfi in range(len(xfn)):
                     res_ = res[xfi].squeeze()

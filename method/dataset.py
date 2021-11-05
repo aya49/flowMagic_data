@@ -115,7 +115,6 @@ class Data2D(Dataset):
             goodi = []
             xyl = len(self.x_files[0])
             for i in range(xyl):
-                print(i, end=' ')
                 try:
                     xil = []
                     for x2i in range(len(self.x_2D)):
@@ -131,6 +130,7 @@ class Data2D(Dataset):
                     self.y.append(yi)
                     self.y_.append(yi_)
                     goodi.append(i)
+                    print(i, end=' ')
                 except:
                     print("error")
                     pass
