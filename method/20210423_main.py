@@ -246,11 +246,6 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         # for par in model.parameters():
         #     print(par)
     
-    if pretrainmode:
-        # train/metatrain data sets denscats folder paths
-        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
-                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
-
     opt.mode = 'meta'
     mff = opt.model_folder
     if baseline and not basemeta:
@@ -259,6 +254,8 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         n_shots_ = [0]
     elif pretrainmode:
         n_shots_ = n_shots
+        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
     for n_shot in n_shots_:
         opt.n_shots = n_shot
         for x_dir_mt in [ds_files_tr[ii]] if baseline else x_dirs_mt:
@@ -335,7 +332,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                batch_size=opt.batch_size, shuffle=False, drop_last=False,
+                                batch_size=10, shuffle=False, drop_last=False,
                                 num_workers=opt.num_workers)
             
             model.eval()
@@ -354,7 +351,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                     inp = inp.cuda()
                     # target = target.cuda()
                 if opt.model == 'setr':
-                    res = model.forward(inp)
+                    res = model(inp)
                 else:
                     res = model.predict(inp)
                 
