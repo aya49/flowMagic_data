@@ -115,7 +115,7 @@ x_dirs.sort()
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
 baseline = True
-basemeta = False
+basemeta = True
 n_shots_baseline = 10
 
 pretrainmode = not baseline
@@ -236,7 +236,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         # get epochs
         opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
         opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_sample//10
-        opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 1
+        opt.print_freq = epochs_sample//tl/100 if not pretrainmode else 1
         # opt = update_opt(opt)
         
         # train and validate        
