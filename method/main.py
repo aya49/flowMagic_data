@@ -130,7 +130,7 @@ mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 
-epochs_sample = 100000
+epochs_sample = 50000
 epochs_pretrain = 100
 for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
@@ -143,12 +143,14 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
     else:
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
-    opt.model_folder = mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
+    opt.model_folder = '{}:{}'.format(
+                        mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
-                            '-{}'.format('-'.join(ds_tr)) if pretrainmode else '', 
-                            '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else ''))
+                            '-{}'.format('-'.join(ds_tr) if pretrainmode else ''),
+                            '-{}'.format(n_shots_baseline if basemeta else '') if baseline else '')),
+                        '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     
@@ -222,9 +224,6 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
             dataset_tr_v.ymask = ymask
-        # if opt.model == 'setr':
-        #     dataset_tr_t.loadxy = False
-        #     dataset_tr_v.loadxy = False
         dataset_tr_t.loadxy = True
         dataset_tr_v.loadxy = True
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
@@ -235,9 +234,9 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
                                     num_workers=opt.num_workers)
         
         # get epochs
-        opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
-        opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_sample//10
-        opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 1
+        opt.epochs = epochs_pretrain
+        opt.save_freq = epochs_sample//10
+        opt.print_freq = 1
         # opt = update_opt(opt)
         
         # train and validate        
@@ -247,7 +246,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
     
     opt.mode = 'meta'
     mff = opt.model_folder
-    if baseline and not basemeta:
+    if baseline and basemeta:
         n_shots_ = [n_shots_baseline]
     elif baseline:
         n_shots_ = [0]
@@ -304,9 +303,10 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
                 model.load_state_dict(ckpt['model'])
                 
                 # train and validate
-                opt.epochs = 100
-                opt.save_freq = 10
-                # opt = update_opt(opt)
+                opt.epochs = epochs_pretrain
+                opt.save_freq = epochs_pretrain//10
+                opt.print_freq = 1
+                opt = update_opt(opt)
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
                 os.makedirs(opt.model_folder, exist_ok=True)
                 acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
