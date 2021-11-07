@@ -130,7 +130,7 @@ mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 
-epochs_sample = 100000
+epochs_sample = 50000
 epochs_pretrain = 100
 for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
