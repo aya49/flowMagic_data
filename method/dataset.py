@@ -78,7 +78,7 @@ class Data2D(Dataset):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
         
         self.loadxy = opt.model !='setr'
-        self.normx = True
+        self.normx = False
         self.x_3D = False
         self.addclass = False
         self.ybig = False
@@ -97,8 +97,8 @@ class Data2D(Dataset):
         for rci in range(0,opt.dim+1):
             seqlr[rci-1,:] = rci
             seqtb[:,rci-1] = rci
-        self.seqlr = seqlr.float()
-        self.seqtb = seqtb.float()
+        self.seqlr = seqlr.float()/(opt.dim*opt.dim)*100
+        self.seqtb = seqtb.float()/(opt.dim*opt.dim)*100
         # if self.mode == 'metatest':
         #     self.ycell = list([])
         #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]
@@ -254,6 +254,7 @@ class Data2D(Dataset):
         
         if self.normx:
             xi = xi/100
+        
         if self.x_3D:
             dimsize = xi.shape[1]
             xj = torch.zeros(1, dimsize, dimsize)
