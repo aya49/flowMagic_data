@@ -39,7 +39,7 @@ def parse_options():
     parser.add_argument('--epochs', type=int, default=100, help='number of training epochs')
     
     parser.add_argument('--adam', action='store_true', help='using Adam GD')
-    parser.add_argument('--learning_rate', type=float, default=0.05, help='learning rate')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='learning rate')
     parser.add_argument('--lr_decay_epochs', type=str, default='60,80', help='delimited list of where to decay lr')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1, help='decay rate for learning rate')
     parser.add_argument('--weight_decay', type=float, default=5e-2, help='weight decay')
