@@ -11,10 +11,12 @@ from SETR.transformer_seg import SETRModel, Vit
 import segmentation_models_pytorch as smp
 
 def model_deeplab3(opt):
-    torchvision.models.segmentation.deeplabv3_resnet50(
-        pretrained=True, 
+    model = torchvision.models.segmentation.deeplabv3_resnet50(
+        # pretrained=True, 
         progress=True, 
         num_classes=6
+    )
+    return model
 
 def model_unet(opt):
     model = smp.Unet(
@@ -22,7 +24,7 @@ def model_unet(opt):
         encoder_depth=5,
         encoder_weights="imagenet",      # random initialization
         in_channels=4,                   # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-        classes=opt.n_class,             # model output channels (number of classes in your dataset)
+        classes=opt.n_class             # model output channels (number of classes in your dataset)
     )
     return model
 
