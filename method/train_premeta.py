@@ -298,7 +298,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             else:
                 acc_.extend([val_acc])
                 loss_.extend([val_loss])
-
+            
             print('==> Saving... {}'.format(opt.model_folder))
             save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
