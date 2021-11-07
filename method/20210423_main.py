@@ -208,13 +208,6 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
             
             dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
             dataset_tr_v.transform = transform_dict['B']
-            
-            dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                        batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                                        num_workers=opt.num_workers)
-            dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                                        batch_size=opt.batch_size, drop_last=False, shuffle=False,
-                                        num_workers=opt.num_workers)
         
         # dataset_tr_t.ybig = True
         # dataset_tr_t.ysqueeze = False
@@ -224,6 +217,9 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
             dataset_tr_v.ymask = ymask
+        if opt.model == 'deeplab3':
+            dataset_tr_t.xcontourdens = True
+            dataset_tr_v.xcontourdens = True
         dataset_tr_t.loadxy = True
         dataset_tr_v.loadxy = True
         dataset_tr_t.normx = True

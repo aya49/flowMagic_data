@@ -254,7 +254,9 @@ class Data2D(Dataset):
             xi = xi[0:1,:,:]
         
         if self.addpos:
-            xi = torch.stack([xi[0], xi[1], self.seqlr, self.seqtb])
+            xit = [xi[ii] for ii in range(xi.shape[0])]
+            xit.extend([self.seqlr, self.seqtb]])
+            xi = torch.stack(xit)
         
         if self.normx:
             xi = xi/100
