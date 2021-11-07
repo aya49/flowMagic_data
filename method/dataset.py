@@ -97,8 +97,8 @@ class Data2D(Dataset):
         for rci in range(0,opt.dim+1):
             seqlr[rci-1,:] = rci
             seqtb[:,rci-1] = rci
-        self.seqlr = seqlr.float()/(opt.dim*opt.dim)*100
-        self.seqtb = seqtb.float()/(opt.dim*opt.dim)*100
+        self.seqlr = 100*seqlr.float()/opt.dim
+        self.seqtb = 100*seqtb.float()/opt.dim
         # if self.mode == 'metatest':
         #     self.ycell = list([])
         #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]

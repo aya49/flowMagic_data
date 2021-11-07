@@ -74,6 +74,14 @@ x_dirs = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for
                 sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in dss]) )
 x_dirs.sort()
 
+# seqlr = torch.zeros(opt.dim,opt.dim)
+# seqtb = torch.zeros(opt.dim,opt.dim)
+# for rci in range(1, opt.dim+1):
+#     seqlr[rci-1,:] = rci
+#     seqtb[:,rci-1] = rci
+# seqlr = 100*seqlr.float()/opt.dim
+# seqtb = 100*seqtb.float()/opt.dim
+
 # preload data
 if opt.preload_data:
     ds_files = []
