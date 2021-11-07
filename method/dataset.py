@@ -84,6 +84,7 @@ class Data2D(Dataset):
         self.ybig = False
         self.ysqueeze = False
         self.ymask = True
+        self.nocontour = False
         self.addpos = True
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
@@ -244,6 +245,9 @@ class Data2D(Dataset):
         
         xi = xi.float()
         yi = yi.float()
+        
+        if self.nocontour:
+            xi = xi[0:1,:,:]
         
         if self.addpos:
             xi = torch.stack([xi[0], xi[1], self.seqlr, self.seqtb])

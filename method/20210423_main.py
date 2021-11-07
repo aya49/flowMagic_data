@@ -130,7 +130,7 @@ mf = opt.model_folder
 ds_files_tr = [x for x in ds_files]
 ds_files_tr.sort()
 
-epochs_sample = 50000
+epochs_sample = 500
 epochs_pretrain = 100
 for ii in [23]:#[x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
@@ -234,8 +234,8 @@ for ii in [23]:#[x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_t
                                     num_workers=opt.num_workers)
         
         # get epochs
-        opt.epochs = epochs_pretrain
-        opt.save_freq = epochs_sample//10
+        opt.epochs = epochs_sample if baseline else epochs_pretrain
+        opt.save_freq = opt.epochs//10
         opt.print_freq = 1
         # opt = update_opt(opt)
         
@@ -303,8 +303,8 @@ for ii in [23]:#[x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_t
                 model.load_state_dict(ckpt['model'])
                 
                 # train and validate
-                opt.epochs = epochs_pretrain
-                opt.save_freq = epochs_pretrain//10
+                opt.epochs = epochs_sample if baseline else epochs_pretrain
+                opt.save_freq = opt.epochs//10
                 opt.print_freq = 1
                 opt = update_opt(opt)
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
