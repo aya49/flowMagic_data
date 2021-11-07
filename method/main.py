@@ -132,7 +132,7 @@ ds_files_tr.sort()
 
 epochs_sample = 100000
 epochs_pretrain = 100
-for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): 
+for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
     ds_tr = ''
     if pretrainmode:
@@ -143,13 +143,12 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
     else:
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
-    opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}DICE{}'.format(
+    opt.model_folder = mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
-                            '-{}'.format('-'.join(ds_tr)) if pretrainmode else '')),  
-                        '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
+                            '-{}'.format('-'.join(ds_tr)) if pretrainmode else '', 
+                            '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else ''))
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
     
@@ -239,18 +238,13 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
         opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_sample//10
         opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 1
-        opt = update_opt(opt)
+        # opt = update_opt(opt)
         
         # train and validate        
         acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
-    if pretrainmode:
-        # train/metatrain data sets denscats folder paths
-        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
-                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
-
     opt.mode = 'meta'
     mff = opt.model_folder
     if baseline and not basemeta:
@@ -259,6 +253,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         n_shots_ = [0]
     elif pretrainmode:
         n_shots_ = n_shots
+        x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
+                    sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in ds_mt]) )
     for n_shot in n_shots_:
         opt.n_shots = n_shot
         for x_dir_mt in [ds_files_tr[ii]] if baseline else x_dirs_mt:
@@ -310,7 +306,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
                 # train and validate
                 opt.epochs = 100
                 opt.save_freq = 10
-                opt = update_opt(opt)
+                # opt = update_opt(opt)
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
                 os.makedirs(opt.model_folder, exist_ok=True)
                 acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
@@ -335,7 +331,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             
             # create dataloaders
             dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                batch_size=opt.batch_size, shuffle=False, drop_last=False,
+                                batch_size=10, shuffle=False, drop_last=False,
                                 num_workers=opt.num_workers)
             
             model.eval()
@@ -354,7 +350,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
                     inp = inp.cuda()
                     # target = target.cuda()
                 if opt.model == 'setr':
-                    res = model.forward(inp)
+                    res = model(inp)
                 else:
                     res = model.predict(inp)
                 

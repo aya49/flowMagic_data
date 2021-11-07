@@ -23,8 +23,7 @@ dc2_dirs <- list_leaf_dirs(m2_dir)
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
 dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x) grepl("pregnancy", x) &
-    (grepl("[/]unetPRETRAINmaskDICE[-]HIPCbcell[-]sangerP2[-]HIPCmyeloid[/]", x) |
-        grepl("[/]unetBASEmaskDICE[/]", x) ))]
+    (grepl("setrBASEmaskDICE", x) ))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 

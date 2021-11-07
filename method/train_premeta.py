@@ -276,30 +276,29 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             loss.extend([train_loss])
         
         # validate
-        if epoch % opt.print_freq == 0:
+        # print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
+        # regular saving
+        if epoch % opt.save_freq == 0:
             # if opt.model == 'setr':
             model.eval()
             val_acc, val_loss = valid_epoch(epoch=epoch, val_loader=val_loader, 
                                             model=model, opt=opt, classes=classes,
-                                            lossfunc=lossfunc, accmetric=accmetric)
+                                            lossfunc=lossfunc, accmetric=accmetric,
+                                            verbose=epoch%opt.print_freq==0)
+            logger.log_value('test_loss', val_loss, epoch)
+            logger.log_value('test_acc', val_acc, epoch)
             # else:
             #     valid_logs = valid_epoch_.run(val_loader)
             #     val_acc = valid_logs['dice_loss']
             #     val_loss = valid_logs['iou_score']
             
-            logger.log_value('test_acc', val_acc, epoch)
-            logger.log_value('test_loss', val_loss, epoch)
             if len(acc_) == 0:
                 acc_ = [val_acc]
                 loss_ = [val_loss]
             else:
                 acc_.extend([val_acc])
                 loss_.extend([val_loss])
-            
-        # print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
-        
-        # regular saving
-        if epoch % opt.save_freq == 0:
+
             print('==> Saving... {}'.format(opt.model_folder))
             save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
             save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)

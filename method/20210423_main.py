@@ -132,7 +132,7 @@ ds_files_tr.sort()
 
 epochs_sample = 100000
 epochs_pretrain = 100
-for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)): 
+for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]: # range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
     ds_tr = ''
     if pretrainmode:
@@ -144,11 +144,12 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}DICE{}'.format(
+                        mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
-                            '-{}'.format('-'.join(ds_tr)) if pretrainmode else '')),  
+                            '-{}'.format('-'.join(ds_tr) if pretrainmode else ''),
+                            '-{}'.format(n_shots_baseline if basemeta else '') if baseline else '')),
                         '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
     os.makedirs(opt.model_folder, exist_ok=True)
@@ -223,9 +224,6 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
             dataset_tr_v.ymask = ymask
-        # if opt.model == 'setr':
-        #     dataset_tr_t.loadxy = False
-        #     dataset_tr_v.loadxy = False
         dataset_tr_t.loadxy = True
         dataset_tr_v.loadxy = True
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
@@ -239,7 +237,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         opt.epochs = epochs_sample//tl if not pretrainmode else epochs_pretrain
         opt.save_freq = epochs_sample//tl/10 if not pretrainmode else epochs_sample//10
         opt.print_freq = epochs_sample//tl/10 if not pretrainmode else 1
-        opt = update_opt(opt)
+        # opt = update_opt(opt)
         
         # train and validate        
         acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
