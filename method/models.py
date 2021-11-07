@@ -34,7 +34,7 @@ def model_setr(opt):
                     num_attention_heads=8, 
                     decode_features=[256, 128, 64, 32])
     # sum(p.numel() for p in model.parameters())
-    t1 = torch.rand(1, 2, 256, 256)
+    t1 = torch.rand(1, 4, 256, 256)
     # print("input: " + str(t1.shape))
     print("output: " + str(model(t1).shape))
     return model
