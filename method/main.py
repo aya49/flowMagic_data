@@ -240,7 +240,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
         # opt = update_opt(opt)
         
         # train and validate        
-        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='less0', overwrite=True) # pt.preload_model = True
+        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='present', overwrite=True) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
@@ -309,7 +309,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
                 opt = update_opt(opt)
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
                 os.makedirs(opt.model_folder, exist_ok=True)
-                acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v) # pt.preload_model = True
+                acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_mt_t, val_loader=dataloader_mt_v, classes='present') # pt.preload_model = True
                 # acc_path = os.path.join(opt.model_folder, 'acc.csv')
                 # loss_path = os.path.join(opt.model_folder, 'loss.csv')
             
