@@ -86,6 +86,7 @@ class Data2D(Dataset):
         self.ymask = True
         self.nocontour = False
         self.addpos = True
+        self.xcontourdens = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
         self.mode = opt.mode
@@ -247,6 +248,9 @@ class Data2D(Dataset):
         yi = yi.float()
         
         if self.nocontour:
+            xi = xi[0:1,:,:]
+        elif self.xcontourdens:
+            xi[0][xi[1]==100] = 100
             xi = xi[0:1,:,:]
         
         if self.addpos:

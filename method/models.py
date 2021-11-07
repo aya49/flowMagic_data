@@ -5,8 +5,16 @@ from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
 from mmseg.models import build_segmentor
 from mmcv import ConfigDict
 
+import torchvision
+
 from SETR.transformer_seg import SETRModel, Vit
 import segmentation_models_pytorch as smp
+
+def model_deeplab3(opt):
+    torchvision.models.segmentation.deeplabv3_resnet50(
+        pretrained=True, 
+        progress=True, 
+        num_classes=6
 
 def model_unet(opt):
     model = smp.Unet(
@@ -48,7 +56,8 @@ def model_setr_(opt):
 
 model_dict = {
     'setr': model_setr,
-    'unet': model_unet
+    'unet': model_unet,
+    'deeplab3': model_deeplab3
 }
 
 model_names = list()
