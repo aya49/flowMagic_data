@@ -84,12 +84,20 @@ class Data2D(Dataset):
         self.ybig = False
         self.ysqueeze = False
         self.ymask = True
+        self.addpos = True
         self.preload_data = opt.preload_data
-        self.data_dir = opt.data_dir          # data set root directory
+        self.data_dir = opt.data_dir
         self.mode = opt.mode
         self.x_2D = opt.x_2D
         self.y_2D = opt.y_2D
         
+        seqlr = torch.zeros(opt.dim,opt.dim)
+        seqtb = torch.zeros(opt.dim,opt.dim)
+        for rci in range(0,opt.dim+1):
+            seqlr[rci-1,:] = rci
+            seqtb[:,rci-1] = rci
+        self.seqlr = seqlr.float()
+        self.seqtb = seqtb.float()
         # if self.mode == 'metatest':
         #     self.ycell = list([])
         #     self.ydiscrete_files = [x_file.replace(opt.x_2D[0], opt.y_2D[1]) for x_file in x_files[0]]
@@ -236,6 +244,9 @@ class Data2D(Dataset):
         
         xi = xi.float()
         yi = yi.float()
+        
+        if self.addpos:
+            xi = torch.stack([xi[0], xi[1], self.seqlr, self.seqtb])
         
         if self.normx:
             xi = xi/100

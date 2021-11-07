@@ -142,7 +142,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     #             sep=',', row.names=FALSE, col.names=TRUE)
 })
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_unetBASEandPRETRAINmaskDICE-HIPCbcell-sangerP2-HIPCmyeloid.csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_setrBASEmaskDICE.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)
