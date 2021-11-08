@@ -181,9 +181,8 @@ class GDiceLossV2(nn.Module):
         target_sum = target.sum(-1)
         class_weights = Variable(torch.tensor([1. / shp_x[1]]), 
                                 # 1. / (target_sum * target_sum).clamp(min=self.smooth), 
-                                requires_grad=False)
-        print(input.device.type)
-        print(target.device.type)
+                                requires_grad=False).cuda()
+        
         intersect = (input * target).sum(-1) * class_weights
         intersect = intersect.sum()
         
