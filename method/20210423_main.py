@@ -240,7 +240,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         # opt = update_opt(opt)
         
         # train and validate        
-        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='present', overwrite=True) # pt.preload_model = True
+        acc, loss, model = train(opt=opt, model=model, train_loader=dataloader_tr_t, val_loader=dataloader_tr_v, classes='present', overwrite=False) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
@@ -351,6 +351,8 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
                     # target = target.cuda()
                 if opt.model == 'setr':
                     res = model(inp)
+                elif opt.model == 'deeplab3':
+                    res = model(inp)['out']
                 else:
                     res = model.predict(inp)
                 
