@@ -144,7 +144,7 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
+                        mf.replace(opt.model, '{}{}{}LOVASZ{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
