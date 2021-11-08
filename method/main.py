@@ -351,6 +351,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
                     # target = target.cuda()
                 if opt.model == 'setr':
                     res = model(inp)
+                elif opt.model == 'deeplab3':
+                    res = model(inp)['out']
                 else:
                     res = model.predict(inp)
                 

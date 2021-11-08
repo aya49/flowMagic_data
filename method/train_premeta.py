@@ -12,7 +12,7 @@ import gc
 import tensorboard_logger as tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
-from Diceloss import dice_loss
+from Diceloss import GDiceLossV2 as dice_loss
 from dataset import tensor2D3D_
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
@@ -70,11 +70,9 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             output = output['out'] if opt.model == 'deeplab3' else output
             # loss = lossfunc(output, target, classes=classes)
             lossfunc = dice_loss()
-            target = tensor2D3D_(target,6).cuda()
-            loss = lossfunc.forward(output, target)
-            acc1 = accmetric(output, target)
-            # loss = lossfunc.forward(output[:,classes], target[:,classes])
-            # acc1 = accmetric(output[:,classes], target[:,classes])
+            # target = tensor2D3D_(target,6).cuda()
+            loss = lossfunc.forward(output[:,classes], target)
+            acc1 = accmetric(output[:,classes], target)
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -147,11 +145,9 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         output = output['out'] if opt.model == 'deeplab3' else output
         # loss = lossfunc(output, target, classes=classes)
         lossfunc = dice_loss()
-        target = tensor2D3D_(target,6).cuda()
-        # loss = lossfunc.forward(output[:,classes], target[:,classes])
-        # acc1 = accmetric(output[:,classes], target[:,classes])
-        loss = lossfunc.forward(output, target)
-        acc1 = accmetric(output, target)
+        # target = tensor2D3D_(target,6).cuda()
+        loss = lossfunc.forward(output[:,classes], target)
+        acc1 = accmetric(output[:,classes], target)
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))
