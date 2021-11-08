@@ -133,7 +133,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         if torch.cuda.is_available():
             inp = inp.cuda()
-            # target = target.cuda()
+            target = target.cuda()
         
         # =================== forward =====================
         # if opt.model == 'setr':
