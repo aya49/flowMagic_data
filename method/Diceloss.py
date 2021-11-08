@@ -179,7 +179,7 @@ class GDiceLossV2(nn.Module):
         target = flatten(y_onehot)
         target = target.float()
         target_sum = target.sum(-1)
-        class_weights = Variable(1. / torch.tensor([shp_x[1]]), 
+        class_weights = Variable(torch.tensor([1. / shp_x[1]]), 
                                 # 1. / (target_sum * target_sum).clamp(min=self.smooth), 
                                 requires_grad=False)
 
