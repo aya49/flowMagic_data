@@ -67,6 +67,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             # else:
             
             output = model(inp)
+            output = output['out'] if opt.model == 'deeplab3' else output
             # loss = lossfunc(output, target, classes=classes)
             lossfunc = dice_loss()
             target = tensor2D3D_(target,6).cuda()
@@ -142,7 +143,8 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         #     loss = ls['decode.loss_lovasz']
         #     acc1 = ls['decode.acc_seg']
         # else:
-        output = model(inp)
+        output = model(inp) 
+        output = output['out'] if opt.model == 'deeplab3' else output
         # loss = lossfunc(output, target, classes=classes)
         lossfunc = dice_loss()
         target = tensor2D3D_(target,6).cuda()
