@@ -93,7 +93,7 @@ x_dirs.sort()
 # preload data
 if opt.preload_data:
     ds_files = []
-    for x_dir_mt in x_dirs:
+    for x_dir_mt in [x for x in x_dirs if 'pregnancy' in x]:
         xdmsplit = x_dir_mt.split('/')
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
@@ -114,8 +114,8 @@ x_dirs.sort()
 
 ## PRE-TRAIN ALL SEQ #############################################
 opt.mode = 'pretrain'
-baseline = False
-basemeta = False
+baseline = True
+basemeta = True
 n_shots_baseline = 10
 
 pretrainmode = not baseline
@@ -132,7 +132,7 @@ ds_files_tr.sort()
 
 epochs_sample = 500
 epochs_pretrain = 100
-for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)): 
+for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): 
     opt.mode = 'pretrain'
     ds_tr = ''
     if pretrainmode:
@@ -144,7 +144,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
+                        mf.replace(opt.model, '{}{}{}LOVASZ{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
@@ -208,13 +208,6 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
             
             dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//20)
             dataset_tr_v.transform = transform_dict['B']
-            
-            dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
-                                        batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
-                                        num_workers=opt.num_workers)
-            dataloader_tr_v = DataLoader(dataset=dataset_tr_v,
-                                        batch_size=opt.batch_size, drop_last=False, shuffle=False,
-                                        num_workers=opt.num_workers)
         
         # dataset_tr_t.ybig = True
         # dataset_tr_t.ysqueeze = False
@@ -224,8 +217,15 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)):
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
             dataset_tr_v.ymask = ymask
+        
+        if opt.model == 'deeplab3':
+            dataset_tr_t.xcontourdens = True
+            dataset_tr_v.xcontourdens = True
+        
         dataset_tr_t.loadxy = True
         dataset_tr_v.loadxy = True
+        dataset_tr_t.normx = True
+        dataset_tr_v.normx = True
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
                                     batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                     num_workers=opt.num_workers)
