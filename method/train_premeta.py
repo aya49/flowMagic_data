@@ -70,8 +70,10 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             # loss = lossfunc(output, target, classes=classes)
             lossfunc = dice_loss()
             target = tensor2D3D_(target,6).cuda()
-            loss = lossfunc.forward(output[:,classes], target[:,classes])
-            acc1 = accmetric(output[:,classes], target[:,classes])
+            loss = lossfunc.forward(output, target)
+            acc1 = accmetric(output, target)
+            # loss = lossfunc.forward(output[:,classes], target[:,classes])
+            # acc1 = accmetric(output[:,classes], target[:,classes])
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -132,7 +134,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         
         if torch.cuda.is_available():
             inp = inp.cuda()
-            target = target.cuda()
+            # target = target.cuda()
         
         # =================== forward =====================
         # if opt.model == 'setr':
@@ -144,8 +146,10 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         # loss = lossfunc(output, target, classes=classes)
         lossfunc = dice_loss()
         target = tensor2D3D_(target,6).cuda()
-        loss = lossfunc.forward(output[:,classes], target[:,classes])
-        acc1 = accmetric(output[:,classes], target[:,classes])
+        # loss = lossfunc.forward(output[:,classes], target[:,classes])
+        # acc1 = accmetric(output[:,classes], target[:,classes])
+        loss = lossfunc.forward(output, target)
+        acc1 = accmetric(output, target)
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))
