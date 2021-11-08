@@ -217,9 +217,11 @@ for ii in [x for x in range(len(ds_files_tr)) if 'pregnancy' in ds_files_tr[x]]:
         if hasattr(dataset_tr_t, 'ymask'):
             dataset_tr_t.ymask = ymask
             dataset_tr_v.ymask = ymask
+
         if opt.model == 'deeplab3':
             dataset_tr_t.xcontourdens = True
             dataset_tr_v.xcontourdens = True
+
         dataset_tr_t.loadxy = True
         dataset_tr_v.loadxy = True
         dataset_tr_t.normx = True

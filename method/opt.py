@@ -15,7 +15,7 @@ def parse_options():
     # parser.add_argument('--root_dir', type=str, default='/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data', help='root directory')
 
     # model
-    parser.add_argument('--model', type=str, default='unet', choices=model_names)
+    parser.add_argument('--model', type=str, default='deeplab3', choices=model_names)
     parser.add_argument('--model_dir', type=str, default='model', help='model directory')
     parser.add_argument('--new_weights', action='store_false', 
                         help="don't preload model to continue training or as final model if file ends in \'_final.pth\')")

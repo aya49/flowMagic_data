@@ -65,6 +65,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             #     acc1 = float(scores['decode.acc_seg'])
             #     loss = float(scores['decode.loss_lovasz'])
             # else:
+            
             output = model(inp)
             # loss = lossfunc(output, target, classes=classes)
             lossfunc = dice_loss()
