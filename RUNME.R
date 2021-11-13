@@ -1,13 +1,6 @@
 ## this script sets the parameters for all other scripts; EDIT THIS
 
 
-## directory ####
-# root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
-setwd(root)
-
-## packages ####
-source("src/helpers.R")
-
 if (!"flowLearn"%in%rownames(installed.packages()))
   devtools::install_github("mlux86/flowLearn")
 libr(c(
@@ -19,6 +12,14 @@ libr(c(
   "kmed",  # for calculating kmed in good_samples
   "combinat" # for calculating possible combos in scoring gigasom
 ), FALSE)
+
+
+## directory ####
+# root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
+setwd(root)
+
+## packages ####
+source("src/helpers.R")
 
 
 ## parallelization ####

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 import torch
+import torch.nn.functional.normalize as normalize
 from torch.utils.data import Dataset
 
 from transform import transform_dict
@@ -84,9 +85,7 @@ class Data2D(Dataset):
         self.ybig = False
         self.ysqueeze = False
         self.ymask = True
-        self.nocontour = False
-        self.addpos = True
-        self.xcontourdens = False
+        self.addpos = False
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
         self.mode = opt.mode
@@ -247,12 +246,6 @@ class Data2D(Dataset):
         xi = xi.float()
         yi = yi.float()
         
-        if self.nocontour:
-            xi = xi[0:1,:,:]
-        elif self.xcontourdens:
-            xi[0][xi[1]==100] = 100
-            xi = xi[0:1,:,:]
-        
         if self.addpos:
             chs = xi.shape[0]
             xit = [xi[ij] for ij in range(chs)]
@@ -260,7 +253,7 @@ class Data2D(Dataset):
             xi = torch.stack(xit)
         
         if self.normx:
-            xi = xi/100
+            xi = normalize(xi)
         
         if self.x_3D:
             dimsize = xi.shape[1]

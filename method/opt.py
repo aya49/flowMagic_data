@@ -24,7 +24,7 @@ def parse_options():
 
     # data
     parser.add_argument('--data_dir', type=str, default='data/2D', help='data directory')
-    parser.add_argument('--x_2D', type=str, default='x_2Ddenscat,x_2Dcontour', help=', delimited list of input (channel) folder names in data_dir')
+    parser.add_argument('--x_2D', type=str, default='x_2Dscatter,x_2Ddensdisc,x_2Ddenslog,x_2DcontourH,x_2DcontourV', help=', delimited list of input (channel) folder names in data_dir')
     parser.add_argument('--y_2D', type=str, default='y_2D,x_2Ddiscrete,y_vector_', help=', delimited list of output folder names data_dir')
     parser.add_argument('--preload_data', action='store_false', help='preload all data into memory')
 
