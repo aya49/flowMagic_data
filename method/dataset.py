@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 import torch
-import torch.nn.functional.normalize as normalize
+from torch.nn.functional import normalize
 from torch.utils.data import Dataset
 
 from transform import transform_dict
