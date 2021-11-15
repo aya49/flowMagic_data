@@ -130,15 +130,14 @@ class Data2D(Dataset):
                 try:
                     xil = []
                     for x2i in range(len(self.x_2D)):
-                        loaded = pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values
-                        if 'contourH' in self.x_2D[x2i]:
+                        loaded = pd.read_csv(self.x_files[x2i][i], header=None).values
+                        if 'contour' in self.x_2D[x2i]:
                             uH = np.unique(loaded)
                             uH.sort()
-                            self.x_contH.append(uH)
-                        elif 'contourV' in self.x_2D[x2i]:
-                            uV = np.unique(loaded)
-                            uV.sort()
-                            self.x_contV.append(uV)
+                            if 'contourH' in self.x_2D[x2i]:
+                                self.x_contH.append(uH)
+                            elif 'contourV' in self.x_2D[x2i]:
+                                self.x_contV.append(uH)
                         else:
                             xil.append(torch.tensor(loaded))
                     xil = torch.stack(xil)
@@ -263,13 +262,13 @@ class Data2D(Dataset):
             thresH = self.x_contH[i]
             thresV = self.x_contV[i]
             cH = torch.ones(xi.shape[-2], xi.shape[-1])
-            cV = cH
-            if len(len(thresH))>1:
+            cV = torch.ones(xi.shape[-2], xi.shape[-1])
+            if len(thresH)>1:
                 for tH in range(1,len(thresH)):
-                    cH[thresH[tH]-1:] = thresH[tH]
-            if len(len(thresV))>1:
+                    cH[thresH[tH]-1:,:] = thresH[tH]
+            if len(thresV)>1:
                 for tV in range(1,len(thresV)):
-                    cV[thresV[tV]-1:] = thresV[tV]
+                    cV[:,thresV[tV]-1:] = thresV[tV]
             
             chs = xi.shape[0]
             xit = [xi[ij] for ij in range(chs)]
