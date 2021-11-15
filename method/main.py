@@ -144,7 +144,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
         dscat = ds_files_tr[ii].split('/')[-1].replace('.gz','').replace('dataloader_mt_r_','').replace('_','/',1)
     
     opt.model_folder = '{}:{}'.format(
-                        mf.replace(opt.model, '{}{}{}LOVASZ{}{}'.format(
+                        mf.replace(opt.model, '{}{}{}DICE{}{}'.format(
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else '',
