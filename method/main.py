@@ -93,7 +93,7 @@ x_dirs.sort()
 # preload data
 if opt.preload_data:
     ds_files = []
-    for x_dir_mt in [x for x in x_dirs if 'pregnancy' in x]:
+    for x_dir_mt in x_dirs:#[x for x in x_dirs if 'pregnancy' in x]:
         xdmsplit = x_dir_mt.split('/')
         opt.data_scat = '/'.join(xdmsplit[-2:])
         ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
@@ -119,7 +119,7 @@ basemeta = False
 n_shots_baseline = 10
 
 pretrainmode = not baseline
-pretrain_all = [[1,2,3]]#,[0,2,3],[0,1,3], [0,1,2]] # if not baseline
+pretrain_all = [[1,2,3]],[0,2,3],[0,1,3], [0,1,2]] # if not baseline
 meta_all = [[0],[1],[2],[3]] # if not baseline
 n_shots = [10,15,5,20,1]
 
