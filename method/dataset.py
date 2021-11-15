@@ -131,11 +131,11 @@ class Data2D(Dataset):
                     xil = []
                     for x2i in range(len(self.x_2D)):
                         loaded = pd.read_csv(self.x_files[x2i][i].replace(self.x_2D[0], self.x_2D[x2i]), header=None).values
-                        if 'contourH' in opt.x_2D[x2i]:
+                        if 'contourH' in self.x_2D[x2i]:
                             uH = np.unique(loaded)
                             uH.sort()
                             self.x_contH.append(uH)
-                        elif 'contourV' in opt.x_2D[x2i]:
+                        elif 'contourV' in self.x_2D[x2i]:
                             uV = np.unique(loaded)
                             uV.sort()
                             self.x_contV.append(uV)
