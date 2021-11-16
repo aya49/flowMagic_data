@@ -377,7 +377,8 @@ def merge_Data2D(dataset, dataset_, preload=True):
         dataset.y_ = torch.cat((dataset.y_, dataset_.y_), 0)
         dataset.y = torch.cat((dataset.y, dataset_.y), 0)
         dataset.x = torch.cat((dataset.x, dataset_.x), 0)
-        
+        dataset.x_contH = torch.cat((dataset.x_contH, dataset_.x_contH), 0)
+        dataset.x_contV = torch.cat((dataset.x_contV, dataset_.x_contV), 0)
     return dataset
 
 
