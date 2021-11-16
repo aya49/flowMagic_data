@@ -131,13 +131,12 @@ class Data2D(Dataset):
                     xil = []
                     for x2i in range(len(self.x_2D)):
                         loaded = pd.read_csv(self.x_files[x2i][i], header=None).values
-                        if 'contour' in self.x_2D[x2i]:
+                        if 'contourH' in self.x_2D[x2i]:
                             uH = np.unique(loaded)
                             uH.sort()
-                            if 'contourH' in self.x_2D[x2i]:
-                                self.x_contH.append(uH)
-                            elif 'contourV' in self.x_2D[x2i]:
-                                self.x_contV.append(uH)
+                        elif 'contourV' in self.x_2D[x2i]:
+                            uV = np.unique(loaded)
+                            uV.sort()
                         else:
                             xil.append(torch.tensor(loaded))
                     xil = torch.stack(xil)
@@ -148,6 +147,8 @@ class Data2D(Dataset):
                     yi_ = torch.tensor(pd.read_csv(self.y_files[i].replace(self.y_2D[0], '{}_rough'.format(self.y_2D[0])), header=None).values).unsqueeze(0)
                     
                     self.x.append(xil)
+                    self.x_contH.append(uH)
+                    self.x_contV.append(uV)
                     self.y.append(yi)
                     self.y_.append(yi_)
                     goodi.append(i)
