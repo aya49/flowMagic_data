@@ -119,7 +119,7 @@ basemeta = False
 n_shots_baseline = 10
 
 pretrainmode = not baseline
-pretrain_all = [[1,2,3]],[0,2,3],[0,1,3], [0,1,2]] # if not baseline
+pretrain_all = [[1,2,3],[0,2,3],[0,1,3], [0,1,2]] # if not baseline
 meta_all = [[0],[1],[2],[3]] # if not baseline
 n_shots = [10,15,5,20,1]
 
