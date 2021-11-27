@@ -124,6 +124,7 @@ meta_all = [[0],[1],[2],[3]] # if not baseline
 n_shots = [10,15,5,20,1]
 
 ymask = True
+singlecpop = True
 
 overwrite_pretrain = True
 mf = opt.model_folder
@@ -156,7 +157,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1):
     
     ## initialize model ####
     if 'model' not in locals(): #if i == 0:
-        model = create_model(opt).cuda()
+        model = create_model(opt, singlecpop).cuda()
         # sum(p.numel() for p in model.parameters())
         model_state = model.state_dict() if opt.n_gpu <= 1 else model.module.state_dict()
     elif baseline:

@@ -26,11 +26,14 @@ def less0_classes(classes, max_class):
     return classes
 
 # one epoch validate
-def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='present', verbose=True, verboselast=True):
+def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='present', rm_ch=None, verbose=True, verboselast=True):
     """One epoch validation"""
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
+    if not rm_ch==None:
+        if not type(rm_ch)==type([0]):
+            rm_ch = [rm_ch]
     
     ldl = ldl = len(val_loader.dataset.x_files[0])
     with torch.no_grad():
@@ -50,6 +53,11 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             #     } for xfn_ in xfn]
             # else:
             (inp, target) = stuff
+            
+            if not rm_ch==None:
+                for ni in range(inp.shape[0]):
+                    for ci in rm_ch:
+                        inp[ni][ci] = 1
             
             if torch.cuda.is_available():
                 inp = inp.cuda()
@@ -102,12 +110,15 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
 
 
 # One epoch training
-def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, classes='present', verbose=True, verboselast=True):
+def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True):
     
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
+    if not rm_ch==None:
+        if not type(rm_ch)==type([0]):
+            rm_ch = [rm_ch]
     
     end = time.time()
     ldl = len(train_loader.dataset.x_files[0])
@@ -128,6 +139,11 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         #     } for xfn_ in xfn]
         # else:
         (inp, target) = stuff
+        
+        if not rm_ch==None:
+            for ni in range(inp.shape[0]):
+                for ci in rm_ch:
+                    inp[ni][ci] = 1
         
         max_class = int(target.max())
         classes = less0_classes(classes, max_class)
@@ -196,33 +212,6 @@ def train(opt, model, train_loader, val_loader, model_t=None,
     lossfunc = lovasz_softmax if lossfunc==None else lossfunc
     accmetric = smp.utils.metrics.IoU(threshold=0.5) if accmetric==None else accmetric
     
-    # if opt.model == 'setr':
-    # else:
-    #     optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=opt.learning_rate, weight_decay=0.0005),])
-    #     lossfunc = smp.losses.LovaszLoss('multiclass') 
-    #     # lossfunc = smp.utils.losses.DiceLoss('multiclass')
-    #     # lossfunc = smp.losses.JaccardLoss(mode='multiclass', from_logits=False)
-    #     accmetric = [smp.utils.metrics.IoU(threshold=0.5),]
-    #     
-    #     if opt.mode == 'meta':
-    #         model = metafreeze_model(model, opt)
-    #         
-    #     train_epoch_ = smp.utils.train.TrainEpoch(
-    #         model, 
-    #         loss=lossfunc, 
-    #         metrics=accmetric, 
-    #         optimizer=optimizer,
-    #         device=torch.device('cuda:0' if opt.gpu else 'cpu'),
-    #         verbose=True,
-    #     )
-    #     valid_epoch_ = smp.utils.train.ValidEpoch(
-    #         model, 
-    #         loss=lossfunc, 
-    #         metrics=accmetric, 
-    #         device=torch.device('cuda:0' if opt.gpu else 'cpu'),
-    #         verbose=True,
-    #     )
-    
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
         if opt.n_gpu > 1:
@@ -264,7 +253,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
                                             model=model, opt=opt, 
                                             optimizer=optimizer, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%opt.print_freq==0)
+                                            verbose=epoch%opt.print_freq==0,
+                                            singlecpop=singlecpop, cpop=cpop)
         # else:
         #     train_logs  = train_epoch_.run(train_loader)
         #     train_acc = train_logs['dice_loss']
@@ -289,7 +279,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             val_acc, val_loss = valid_epoch(epoch=epoch, val_loader=val_loader, 
                                             model=model, opt=opt, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%opt.print_freq==0)
+                                            verbose=epoch%opt.print_freq==0,
+                                            singlecpop=singlecpop, cpop=cpop)
             logger.log_value('test_loss', val_loss, epoch)
             logger.log_value('test_acc', val_acc, epoch)
             # else:

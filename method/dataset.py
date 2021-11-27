@@ -79,13 +79,15 @@ class Data2D(Dataset):
                 x_files.append([x_file.replace(opt.x_2D[0], opt.x_2D[x2i]) for x_file in x_files[0]])
         
         self.loadxy = opt.model !='setr'
-        self.normx = False
+        self.normx = True
         self.x_3D = False
         self.addclass = False
         self.ybig = False
         self.ysqueeze = False
         self.ymask = True
         self.addpos = False
+        self.rot = True # rotate in transformations
+        self.cpop = 0 # if >0, then will crop and leave only one cell population in mask
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
         self.mode = opt.mode
@@ -251,7 +253,7 @@ class Data2D(Dataset):
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
         
         if self.transform != None:
-            xi, yi = self.transform(xi, yi)
+            xi, yi = self.transform(xi, yi, cpop=self.cpop, rot=self.rot)
             
         if self.ysqueeze:
             yi = yi.squeeze()
