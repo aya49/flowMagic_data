@@ -260,14 +260,6 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 dataset_mt_v = copy.deepcopy(dataset_mt_t)
                 dataset_mt_v.transform = transform_dict['B']
             
-            # create dataloaders
-            dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
-                                        batch_size=min(len(dataset_mt_t.x_files[0]), opt.batch_size), drop_last=True, # shuffle=True, 
-                                        num_workers=opt.num_workers)
-            dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
-                                        batch_size=min(len(dataset_mt_v.x_files[0]), opt.batch_size), drop_last=False, shuffle=False, 
-                                        num_workers=opt.num_workers)
-                
             # load model
             if pretrain:
                 ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
@@ -283,9 +275,19 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
             opt = update_opt(opt)
             
             x, y = dataset_mt_t.__getitem__(0)
-            num_class = int(y.max()) #***
+            num_class = int(y.max())
             for cpop in range(1,num_class) if singlecpop else [0]:
-                opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name_meta)
+                # create dataloaders
+                dataset_mt_t.cpop = cpop
+                dataset_mt_v.cpop = cpop
+                dataloader_mt_t = DataLoader(dataset=dataset_mt_t,# sampler=ids(dataset_mt_t), 
+                                            batch_size=min(len(dataset_mt_t.x_files[0]), opt.batch_size), drop_last=True, # shuffle=True, 
+                                            num_workers=opt.num_workers)
+                dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
+                                            batch_size=min(len(dataset_mt_v.x_files[0]), opt.batch_size), drop_last=False, shuffle=False, 
+                                            num_workers=opt.num_workers)
+                
+                opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, '{}{}{}'.format(opt.model_name_meta, '_cpop:', cpop))
                 os.makedirs(opt.model_folder, exist_ok=True)
                 acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                         train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
@@ -294,7 +296,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 #     print(par)
                 # acc_path = os.path.join(opt.model_folder, 'acc.csv')
                 # loss_path = os.path.join(opt.model_folder, 'loss.csv')
-                ***
+                
                 ## META-TEST ##############################################
                 # load datasets
                 ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))

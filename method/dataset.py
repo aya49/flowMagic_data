@@ -88,6 +88,7 @@ class Data2D(Dataset):
         self.addpos = False
         self.rot = True # rotate in transformations
         self.cpop = 0 # if >0, then will crop and leave only one cell population in mask
+        self.dim = None # dimensions to crop if cpop > 0
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
         self.mode = opt.mode
@@ -253,7 +254,7 @@ class Data2D(Dataset):
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
         
         if self.transform != None:
-            xi, yi = self.transform(xi, yi, cpop=self.cpop, rot=self.rot)
+            xi, yi = self.transform(xi, yi, cpop=self.cpop, dim=self.dim, rot=self.rot)
             
         if self.ysqueeze:
             yi = yi.squeeze()
