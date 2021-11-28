@@ -35,10 +35,10 @@ def model_unet_(opt):
     model = init_segmentor(cfg)
     return model
 
-def model_setr(opt):
+def model_setr(opt, singlecpop=False):
     model = SETRModel(patch_size=(16, 16), 
                     in_channels=len(opt.x_2D), 
-                    out_channels=opt.n_class, 
+                    out_channels=opt.n_class if not singlecpop else 1, 
                     hidden_size=1024, 
                     num_hidden_layers=8,
                     num_attention_heads=8, 
@@ -66,8 +66,8 @@ model_names = list()
 for name, dict_ in model_dict.items():
     model_names.append(name)
 
-def create_model(opt):
-    return model_dict[opt.model](opt)
+def create_model(opt, singlecpop):
+    return model_dict[opt.model](opt, singlecpop)
 
 
 
