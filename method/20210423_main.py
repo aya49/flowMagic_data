@@ -44,6 +44,8 @@ from matplotlib import pyplot as plt
 # sys.stdout = orig_stdout
 # f.close()
 
+import cv2
+
 # torch
 import torch
 from torch.utils.data import DataLoader
@@ -51,12 +53,14 @@ from torch.utils.data import DataLoader
 from torchsampler import ImbalancedDatasetSampler as ids # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 
 from opt import parse_options, update_opt
-from util import prep_input, visualize
+from util import prep_input, visualize, load_checkpoint
 from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
 from train_premeta import train
-from util import load_checkpoint
+
+from Diceloss import GDiceLossV2 as dice_loss
+from Diceloss import BinaryDiceLoss as dice_loss_binary
 
 ## number of model parameters
 # sum(p.numel() for p in model.parameters())
@@ -200,6 +204,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
         dataset_tr_v = subset_Data2D(dataset_tr_t, tl//20)
         dataset_tr_v.transform = transform_dict['B']
         
+        dataset_tr_t.cpop = -1 if singlecpop else None
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
                                     batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                     num_workers=opt.num_workers)
@@ -215,14 +220,14 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
         # opt = update_opt(opt)
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
-                                 singlecpop=singlecpop) # pt.preload_model = True
+                                 lossfunc=dice_loss_binary() if singlecpop else dice_loss()) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
     opt.mode = 'meta'
     mff = opt.model_folder
     if baseline:
-        n_shots_ = [0] if basemeta else n_shots_baseline
+        n_shots_ = n_shots_baseline if basemeta else [0] 
     elif pretrainmode:
         n_shots_ = n_shots
         x_dirs_mt = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
@@ -230,14 +235,15 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
     for n_shot in n_shots_:
         opt.n_shots = n_shot
         for x_dir_mt in [ds_files_tr[ii]] if baseline else x_dirs_mt:
-            opt.model_name_meta = '{}_{}_METAshots:{}'.format(os.path.split(mff)[-1], '_'.join(xdmsplit[-2:]), opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
+            opt.model_name_meta = '{}_{}_METAshots:{}'.format(os.path.split(mff)[-1], '_'.join(xdmsplit[-2:]) if pretrainmode else '', opt.n_shots) # data_scat e.g. 'pregnancy/07_FoxP3CD25_CD4Tcell'
             if baseline and not basemeta:
-                dataset_tr_t = compress_pickle.load(ds_files_tr[ii], compression="lzma", set_default_extension=False)
+                dataset_tr_t = compress_pickle.load(x_dir_mt, compression="lzma", set_default_extension=False)
                 dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//10)
             else:
-                xdmsplit = x_dir_mt.split('/')
+                x_dir_mt_ = x_dirs[ii] if baseline else x_dir_mt
+                xdmsplit = x_dir_mt_.split('/')
                 opt.data_scat = '/'.join(xdmsplit[-2:])
-                x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for f in os.listdir(x_dir_mt)] ))
+                x_files_mt = yegz(nomac( [os.path.join(x_dir_mt_, f) for f in os.listdir(x_dir_mt_)] ))
                 
                 # get n-shot samples
                 shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
@@ -291,7 +297,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 os.makedirs(opt.model_folder, exist_ok=True)
                 acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                         train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
-                                        singlecpop=singlecpop, cpop=cpop) # pt.preload_model = True
+                                        lossfunc=dice_loss_binary() if singlecpop else dice_loss()) # pt.preload_model = True
                 # for par in model.parameters():
                 #     print(par)
                 # acc_path = os.path.join(opt.model_folder, 'acc.csv')
@@ -313,16 +319,38 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 if hasattr(dataset_mt_r, "ymask"):
                     dataset_mt_r.ymask = ymask
                 
+                if cpop>0:
+                    dataset_mt_t.transform = transform_dict['B']
+                    dataset_mt_t.cpop = 0
+                    x, y = dataset_mt_t.__getitem__(di)
+                    xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
+                    if len(dataset_mt_t)>1:
+                        xind2 = xind+w
+                        yind2 = yind+h
+                        for di in range(len(dataset_mt_t)):
+                            x, y = dataset_tr_t.__getitem__(di)
+                            xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
+                            xind = min(xind, xind_)
+                            yind = min(yind, yind_)
+                            xind2 = max(xind_+w_, xind2)
+                            yind2 = max(yind_+w_, yind2)
+                        w = xind2-xind
+                        h = yind2-yind
+                    cpopdim = [xind, yind, w, h]
+                
                 # create dataloaders
+                dataloader_mt_r.cpop = cpop
+                dataloader_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                    batch_size=10, shuffle=False, drop_last=False,
-                                    num_workers=opt.num_workers)
+                                             batch_size=10, shuffle=False, drop_last=False,
+                                             num_workers=opt.num_workers)
                 
                 model.eval()
                 total_r = len(dataset_mt_r)
                 res_dir = os.path.join(opt.data_folder.replace('/data/','/results/'), 'method/{}/{}/{}'.format( os.path.split(mff)[-1].split('_')[0], opt.n_shots, opt.data_scat))
                 os.makedirs(res_dir, exist_ok=True)
                 
+                endclass = cpop>0 and cpop==num_class
                 for idx, stuff in enumerate(dataloader_mt_r):
                     (inp, target, _, xdir, xfn) = stuff
                     
@@ -341,12 +369,35 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                         res = model.predict(inp)
                     
                     for xfi in range(len(xfn)):
-                        res_ = res[xfi].squeeze()
-                        res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
-                        res_ind[inp[xfi][0].squeeze()==0] = 0
-                        res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
-                        
                         res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
+                        if cpop==0:
+                            res_ = res[xfi].squeeze()
+                        elif cpop==1:
+                            if endclass:
+                                res_ind = res[xfi].squeeze()
+                                res_ind = res_ind.round().int() # i just like seeing assignments
+                            else:
+                                res_temp = res[xfi].squeeze().unsqueeze(0)
+                                res_temp = [res_temp]
+                                compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                        else:
+                            res_temp_ = res[xfi].squeeze()
+                            res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
+                            res_temp.append(res_temp_)
+                            compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                            if endclass:
+                                res_ = torch.stack(res_temp)
+                                max_class, mcind = torch.max(res_, 0)
+                                max_class = max_class<.5
+                                max_class = max_class.int()
+                                res_temp.insert(max_class, 0)
+                                res_ = torch.stack(res_temp)
+                        
+                        if cpop==0 or (cpop>1 and endclass):
+                            res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
+                            res_ind[inp[xfi][0].squeeze()==0] = 0
+                        
+                        res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
                         res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
                     
                     del(inp)

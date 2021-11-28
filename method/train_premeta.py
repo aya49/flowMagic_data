@@ -13,6 +13,7 @@ import tensorboard_logger as tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
 from Diceloss import GDiceLossV2 as dice_loss
+from Diceloss import BinaryDiceLoss as dice_loss_binary
 from dataset import tensor2D3D_
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
@@ -77,7 +78,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             output = model(inp)
             output = output['out'] if opt.model == 'deeplab3' else output
             # loss = lossfunc(output, target, classes=classes)
-            lossfunc = dice_loss()
+            # lossfunc = dice_loss() if cpop=0 else dice_loss_binary()
             # target = tensor2D3D_(target,6).cuda()
             loss = lossfunc.forward(output[:,classes], target)
             # loss = lossfunc(output[:,classes], target)
@@ -161,7 +162,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         output = model(inp) 
         output = output['out'] if opt.model == 'deeplab3' else output
         # loss = lossfunc(output, target, classes=classes)
-        lossfunc = dice_loss()
+        # lossfunc = dice_loss()
         # target = tensor2D3D_(target,6).cuda()
         loss = lossfunc.forward(output[:,classes], target)
         # loss = lossfunc(output[:,classes], target)

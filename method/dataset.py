@@ -87,7 +87,7 @@ class Data2D(Dataset):
         self.ymask = True
         self.addpos = False
         self.rot = True # rotate in transformations
-        self.cpop = 0 # if >0, then will crop and leave only one cell population in mask
+        self.cpop = 0 # if >0, then will crop and leave only one cell population in mask; if -1, random
         self.dim = None # dimensions to crop if cpop > 0
         self.preload_data = opt.preload_data
         self.data_dir = opt.data_dir
