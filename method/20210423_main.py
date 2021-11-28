@@ -296,7 +296,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, '{}{}{}'.format(opt.model_name_meta, '_cpop:', cpop))
                 os.makedirs(opt.model_folder, exist_ok=True)
                 acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
-                                        train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
+                                        train_loader=dataloader_mt_t, val_loader=dataloader_mt_v,
                                         lossfunc=dice_loss_binary() if singlecpop else dice_loss()) # pt.preload_model = True
                 # for par in model.parameters():
                 #     print(par)
