@@ -254,8 +254,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
                                             model=model, opt=opt, 
                                             optimizer=optimizer, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%opt.print_freq==0,
-                                            singlecpop=singlecpop, cpop=cpop)
+                                            verbose=epoch%opt.print_freq==0)
         # else:
         #     train_logs  = train_epoch_.run(train_loader)
         #     train_acc = train_logs['dice_loss']
@@ -280,8 +279,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
             val_acc, val_loss = valid_epoch(epoch=epoch, val_loader=val_loader, 
                                             model=model, opt=opt, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%opt.print_freq==0,
-                                            singlecpop=singlecpop, cpop=cpop)
+                                            verbose=epoch%opt.print_freq==0)
             logger.log_value('test_loss', val_loss, epoch)
             logger.log_value('test_acc', val_acc, epoch)
             # else:
