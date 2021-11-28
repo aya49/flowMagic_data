@@ -267,7 +267,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 dataset_mt_v.transform = transform_dict['B']
             
             # load model
-            if pretrain:
+            if pretrainmode:
                 ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
                 # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
                 model.load_state_dict(ckpt['model'])
