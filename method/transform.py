@@ -7,12 +7,12 @@ import numpy as np
 
 tresize = tr.Compose([tr.Resize((256, 256))])
 
-def crop_y(x, y, cpop, ratio=1/.85, dim=None):
+def crop_y(x, y, cpop, dim=None, ratio=1/.85):
     if cpop==-1:
         cpop = random.randrange(1,int(y.max()))
     xind, yind, w, h = dim if not dim==None else cv2.boundingRect(np.uint8(y[0] == cpop))
     if xind==None:
-        return None, None
+        return None
     w_ = int(w*ratio) # index > ncol is ok
     h_ = int(h*ratio)
     xind_ = int(max(xind-((ratio-1)/2), 0))
