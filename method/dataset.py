@@ -255,6 +255,8 @@ class Data2D(Dataset):
         
         if self.transform != None:
             xi, yi = self.transform(xi, yi, cpop=self.cpop, dim=self.dim, rot=self.rot)
+            if xi==None:
+                return None
             
         if self.ysqueeze:
             yi = yi.squeeze()

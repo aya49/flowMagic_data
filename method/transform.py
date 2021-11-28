@@ -11,6 +11,8 @@ def crop_y(x, y, cpop, ratio=1/.85, dim=None):
     if cpop==-1:
         cpop = random.randrange(1,int(y.max()))
     xind, yind, w, h = dim if not dim==None else cv2.boundingRect(np.uint8(y[0] == cpop))
+    if xind==None:
+        return None, None
     w_ = int(w*ratio) # index > ncol is ok
     h_ = int(h*ratio)
     xind_ = int(max(xind-((ratio-1)/2), 0))
@@ -26,6 +28,8 @@ def crop_y(x, y, cpop, ratio=1/.85, dim=None):
 def transform_A(x, y, y_=None, cpop=0, dim=None, rot=True):
     if cpop>0:
         x, y = crop_y(x, y, cpop, dim)
+        if x==None:
+            return None
     
     if rot:
         # Random rotation
@@ -52,6 +56,8 @@ def transform_A(x, y, y_=None, cpop=0, dim=None, rot=True):
 def transform_B(x, y, y_=None, cpop=0, dim=None, rot=True):
     if cpop>0:
         x, y = crop_y(x, y, cpop, dim)
+        if x==None:
+            return None
     
     x = tresize(x)
     y = tresize(y)
