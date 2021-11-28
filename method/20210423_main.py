@@ -308,9 +308,9 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
                 
                 if baseline and basemeta:
-                    dataset_mt_r = dataset_tr_v
+                    dataset_mt_r = dataset_mt_v
                 elif baseline and not basemeta:
-                    dataset_mt_r = dataset_tr_t
+                    dataset_mt_r = dataset_mt_t
                 elif pretrainmode:
                     dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
                 
