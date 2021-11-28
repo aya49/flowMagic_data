@@ -80,9 +80,9 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             # loss = lossfunc(output, target, classes=classes)
             # lossfunc = dice_loss() if cpop=0 else dice_loss_binary()
             # target = tensor2D3D_(target,6).cuda()
-            loss = lossfunc.forward(output[:,1] if len(target.shape)==3 else output[:,classes], target)
+            loss = lossfunc.forward(output if target.shape[1]==1 else output[:,classes], target)
             # loss = lossfunc(output[:,classes], target)
-            acc1 = accmetric(output[:,1] if len(target.shape)==3 else output[:,classes], target)
+            acc1 = accmetric(output if target.shape[1]==1 else output[:,classes], target)
             
             losses.update(float(loss), inp.size(0))
             top1.update(float(acc1), inp.size(0))
@@ -112,7 +112,6 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
 
 # One epoch training
 def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True):
-    
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -164,9 +163,9 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         # loss = lossfunc(output, target, classes=classes)
         # lossfunc = dice_loss()
         # target = tensor2D3D_(target,6).cuda()
-        loss = lossfunc.forward(output[:,1] if len(target.shape)==3 else output[:,classes], target)
+        loss = lossfunc.forward(output if target.shape[1]==1 else output[:,classes], target)
         # loss = lossfunc(output[:,classes], target)
-        acc1 = accmetric(output[:,1] if len(target.shape)==3 else output[:,classes], target)
+        acc1 = accmetric(output if target.shape[1]==1 else output[:,classes], target)
         
         losses.update(float(loss), inp.size(0))
         top1.update(float(acc1), inp.size(0))

@@ -199,12 +199,12 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
         #     dataset_tr_t.ymask = ymask
         dataset_tr_t.loadxy = True
         dataset_tr_t.normx = True
+        dataset_tr_t.cpop = -1 if singlecpop else None
         
         tl = len(dataset_tr_t)
         dataset_tr_v = subset_Data2D(dataset_tr_t, tl//20)
         dataset_tr_v.transform = transform_dict['B']
         
-        dataset_tr_t.cpop = -1 if singlecpop else None
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
                                     batch_size=opt.batch_size, drop_last=True, #shuffle=True, 
                                     num_workers=opt.num_workers)
@@ -322,13 +322,13 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 if cpop>0:
                     dataset_mt_t.transform = transform_dict['B']
                     dataset_mt_t.cpop = 0
-                    x, y = dataset_mt_t.__getitem__(di)
+                    x, y = dataset_mt_t.__getitem__(0)
                     xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
                     if len(dataset_mt_t)>1:
                         xind2 = xind+w
                         yind2 = yind+h
                         for di in range(len(dataset_mt_t)):
-                            x, y = dataset_tr_t.__getitem__(di)
+                            x, y = dataset_mt_t.__getitem__(di)
                             xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
@@ -368,6 +368,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                     else:
                         res = model.predict(inp)
                     
+                    res_temp = []
                     for xfi in range(len(xfn)):
                         res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
                         if cpop==0:
@@ -377,8 +378,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                                 res_ind = res[xfi].squeeze()
                                 res_ind = res_ind.round().int() # i just like seeing assignments
                             else:
-                                res_temp = res[xfi].squeeze().unsqueeze(0)
-                                res_temp = [res_temp]
+                                res_temp.append(res[xfi].squeeze())
                                 compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
                         else:
                             res_temp_ = res[xfi].squeeze()
@@ -390,8 +390,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                                 max_class, mcind = torch.max(res_, 0)
                                 max_class = max_class<.5
                                 max_class = max_class.int()
-                                res_temp.insert(max_class, 0)
-                                res_ = torch.stack(res_temp)
+                                res_ind = torch.stack([max_class]+res_temp)
                         
                         if cpop==0 or (cpop>1 and endclass):
                             res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
