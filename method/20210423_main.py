@@ -49,6 +49,7 @@ import cv2
 # torch
 import torch
 from torch.utils.data import DataLoader
+import torchvision.transforms as tr
 # from torchviz import make_dot # creates an image of the model
 from torchsampler import ImbalancedDatasetSampler as ids # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
 
@@ -123,7 +124,7 @@ basemeta = True # if baseline, train with k samples, else train with all samples
 n_shots_baseline = [10]
 
 pretrainmode = not baseline
-pretrain_all = [[1,2,3]]#,[0,2,3],[0,1,3], [0,1,2]] # if not baseline
+pretrain_all = [[1,2,3],[0,2,3],[0,1,3], [0,1,2]] # if not baseline
 meta_all = [[0],[1],[2],[3]] # if not baseline
 n_shots = [10,15,5,20,1]
 
@@ -333,17 +334,18 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
                             xind2 = max(xind_+w_, xind2)
-                            yind2 = max(yind_+w_, yind2)
+                            yind2 = max(yind_+h_, yind2)
                         w = xind2-xind
                         h = yind2-yind
                     cpopdim = [xind, yind, w, h]
+                    tr_resize = tr.Resize((w, h))
                 
                 # create dataloaders
-                dataloader_mt_r.cpop = cpop
-                dataloader_mt_r.dim = None if cpop==0 else cpopdim
+                dataset_mt_r.cpop = cpop
+                dataset_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                             batch_size=10, shuffle=False, drop_last=False,
-                                             num_workers=opt.num_workers)
+                                          batch_size=10, shuffle=False, drop_last=False,
+                                          num_workers=opt.num_workers)
                 
                 model.eval()
                 total_r = len(dataset_mt_r)
@@ -373,24 +375,28 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                         res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
                         if cpop==0:
                             res_ = res[xfi].squeeze()
-                        elif cpop==1:
-                            if endclass:
-                                res_ind = res[xfi].squeeze()
-                                res_ind = res_ind.round().int() # i just like seeing assignments
-                            else:
-                                res_temp.append(res[xfi].squeeze())
-                                compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
                         else:
-                            res_temp_ = res[xfi].squeeze()
-                            res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
-                            res_temp.append(res_temp_)
-                            compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
-                            if endclass:
-                                res_ = torch.stack(res_temp)
-                                max_class, mcind = torch.max(res_, 0)
-                                max_class = max_class<.5
-                                max_class = max_class.int()
-                                res_ind = torch.stack([max_class]+res_temp)
+                            res_t_ = tr_resize(res[xfi]).squeeze()
+                            res_t = torch.zeros(opt.dim, opt.dim)
+                            res_t[xind:(xind+w),yind:(yind+h)] = res_t_
+                            if cpop==1:
+                                if endclass:
+                                    res_ind = res_t
+                                    res_ind = res_ind.round().int() # i just like seeing assignments
+                                else:
+                                    res_temp.append(res_t)
+                                    compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                            else:
+                                res_temp_ = res_t
+                                res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
+                                res_temp.append(res_temp_)
+                                compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                                if endclass:
+                                    res_ = torch.stack(res_temp)
+                                    max_class, mcind = torch.max(res_, 0)
+                                    max_class = max_class<.5
+                                    max_class = max_class.int()
+                                    res_ = torch.stack([max_class]+res_temp)
                         
                         if cpop==0 or (cpop>1 and endclass):
                             res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
