@@ -334,18 +334,18 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
                             xind2 = max(xind_+w_, xind2)
-                            yind2 = max(yind_+w_, yind2)
+                            yind2 = max(yind_+h_, yind2)
                         w = xind2-xind
                         h = yind2-yind
                     cpopdim = [xind, yind, w, h]
-                    tr_resize = tr.Compose([tr.Resize((w, h))])
+                    tr_resize = tr.Resize((w, h))
                 
                 # create dataloaders
-                dataloader_mt_r.cpop = cpop
-                dataloader_mt_r.dim = None if cpop==0 else cpopdim
+                dataset_mt_r.cpop = cpop
+                dataset_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                             batch_size=10, shuffle=False, drop_last=False,
-                                             num_workers=opt.num_workers)
+                                          batch_size=10, shuffle=False, drop_last=False,
+                                          num_workers=opt.num_workers)
                 
                 model.eval()
                 total_r = len(dataset_mt_r)
@@ -376,10 +376,9 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                         if cpop==0:
                             res_ = res[xfi].squeeze()
                         else:
-                            res_t_ = res[xfi].squeeze()
-                            res_t_ = tr_resize(res_t)
+                            res_t_ = tr_resize(res[xfi]).squeeze()
                             res_t = torch.zeros(opt.dim, opt.dim)
-                            res_t[xind:(xind+w),yind:yind(yind+h)] = res_t_
+                            res_t[xind:(xind+w),yind:(yind+h)] = res_t_
                             if cpop==1:
                                 if endclass:
                                     res_ind = res_t
@@ -397,7 +396,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                                     max_class, mcind = torch.max(res_, 0)
                                     max_class = max_class<.5
                                     max_class = max_class.int()
-                                    res_ind = torch.stack([max_class]+res_temp)
+                                    res_ = torch.stack([max_class]+res_temp)
                         
                         if cpop==0 or (cpop>1 and endclass):
                             res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
