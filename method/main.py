@@ -352,7 +352,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 dataset_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
                                           batch_size=10, shuffle=False, drop_last=False,
-                                          num_workers=opt.num_workers)
+                                          num_workers=0)
                 
                 model.eval()
                 total_r = len(dataset_mt_r)
