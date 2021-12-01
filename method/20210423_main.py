@@ -370,7 +370,6 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                     else:
                         res = model.predict(inp)
                     
-                    res_temp = []
                     for xfi in range(len(xfn)):
                         res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
                         if cpop==0:
@@ -381,11 +380,9 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                             res_t[xind:(xind+w),yind:(yind+h)] = res_t_
                             if cpop==1:
                                 if endclass:
-                                    res_ind = res_t
-                                    res_ind = res_ind.round().int() # i just like seeing assignments
+                                    res_ind = res_t.round().int() # i just like seeing assignments
                                 else:
-                                    res_temp.append(res_t)
-                                    compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                                    compress_pickle.dump([res_t], '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
                             else:
                                 res_temp_ = res_t
                                 res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
@@ -401,9 +398,9 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                         if cpop==0 or (cpop>1 and endclass):
                             res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
                             res_ind[inp[xfi][0].squeeze()==0] = 0
-                        
-                        res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
-                        res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                            
+                            res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+                            res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
                     
                     del(inp)
                     del(res)
