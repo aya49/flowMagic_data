@@ -263,7 +263,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             opt.print_freq = 1
             opt = update_opt(opt)
             
-            x = dataset_mt_t.__getitem__(0)[0]
+            y = dataset_mt_t.__getitem__(0)[1]
             num_class = int(y.max())
             for cpop in range(1,num_class) if singlecpop else [0]:
                 if cpop>0:
