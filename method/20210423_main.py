@@ -296,6 +296,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                         h = yind2-yind
                     cpopdim = [xind, yind, w, h]
                     tr_resize = tr.Resize((w, h))
+                    dataset_mt_t.transform = transform_dict['A']
                     
                     dataset_mt_t.dim = cpopdim
                     dataset_mt_v.dim = cpopdim
@@ -346,6 +347,8 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 
                 
                 # create dataloaders
+                if cpop>0:
+                    dataset_mt_r.dim = cpopdim
                 dataset_mt_r.cpop = cpop
                 dataset_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,

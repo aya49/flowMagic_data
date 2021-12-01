@@ -267,14 +267,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 dataset_mt_v = copy.deepcopy(dataset_mt_t)
                 dataset_mt_v.transform = transform_dict['B']
             
-            # load model
-            if pretrainmode:
-                ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
-                # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
-                model.load_state_dict(ckpt['model'])
-            else:
-                model.load_state_dict(model_state)
-                
+            
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_pretrain
             opt.save_freq = opt.epochs//10
@@ -284,6 +277,30 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
             x, y = dataset_mt_t.__getitem__(0)
             num_class = int(y.max())
             for cpop in range(1,num_class) if singlecpop else [0]:
+                if cpop>0:
+                    dataset_mt_t.transform = transform_dict['B']
+                    dataset_mt_t.cpop = 0
+                    x, y = dataset_mt_t.__getitem__(0)
+                    xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
+                    if len(dataset_mt_t)>1:
+                        xind2 = xind+w
+                        yind2 = yind+h
+                        for di in range(len(dataset_mt_t)):
+                            x, y = dataset_mt_t.__getitem__(di)
+                            xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
+                            xind = min(xind, xind_)
+                            yind = min(yind, yind_)
+                            xind2 = max(xind_+w_, xind2)
+                            yind2 = max(yind_+h_, yind2)
+                        w = xind2-xind
+                        h = yind2-yind
+                    cpopdim = [xind, yind, w, h]
+                    tr_resize = tr.Resize((w, h))
+                    dataset_mt_t.transform = transform_dict['A']
+                    
+                    dataset_mt_t.dim = cpopdim
+                    dataset_mt_v.dim = cpopdim
+                
                 # create dataloaders
                 dataset_mt_t.cpop = cpop
                 dataset_mt_v.cpop = cpop
@@ -293,6 +310,14 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 dataloader_mt_v = DataLoader(dataset=dataset_mt_v,# sampler=ids(dataset_mt_v), 
                                             batch_size=min(len(dataset_mt_v.x_files[0]), opt.batch_size), drop_last=False, shuffle=False, 
                                             num_workers=opt.num_workers)
+                
+                # load model
+                if pretrainmode:
+                    ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
+                    # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
+                    model.load_state_dict(ckpt['model'])
+                else:
+                    model.load_state_dict(model_state)
                 
                 opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, '{}{}{}'.format(opt.model_name_meta, '_cpop:', cpop))
                 os.makedirs(opt.model_folder, exist_ok=True)
@@ -320,27 +345,10 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 if hasattr(dataset_mt_r, "ymask"):
                     dataset_mt_r.ymask = ymask
                 
-                if cpop>0:
-                    dataset_mt_t.transform = transform_dict['B']
-                    dataset_mt_t.cpop = 0
-                    x, y = dataset_mt_t.__getitem__(0)
-                    xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
-                    if len(dataset_mt_t)>1:
-                        xind2 = xind+w
-                        yind2 = yind+h
-                        for di in range(len(dataset_mt_t)):
-                            x, y = dataset_mt_t.__getitem__(di)
-                            xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
-                            xind = min(xind, xind_)
-                            yind = min(yind, yind_)
-                            xind2 = max(xind_+w_, xind2)
-                            yind2 = max(yind_+h_, yind2)
-                        w = xind2-xind
-                        h = yind2-yind
-                    cpopdim = [xind, yind, w, h]
-                    tr_resize = tr.Resize((w, h))
                 
                 # create dataloaders
+                if cpop>0:
+                    dataset_mt_r.dim = cpopdim
                 dataset_mt_r.cpop = cpop
                 dataset_mt_r.dim = None if cpop==0 else cpopdim
                 dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
