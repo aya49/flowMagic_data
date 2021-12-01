@@ -342,8 +342,7 @@ for ii in range(len(ds_files_tr) if baseline else len(pretrain_all)-1): #[x for 
                 
                 dataset_mt_r.transform = transform_dict['B']
                 dataset_mt_r.loadxy = False
-                if hasattr(dataset_mt_r, "ymask"):
-                    dataset_mt_r.ymask = ymask
+                dataset_mt_r.ymask = ymask
                 
                 
                 # create dataloaders
