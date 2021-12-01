@@ -253,10 +253,7 @@ class Data2D(Dataset):
         # if 'meta' in self.mode:
         #     return xi, yi, i, self.x_dirs[i], ydi, yvi
         
-        if self.transform != None:
-            xi, yi = self.transform(xi, yi, cpop=self.cpop, dim=self.dim, rot=self.rot)
-            if xi==None:
-                return None
+        
             
         if self.ysqueeze:
             yi = yi.squeeze()
@@ -286,6 +283,11 @@ class Data2D(Dataset):
             xit = [xi[ij] for ij in range(chs)]
             xit.extend([self.seqlr, self.seqtb])
             xi = torch.stack(xit)
+        
+        if self.transform != None:
+            xi, yi = self.transform(xi, yi, cpop=self.cpop, dim=self.dim, rot=self.rot)
+            if xi==None:
+                return None
         
         if self.normx:
             xi = normalize(xi)

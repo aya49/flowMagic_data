@@ -17,8 +17,8 @@ def crop_y(x, y, cpop, dim=None, ratio=1/.85):
     h_ = int(h*ratio)
     xind_ = int(max(xind-((ratio-1)/2), 0))
     yind_ = int(max(yind-((ratio-1)/2), 0))
-    x = x[:][xind_:(xind_+w_),yind_:(yind_+h_)]
-    y = y[:][xind_:(xind_+w_),yind_:(yind_+h_)]
+    x = x[:,xind_:(xind_+w_),yind_:(yind_+h_)]
+    y = y[:,xind_:(xind_+w_),yind_:(yind_+h_)]
     y[y!=cpop] = 0
     y[y==cpop] = 1
     
