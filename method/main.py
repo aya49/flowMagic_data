@@ -240,8 +240,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                                          f in os.listdir(x_dir_mt)] ))
                 
                 # get n-shot samples
-                shot_folder = os.path.join(opt.root_dir, opt.shot_dir, 
-                                           opt.data_scat, str(opt.n_shots))
+                shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
                 x_files_mt_t_ = os.listdir(shot_folder)
                 x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
                 # x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
@@ -337,9 +336,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     dataset_mt_r.dim = cpopdim
                 dataset_mt_r.cpop = cpop
                 dataset_mt_r.dim = None if cpop==0 else cpopdim
-                dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
-                                          batch_size=10, shuffle=False, drop_last=False,
-                                          num_workers=0)
+                # dataloader_mt_r = DataLoader(dataset=dataset_mt_r,
+                #                           batch_size=10, shuffle=False, drop_last=False,
+                #                           num_workers=0)
                 
                 model.eval()
                 total_r = len(dataset_mt_r)
@@ -347,8 +346,10 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 os.makedirs(res_dir, exist_ok=True)
                 
                 endclass = cpop>0 and cpop==num_class
-                for idx, stuff in enumerate(dataloader_mt_r):
-                    (inp, target, _, xdir, xfn) = stuff
+                # for idx, stuff in enumerate(dataloader_mt_r):
+                for ids in range(len(dataset_mt_r)):
+                    inp_, target, _, xdir, xfn = dataset_mt_r.__getitem__(ids)
+                    inp = inp_.unsqueeze(0)
                     
                     # if opt.model == 'setr':
                     #     inp, target, img_metas = prep_input(inp, target, xfn)
@@ -364,37 +365,36 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     else:
                         res = model.predict(inp)
                     
-                    for xfi in range(len(xfn)):
-                        res_file = os.path.join(res_dir, xfn[xfi]) # ends with gz so auto compress
-                        if cpop==0:
-                            res_ = res[xfi].squeeze()
-                        else:
-                            res_t_ = tr_resize(res[xfi]).squeeze()
-                            res_t = torch.zeros(opt.dim, opt.dim)
-                            res_t[xind:(xind+w),yind:(yind+h)] = res_t_
-                            if cpop==1:
-                                if endclass:
-                                    res_ind = res_t.round().int() # i just like seeing assignments
-                                else:
-                                    compress_pickle.dump([res_t], '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                    res_file = os.path.join(res_dir, xfn) # ends with gz so auto compress
+                    if cpop==0:
+                        res_ = res.squeeze()
+                    else:
+                        res_t_ = tr_resize(res).squeeze()
+                        res_t = torch.zeros(opt.dim, opt.dim)
+                        res_t[xind:(xind+w),yind:(yind+h)] = res_t_
+                        if cpop==1:
+                            if endclass:
+                                res_ind = res_t.round().int() # i just like seeing assignments
                             else:
-                                res_temp_ = res_t
-                                res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
-                                res_temp.append(res_temp_)
-                                compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
-                                if endclass:
-                                    res_ = torch.stack(res_temp)
-                                    max_class, mcind = torch.max(res_, 0)
-                                    max_class = max_class<.5
-                                    max_class = max_class.int()
-                                    res_ = torch.stack([max_class]+res_temp)
+                                compress_pickle.dump([res_t], '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                        else:
+                            res_temp_ = res_t
+                            res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
+                            res_temp.append(res_temp_)
+                            compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
+                            if endclass:
+                                res_ = torch.stack(res_temp)
+                                max_class, mcind = torch.max(res_, 0)
+                                max_class = max_class<.5
+                                max_class = max_class.int()
+                                res_ = torch.stack([max_class]+res_temp)
+                    
+                    if cpop==0 or (cpop>1 and endclass):
+                        res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
+                        res_ind[inp[xfi][0].squeeze()==0] = 0
                         
-                        if cpop==0 or (cpop>1 and endclass):
-                            res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
-                            res_ind[inp[xfi][0].squeeze()==0] = 0
-                            
-                            res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
-                            res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                        res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
+                        res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
                     
                     del(inp)
                     del(res)
