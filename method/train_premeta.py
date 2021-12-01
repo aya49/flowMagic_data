@@ -53,7 +53,10 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
             #         'flip': False,
             #     } for xfn_ in xfn]
             # else:
-            (inp, target) = stuff
+            if len(stuff)==5:
+                (inp, target, _, xdir, xfn) = stuff
+            else:
+                (inp, target) = stuff
             
             if not rm_ch==None:
                 for ni in range(inp.shape[0]):
@@ -138,7 +141,10 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         #         'flip': False,
         #     } for xfn_ in xfn]
         # else:
-        (inp, target) = stuff
+        if len(stuff)==5:
+            (inp, target, _, xdir, xfn) = stuff
+        else:
+            (inp, target) = stuff
         
         if not rm_ch==None:
             for ni in range(inp.shape[0]):

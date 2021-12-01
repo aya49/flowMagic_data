@@ -4,6 +4,14 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 
+def nomac(xx):
+    return [x for x in xx if '__MACOSX' not in x] 
+
+def yegz(xx):
+    return [x for x in xx if '.gz' in x] 
+
+flatx = lambda x: [i for row in x for i in row] 
+
 def visualize(save_file, **images):
     n = len(images)
     plt.figure(figsize=(16, 5))
