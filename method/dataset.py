@@ -374,18 +374,19 @@ def merge_Data2D(dataset, dataset_, preload=True):
     dataset.x_dirs_factor.extend(dataset_.x_dirs_factor)
     dataset.x_filenames.extend(dataset_.x_filenames)
     if len(dataset.x_2D) > 1:
-        for j in range(len(dataset.x_2D)):
+        for j in range(len(dataset.x[0])):
             dataset.x_files[j].extend(dataset_.x_files[j])
-        else:
-            dataset.x_files.extend(dataset_.x_files)
+    else:
+        dataset.x_files.extend(dataset_.x_files)
+    
     dataset.y_files.extend(dataset_.y_files)
     
     if preload:
         dataset.y_ = torch.cat((dataset.y_, dataset_.y_), 0)
         dataset.y = torch.cat((dataset.y, dataset_.y), 0)
         dataset.x = torch.cat((dataset.x, dataset_.x), 0)
-        dataset.x_contH.append(dataset_.x_contH)
-        dataset.x_contV.append(dataset_.x_contV)
+        dataset.x_contH.extend(dataset_.x_contH)
+        dataset.x_contV.extend(dataset_.x_contV)
     return dataset
 
 
