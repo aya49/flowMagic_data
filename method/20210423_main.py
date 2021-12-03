@@ -112,7 +112,7 @@ if opt.preload_data:
 
 ## PRE-TRAIN ALL SEQ #############################################
 baseline = True # no pre-training
-basemeta = True # if baseline, train with k samples, else train with all samples
+basemeta = False # if baseline, train with k samples, else train with all samples
 n_shots_baseline = [10]
 epochs_sample = 300
 
@@ -191,7 +191,11 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
         
         # split pre-train data set into train (95%) and validation (5%)
         tl = len(dataset_tr_t)
-        dataset_tr_v = subset_Data2D(dataset_tr_t, tl//v_ratio)
+        if opt.preload_data:
+            dataset_tr_v = compress_pickle.load(ds_files_tr_[0], compression="lzma", 
+                                                set_default_extension=False) #gzip
+        dataset_tr_v = subset_Data2D(dataset_tr_t, tl//v_ratio, 
+                                     dataset_tr_v if opt.preload_data else None)
         dataset_tr_v.transform = transform_dict['B']
         
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
@@ -262,8 +266,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             opt.print_freq = 1
             opt = update_opt(opt)
             
-            y = dataset_mt_t.__getitem__(0)[1]
-            num_class = int(y.max())
+            num_class = int(dataset_mt_t.y[0].max())
             for cpop in range(1,num_class) if singlecpop else [0]:
                 if cpop>0:
                     dataset_mt_t.cpop = 0

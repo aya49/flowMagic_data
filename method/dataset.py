@@ -347,25 +347,32 @@ def split_Data2D(dataset, n):
 
 # get random subset of dataset
 # making this a separater function to split up Data2D into smaller chunks for saving
-def subset_Data2D(dataset, n):
+def subset_Data2D(dataset, n, dataseti=None):
     n_inds = random.sample(range(len(dataset)), n)
     preload = dataset.preload_data
     
-    dataseti = copy.deepcopy(dataset)
-    dataseti.x_dirs = [dataseti.x_dirs[i] for i in n_inds]
-    dataseti.x_dirs_factor = [dataseti.x_dirs_factor[i] for i in n_inds]
-    dataseti.x_filenames = [dataseti.x_filenames[i] for i in n_inds]
+    if dataseti==None:
+        dataseti = copy.deepcopy(dataset)
+    
+    dataseti.x_dirs = [dataset.x_dirs[i] for i in n_inds]
+    dataseti.x_dirs_factor = [dataset.x_dirs_factor[i] for i in n_inds]
+    dataseti.x_filenames = [dataset.x_filenames[i] for i in n_inds]
     if len(dataset.x_2D)>1:
-        for j in range(len(dataset.x_2D)):
-            dataseti.x_files[j] = [dataseti.x_files[j][i] for i in n_inds]
+        for j in range(len(dataset.x[0])):
+            dataseti.x_files[j] = [dataset.x_files[j][i] for i in n_inds]
     else:
-        dataseti.x_files = [dataseti.x_files[i] for i in n_inds]
-    dataseti.y_files = [dataseti.y_files[i] for i in n_inds]
+        dataseti.x_files = [dataset.x_files[i] for i in n_inds]
+    
+    dataseti.y_files = [dataset.y_files[i] for i in n_inds]
     
     if preload:
-        dataseti.y_ = [dataseti.y_[i] for i in n_inds]
-        dataseti.y = [dataseti.y[i] for i in n_inds]
-        dataseti.x = [dataseti.x[i] for i in n_inds]
+        dataseti.y_ = [dataset.y_[i] for i in n_inds]
+        dataseti.y = [dataset.y[i] for i in n_inds]
+        dataseti.x = [dataset.x[i] for i in n_inds]
+        dataseti.x_contH = [dataset.x_contH[i] for i in n_inds]
+        dataseti.x_contV = [dataset.x_contV[i] for i in n_inds]
+    
+    dataseti.factorize_labels()
     
     return dataseti
 

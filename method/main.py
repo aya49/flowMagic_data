@@ -191,7 +191,11 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
         
         # split pre-train data set into train (95%) and validation (5%)
         tl = len(dataset_tr_t)
-        dataset_tr_v = subset_Data2D(dataset_tr_t, tl//v_ratio)
+        if opt.preload_data:
+            dataset_tr_v = compress_pickle.load(ds_files_tr_[0], compression="lzma", 
+                                                set_default_extension=False) #gzip
+        dataset_tr_v = subset_Data2D(dataset_tr_t, tl//v_ratio, 
+                                     dataset_tr_v if opt.preload_data else None)
         dataset_tr_v.transform = transform_dict['B']
         
         dataloader_tr_t = DataLoader(dataset=dataset_tr_t, sampler=ids(dataset_tr_t), 
@@ -250,11 +254,14 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 
                 ## create datasets ####
                 dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
-                dataset_mt_t.loadxy = True
-                dataset_mt_t.ymask = ymask
-                dataset_mt_t.transform = transform_dict['B']
                 
                 dataset_mt_v = copy.deepcopy(dataset_mt_t)
+            
+            dataset_mt_t.ymask = ymask
+            dataset_mt_t.loadxy = True
+            dataset_mt_v.transform = transform_dict['B']
+            dataset_mt_v.ymask = ymask
+            dataset_mt_v.loadxy = True
             
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_pretrain
@@ -262,18 +269,18 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             opt.print_freq = 1
             opt = update_opt(opt)
             
-            y = dataset_mt_t.__getitem__(0)[1]
+            y = dataset_mt_t.y[0]
             num_class = int(y.max())
             for cpop in range(1,num_class) if singlecpop else [0]:
                 if cpop>0:
                     dataset_mt_t.cpop = 0
-                    y = dataset_mt_t.__getitem__(0)[1]
+                    y = dataset_mt_t.y[0]
                     xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
                     if len(dataset_mt_t)>1:
                         xind2 = xind+w
                         yind2 = yind+h
-                        for di in range(len(dataset_mt_t)):
-                            x, y = dataset_mt_t.__getitem__(di)
+                        for di in range(1,len(dataset_mt_t)):
+                            y = dataset_mt_t.y[di]
                             xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
@@ -281,13 +288,12 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                             yind2 = max(yind_+h_, yind2)
                         w = xind2-xind
                         h = yind2-yind
+                    
                     cpopdim = [xind, yind, w, h]
                     tr_resize = tr.Resize((w, h))
                     
                     dataset_mt_t.dim = cpopdim
                     dataset_mt_v.dim = cpopdim
-                
-                dataset_mt_t.transform = transform_dict['A']
                 
                 # create dataloaders
                 dataset_mt_t.cpop = cpop
