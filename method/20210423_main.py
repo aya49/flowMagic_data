@@ -236,9 +236,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             
             ## create training dataset ####
             if baseline and not basemeta:
-                dataset_tr_t = compress_pickle.load(ds_files[ii], compression="lzma", 
+                dataset_mt_t = compress_pickle.load(ds_files[ii], compression="lzma", 
                                                     set_default_extension=False)
-                dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//v_ratio)
+                dataset_mt_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//v_ratio)
             else:
                 x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for 
                                          f in os.listdir(x_dir_mt)] ))
