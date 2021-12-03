@@ -22,8 +22,8 @@ m2_dir <- paste0(results_dir,"/2D/method");
 dc2_dirs <- list_leaf_dirs(m2_dir)
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
-dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x) grepl("pregnancy", x) &
-    (grepl("deeplab3BASEmaskDICE", x) ))]
+dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x)
+    (grepl("unetBASEmaskDICESinglecpop-[/]10", x) ))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
@@ -37,7 +37,7 @@ wi <- hi <- 10
 size <- 400
 
 
-dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE))
+dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE, pattern="csv.gz"))
 dc_fls <- lapply(dc_files, function(dc_files_) {
     if (length(dc_files_)<=wi*hi)
         return(list(dc_files))
@@ -142,7 +142,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     #             sep=',', row.names=FALSE, col.names=TRUE)
 })
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_setrBASEmaskDICE.csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)

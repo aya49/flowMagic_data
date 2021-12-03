@@ -112,7 +112,7 @@ if opt.preload_data:
 
 ## PRE-TRAIN ALL SEQ #############################################
 baseline = True # no pre-training
-basemeta = False # if baseline, train with k samples, else train with all samples
+basemeta = True # if baseline, train with k samples, else train with all samples
 n_shots_baseline = [10]
 epochs_sample = 300
 
@@ -254,11 +254,16 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 
                 ## create datasets ####
                 dataset_mt_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_mt_t*(100//len(x_files_mt_t)))
-                dataset_mt_t.loadxy = True
-                dataset_mt_t.ymask = ymask
-                dataset_mt_t.transform = transform_dict['B']
                 
                 dataset_mt_v = copy.deepcopy(dataset_mt_t)
+            
+            dataset_mt_t.ymask = ymask
+            dataset_mt_t.loadxy = True
+            dataset_mt_t.normx = True
+            dataset_mt_v.transform = transform_dict['B']
+            dataset_mt_v.ymask = ymask
+            dataset_mt_v.loadxy = True
+            dataset_mt_v.normx = True
             
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_pretrain
@@ -322,17 +327,11 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 # load datasets
                 ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
                 
-                if baseline and basemeta:
-                    dataset_mt_r = dataset_mt_v
-                elif baseline and not basemeta:
-                    dataset_mt_r = dataset_mt_t
-                elif pretrainmode:
-                    dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+                dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
                 
                 dataset_mt_r.transform = transform_dict['B']
                 dataset_mt_r.loadxy = False
                 dataset_mt_r.ymask = ymask
-                
                 
                 # create dataloaders
                 if cpop>0:
@@ -358,9 +357,8 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     #     inp, target, img_metas = prep_input(inp, target, xfn)
                     #     res = model.inference(inp, img_metas, rescale=False)
                     # else:
-                    if torch.cuda.is_available():
-                        inp = inp.cuda()
-                        # target = target.cuda()
+                    inp = inp.cuda() if torch.cuda.is_available() else inp
+                    
                     if opt.model == 'setr':
                         res = model(inp)
                     elif opt.model == 'deeplab3':
@@ -394,7 +392,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     
                     if cpop==0 or (cpop>1 and endclass):
                         res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
-                        res_ind[inp[xfi][0].squeeze()==0] = 0
+                        res_ind[inp[0][0].squeeze()==0] = 0
                         
                         res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
                         res_ind.to_csv(res_file, index=False, header=False, compression='gzip')

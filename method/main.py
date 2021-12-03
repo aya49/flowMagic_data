@@ -236,9 +236,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             
             ## create training dataset ####
             if baseline and not basemeta:
-                dataset_tr_t = compress_pickle.load(ds_files[ii], compression="lzma", 
+                dataset_mt_t = compress_pickle.load(ds_files[ii], compression="lzma", 
                                                     set_default_extension=False)
-                dataset_tr_v = subset_Data2D(dataset_tr_t, len(dataset_tr_t)//v_ratio)
+                dataset_mt_v = subset_Data2D(dataset_mt_t, len(dataset_mt_t)//v_ratio)
             else:
                 x_files_mt = yegz(nomac( [os.path.join(x_dir_mt, f) for 
                                          f in os.listdir(x_dir_mt)] ))
@@ -259,9 +259,11 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             
             dataset_mt_t.ymask = ymask
             dataset_mt_t.loadxy = True
+            dataset_mt_t.normx = True
             dataset_mt_v.transform = transform_dict['B']
             dataset_mt_v.ymask = ymask
             dataset_mt_v.loadxy = True
+            dataset_mt_v.normx = True
             
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_pretrain
@@ -269,18 +271,17 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             opt.print_freq = 1
             opt = update_opt(opt)
             
-            y = dataset_mt_t.y[0]
-            num_class = int(y.max())
+            num_class = int(dataset_mt_t.y[0].max())
             for cpop in range(1,num_class) if singlecpop else [0]:
                 if cpop>0:
                     dataset_mt_t.cpop = 0
-                    y = dataset_mt_t.y[0]
+                    y = dataset_mt_t.__getitem__(0)[1]
                     xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
                     if len(dataset_mt_t)>1:
                         xind2 = xind+w
                         yind2 = yind+h
-                        for di in range(1,len(dataset_mt_t)):
-                            y = dataset_mt_t.y[di]
+                        for di in range(len(dataset_mt_t)):
+                            x, y = dataset_mt_t.__getitem__(di)
                             xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
@@ -288,12 +289,13 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                             yind2 = max(yind_+h_, yind2)
                         w = xind2-xind
                         h = yind2-yind
-                    
                     cpopdim = [xind, yind, w, h]
                     tr_resize = tr.Resize((w, h))
                     
                     dataset_mt_t.dim = cpopdim
                     dataset_mt_v.dim = cpopdim
+                
+                dataset_mt_t.transform = transform_dict['A']
                 
                 # create dataloaders
                 dataset_mt_t.cpop = cpop
@@ -325,17 +327,11 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 # load datasets
                 ds_mt_r_path = os.path.join(opt.data_folder, 'dataloader_mt_r_{}.gz'.format(opt.data_scat.replace('/','_')))
                 
-                if baseline and basemeta:
-                    dataset_mt_r = dataset_mt_v
-                elif baseline and not basemeta:
-                    dataset_mt_r = dataset_mt_t
-                elif pretrainmode:
-                    dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
+                dataset_mt_r = compress_pickle.load(ds_mt_r_path, compression="lzma", set_default_extension=False) #gzip
                 
                 dataset_mt_r.transform = transform_dict['B']
                 dataset_mt_r.loadxy = False
                 dataset_mt_r.ymask = ymask
-                
                 
                 # create dataloaders
                 if cpop>0:
@@ -361,9 +357,8 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     #     inp, target, img_metas = prep_input(inp, target, xfn)
                     #     res = model.inference(inp, img_metas, rescale=False)
                     # else:
-                    if torch.cuda.is_available():
-                        inp = inp.cuda()
-                        # target = target.cuda()
+                    inp = inp.cuda() if torch.cuda.is_available() else inp
+                    
                     if opt.model == 'setr':
                         res = model(inp)
                     elif opt.model == 'deeplab3':
@@ -397,7 +392,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                     
                     if cpop==0 or (cpop>1 and endclass):
                         res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
-                        res_ind[inp[xfi][0].squeeze()==0] = 0
+                        res_ind[inp[0][0].squeeze()==0] = 0
                         
                         res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
                         res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
