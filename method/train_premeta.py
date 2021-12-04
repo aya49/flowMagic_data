@@ -114,7 +114,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
 
 
 # One epoch training
-def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True):
+def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True, weightbg0=weightbg0):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -210,7 +210,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
 
 def train(opt, model, train_loader, val_loader, model_t=None, 
           optimizer=None, lossfunc=None, accmetric=None,
-          overwrite=True, classes='less0'):
+          overwrite=True, classes='less0', weightbg0=False):
     
     start = time.time()
     
@@ -259,7 +259,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
                                             model=model, opt=opt, 
                                             optimizer=optimizer, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
-                                            verbose=epoch%opt.print_freq==0)
+                                            verbose=epoch%opt.print_freq==0,
+                                            weightbg0=weightbg0)
         # else:
         #     train_logs  = train_epoch_.run(train_loader)
         #     train_acc = train_logs['dice_loss']
