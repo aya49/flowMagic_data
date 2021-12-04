@@ -121,7 +121,7 @@ meta_all = [[0],[1],[2],[3]] # if not baseline
 
 ymask = True
 singlecpop = True
-weightbg0 = True # weight background as 0 for calculating loss
+weightbg0 = False # weight background as 0 for calculating loss
 v_ratio = 20 # validation set ratio = len(training)//v_ratio
 overwrite_pretrain = True
 

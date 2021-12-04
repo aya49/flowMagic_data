@@ -152,7 +152,7 @@ class GDiceLossV2(nn.Module):
 
         self.apply_nonlin = apply_nonlin
         self.smooth = smooth
-
+    
     def forward(self, net_output, gt, pixel_weights=None):
         shp_x = net_output.shape # (batch size,class_num,x,y,z)
         shp_y = gt.shape # (batch size,1,x,y,z)
@@ -186,11 +186,10 @@ class GDiceLossV2(nn.Module):
             if shp_x[1]>1:
                 pixel_weights = pixel_weights.expand(shp_x[0], shp_x[1], shp_x[2], shp_x[3])
             pixel_weights = flatten(pixel_weights)
-            intersect = (input * target * pixel_weights).sum(-1) * class_weights
+            intersect = ((input * target * pixel_weights).sum(-1) * class_weights).sum()
             denominator = (((input * pixel_weights) + (target * pixel_weights)).sum(-1) * class_weights).sum()
         else:
-            intersect = (input * target).sum(-1) * class_weights
-        intersect = intersect.sum()
+            intersect = ((input * target).sum(-1) * class_weights).sum()
             denominator = ((input + target).sum(-1) * class_weights).sum()
         
         return  - 2. * intersect / denominator.clamp(min=self.smooth)
