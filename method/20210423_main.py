@@ -111,13 +111,14 @@ if opt.preload_data:
 baseline = True # no pre-training
 basemeta = True # if baseline, train with k samples, else train with all samples
 n_shots_baseline = [10]
-epochs_sample = 1
+epochs_sample = 500
 
 pretrainmode = not baseline
 n_shots = [10,15,5,20,1]
 epochs_pretrain = 500
-pretrain_all = [[1,2,3],[0,2,3],[0,1,3], [0,1,2]] # if not baseline
-meta_all = [[0],[1],[2],[3]] # if not baseline
+epochs_metatrain = 200
+pretrain_all = [[0,1,2], [1,2,3],[0,2,3],[0,1,3]] # if not baseline
+meta_all = [[3],[0],[1],[2]] # if not baseline
 
 ymask = True
 singlecpop = True
@@ -127,7 +128,7 @@ overwrite_pretrain = True
 
 ds_tr = ''
 opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
-opt.num_workers = 20
+opt.num_workers = 32
 opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 
 for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x in range(len(ds_files)) if 'pregnancy' in ds_files[x]]:
@@ -211,7 +212,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
         
         ## pre-train model ####
         opt.epochs = epochs_pretrain
-        opt.save_freq = opt.epochs//10
+        opt.save_freq = max(1, opt.epochs//10)
         opt.print_freq = 1
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
@@ -270,10 +271,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             dataset_mt_v.normx = True
             
             # train and validate
-            opt.epochs = epochs_sample if baseline else epochs_pretrain
-            opt.save_freq = opt.epochs//10
+            opt.epochs = epochs_sample if baseline else epochs_metatrain
+            opt.save_freq = max(1, opt.epochs//10)
             opt.print_freq = 1
-            opt = update_opt(opt)
             
             num_class = int(dataset_mt_t.y[0].max())
             for cpop in range(1,num_class) if singlecpop else [0]:
