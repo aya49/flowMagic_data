@@ -153,7 +153,7 @@ class GDiceLossV2(nn.Module):
         self.apply_nonlin = apply_nonlin
         self.smooth = smooth
 
-    def forward(self, net_output, gt):
+    def forward(self, net_output, gt, pixel_weights=None):
         shp_x = net_output.shape # (batch size,class_num,x,y,z)
         shp_y = gt.shape # (batch size,1,x,y,z)
         # one hot code for gt
@@ -182,13 +182,17 @@ class GDiceLossV2(nn.Module):
         class_weights = Variable(torch.tensor([1. / shp_x[1]]), 
                                 # 1. / (target_sum * target_sum).clamp(min=self.smooth), 
                                 requires_grad=False).cuda()
-        
-        intersect = (input * target).sum(-1) * class_weights
+        if pixel_weights!=None:
+            if shp_x[1]>1:
+                pixel_weights = pixel_weights.expand(shp_x[0], shp_x[1], shp_x[2], shp_x[3])
+            pixel_weights = flatten(pixel_weights)
+            intersect = (input * target * pixel_weights).sum(-1) * class_weights
+            denominator = (((input * pixel_weights) + (target * pixel_weights)).sum(-1) * class_weights).sum()
+        else:
+            intersect = (input * target).sum(-1) * class_weights
         intersect = intersect.sum()
+            denominator = ((input + target).sum(-1) * class_weights).sum()
         
-
-        denominator = ((input + target).sum(-1) * class_weights).sum()
-
         return  - 2. * intersect / denominator.clamp(min=self.smooth)
 
 
@@ -549,11 +553,17 @@ class BinaryDiceLoss(nn.Module):
         self.p = p
         self.reduction = reduction
 
-    def forward(self, predict, target):
+    def forward(self, predict, target, pixel_weights=None):
         assert predict.shape[0] == target.shape[0], "predict & target batch size don't match"
         predict = predict.contiguous().view(predict.shape[0], -1)
         target = target.contiguous().view(target.shape[0], -1)
-
+        
+        if pixel_weights!=None:
+            pixel_weights = pixel_weights.contiguous().view(target.shape[0], -1)
+            num = torch.sum(predict * target * pixel_weights, dim=1) + self.smooth
+            den = torch.sum((predict * pixel_weights).pow(self.p) + 
+                            (target * pixel_weights).pow(self.p), dim=1) + self.smooth
+        
         num = torch.sum(torch.mul(predict, target), dim=1) + self.smooth
         den = torch.sum(predict.pow(self.p) + target.pow(self.p), dim=1) + self.smooth
 

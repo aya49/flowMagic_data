@@ -121,7 +121,7 @@ meta_all = [[0],[1],[2],[3]] # if not baseline
 
 ymask = True
 singlecpop = True
-wbg0 = True # weight background as 0 for calculating loss
+weightbg0 = True # weight background as 0 for calculating loss
 v_ratio = 20 # validation set ratio = len(training)//v_ratio
 overwrite_pretrain = True
 
@@ -143,7 +143,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                             opt.model,
                             'BASE' if baseline else 'PRETRAIN',
                             'mask' if ymask else 'raw',
-                            'wbg0' if wbg0 else 'wbg1',
+                            'wbg0' if weightbg0 else 'wbg1',
                             'Singlecpop' if singlecpop else 'Multicpop',
                             '-{}'.format('-'.join(ds_tr) if pretrainmode else ''))),
                         '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
@@ -216,7 +216,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
                                  lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
-                                 weightbg0=wbg0) # pt.preload_model = True
+                                 weightbg0=weightbg0) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
     
@@ -322,7 +322,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                         train_loader=dataloader_mt_t, val_loader=dataloader_mt_v,
                                         lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
-                                 weightbg0=wbg0) # pt.preload_model = True
+                                 weightbg0=weightbg0) # pt.preload_model = True
                 # for par in model.parameters():
                 #     print(par)
                 # acc_path = os.path.join(opt.model_folder, 'acc.csv')

@@ -114,7 +114,7 @@ def valid_epoch(epoch, val_loader, model, opt, lossfunc, accmetric, classes='pre
 
 
 # One epoch training
-def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True, weightbg0=weightbg0):
+def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric, rm_ch=None, classes='present', verbose=True, verboselast=True, weightbg0=False):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -169,7 +169,7 @@ def train_epoch(epoch, train_loader, model, opt, optimizer, lossfunc, accmetric,
         # loss = lossfunc(output, target, classes=classes)
         # lossfunc = dice_loss()
         # target = tensor2D3D_(target,6).cuda()
-        loss = lossfunc.forward(output if target.shape[1]==1 else output[:,classes], target)
+        loss = lossfunc.forward(output if target.shape[1]==1 else output[:,classes], target, pixel_weights=inp[:,0:1,:,:] if weightbg0 else None)
         # loss = lossfunc(output[:,classes], target)
         acc1 = accmetric(output if target.shape[1]==1 else output[:,classes], target)
         
