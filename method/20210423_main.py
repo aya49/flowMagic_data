@@ -109,7 +109,7 @@ if opt.preload_data:
 
 ## PARAMETERS #############################################
 baseline = True # no pre-training
-basemeta = True # if baseline, train with k samples, else train with all samples
+basemeta = True # if basemeta, train with k samples, else train with all samples
 n_shots_baseline = [10]
 epochs_sample = 500
 
@@ -117,21 +117,27 @@ pretrainmode = not baseline
 n_shots = [10,15,5,20,1]
 epochs_pretrain = 500
 epochs_metatrain = 200
-pretrain_all = [[0,1,2], [1,2,3],[0,2,3],[0,1,3]] # if not baseline
-meta_all = [[3],[0],[1],[2]] # if not baseline
+# pretrain_all = [[0,1,2], [1,2,3],[0,2,3],[0,1,3]] # if not baseline
+# meta_all = [[3],[0],[1],[2]] # if not baseline
+# pretrain_all = [[0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
+# meta_all = [[3],[3],[3],[3],[3],[3]] # if not baseline
+pretrain_all = [[0,1,2], [1,2,3],[0,2,3],[0,1,3] , [0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
+meta_all = [[3],[0],[1],[2] , [3],[3],[3],[3],[3],[3]] # if not baseline
 
 ymask = True
 singlecpop = True
-weightbg0 = False # weight background as 0 for calculating loss
+weightbg0 = True # weight background as 0 for calculating loss
 v_ratio = 20 # validation set ratio = len(training)//v_ratio
-overwrite_pretrain = True
+overwrite_pretrain = False
+overwrite_model = False
 
 ds_tr = ''
 opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
-opt.num_workers = 32
+opt.num_workers = 12
 opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 
-for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x in range(len(ds_files)) if 'pregnancy' in ds_files[x]]:
+for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
+# for ii in [x for x in range(len(ds_files)) if 'pregnancy' in ds_files[x]]:
     opt.mode = 'pretrain'
     if pretrainmode:
         ds_tr = [x for i, x in enumerate(dss) if i in pretrain_all[ii]]
@@ -212,14 +218,17 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
         
         ## pre-train model ####
         opt.epochs = epochs_pretrain
-        opt.save_freq = max(1, opt.epochs//10)
-        opt.print_freq = 1
+        opt.save_freq = opt.epochs #max(1, opt.epochs//10)
+        opt.print_freq = 10
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
                                  lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
                                  weightbg0=weightbg0) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
+        
+        del(dataset_tr_t)
+        torch.cuda.empty_cache()
     
     opt.mode = 'meta'
     mff = opt.model_folder
@@ -237,6 +246,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             opt.data_scat = '/'.join(xdmsplit[-2:])
             
             opt.model_folder = '{}_{}_METAshots:{}'.format(mff, '_'.join(xdmsplit[-2:]) if pretrainmode else '', opt.n_shots)
+            mfff = opt.model_folder
             os.makedirs(opt.model_folder, exist_ok=True)
             
             ## create training dataset ####
@@ -272,12 +282,16 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
             
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_metatrain
-            opt.save_freq = max(1, opt.epochs//10)
-            opt.print_freq = 1
+            opt.save_freq = opt.epochs#max(1, opt.epochs//10)
+            opt.print_freq = 10
             
             num_class = int(dataset_mt_t.y[0].max())
-            for cpop in range(1,num_class) if singlecpop else [0]:
+            for cpop in range(1,num_class+1) if singlecpop else [0]:
+                opt.model_folder = mfff
                 if cpop>0:
+                    opt.model_folder = '{}_{}'.format(mfff, cpop)
+                    os.makedirs(opt.model_folder, exist_ok=True)
+                    
                     dataset_mt_t.cpop = 0
                     y = dataset_mt_t.__getitem__(0)[1]
                     xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
@@ -313,16 +327,18 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1): #[x for x i
                 
                 # load model
                 if pretrainmode:
-                    ckpt = torch.load(os.path.join(mff, '{}_last.pth'.format(opt.model)))
-                    # ckpt = torch.load(os.path.join(mff, 'ckpt_epoch_700.pth'))
-                    model.load_state_dict(ckpt['model'])
+                    model, _, epoch_ = load_checkpoint(model, model_path)
                 else:
                     model.load_state_dict(model_state)
                 
-                acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
-                                        train_loader=dataloader_mt_t, val_loader=dataloader_mt_v,
-                                        lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
-                                 weightbg0=weightbg0) # pt.preload_model = True
+                model_path_cpop = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
+                if not overwrite_model and os.path.exists(model_path_cpop):
+                    model, _, epoch_ = load_checkpoint(model, model_path_cpop)
+                else:
+                    acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
+                                            train_loader=dataloader_mt_t, val_loader=dataloader_mt_v,
+                                            lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
+                                    weightbg0=weightbg0) # pt.preload_model = True
                 # for par in model.parameters():
                 #     print(par)
                 # acc_path = os.path.join(opt.model_folder, 'acc.csv')

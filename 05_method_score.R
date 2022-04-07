@@ -13,17 +13,18 @@ no_cores <- 32#parallel::detectCores() - 5
 root <- "/home/aya43/flowMagic_data"
 source(paste0(root,"/src/RUNME.R"))
 future::plan(future::multisession, workers=no_cores) # for furrr
+doMC::registerDoMC(no_cores) # for plyr::llply
 
 ## input ####
 m2_dir <- paste0(results_dir,"/2D/method"); 
 
 
 ## load inputs ####
-dc2_dirs <- list_leaf_dirs(m2_dir)
+dc2_dirs <- list_leaf_dirs(m2_dir, pattern=".csv.gz")
 # dc2_files <- list.files(dc2_dir, recursive=TRUE, full.names=TRUE, pattern=".csv")
 
 dc2_dirs <- dc2_dirs[sapply(dc2_dirs, function(x)
-    (grepl("unetBASEmaskDICESinglecpop-[/]10", x) ))]
+    (grepl("pregnancy", x) ))]
 
 ## output ####
 gs_xr_ <- function(x,y) gs_xr(x,y,"scores") 
@@ -37,7 +38,7 @@ wi <- hi <- 10
 size <- 400
 
 
-dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE, pattern="csv.gz"))
+dc_files <- lapply(dc2_dirs, function(x) list.files(x, full.names=TRUE, pattern="csv.gz$"))
 dc_fls <- lapply(dc_files, function(dc_files_) {
     if (length(dc_files_)<=wi*hi)
         return(list(dc_files))
@@ -55,7 +56,8 @@ allind <- which(matrix(0, 256,256)==0, arr.ind=TRUE)
 
 ## START ####
 start <- Sys.time()
-bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
+#bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
+bests <- plyr::ldply(dc_fls, function(dc_fs) { try({
     best <- NULL
     methl <- stringr::str_split(dc_fs[1],"/")[[1]]
     methi <- which(methl=="method")
@@ -76,7 +78,7 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
     # dir.create(folder_name(scores_file), showWarnings=FALSE, recursive=TRUE)
     png(png_file, width=wi*size, height=hi*size)
     par(mfcol=c(hi,wi))
-    for (i in seq_len(length(dc_fs))) { tryCatch({
+    for (i in seq_len(length(dc_fs))) { try({
         dc_f <- dc_fs[i]
         cat(i, " ")
         x2predicted <- read.csv(dc_f, header=FALSE)
@@ -134,15 +136,15 @@ bests <- furrr::future_map_dfr(dc_fls, function(dc_fs) {
         legend("topright", legend=cpops, col=colours, 
                lty=rep(1,cl), lwd=rep(2,cl))
         
-    }, error = function(e) {
-        print(dc_f)
+    # }, error = function(e) {
+    #     print(dc_f)
     })}
     graphics.off()
     # write.table(best, file=gzfile(scores_file),
     #             sep=',', row.names=FALSE, col.names=TRUE)
-})
+})}, .parallel=TRUE)
 bests <- bests[,colnames(bests)!=".id"]
-score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_.csv.gz") ### ????
+score_file <- paste0(gs_xr_(m2_dir,"method"),"/SCORE_20220112preg.csv.gz") ### ????
 dir.create(folder_name(score_file), recursive=TRUE, showWarnings=FALSE)
 write.table(bests, file=gzfile(score_file), sep=",", row.names=FALSE, col.names=TRUE)
 time_output(start)

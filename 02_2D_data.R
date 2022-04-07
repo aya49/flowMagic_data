@@ -48,31 +48,31 @@ kd2Dto3D <- function(x) {
 
 
 ## START ####
-# fe <- 1:length(x2_files)
-fe <- 1:13810
-fe <- 13811:length(x2_files)
-fe <- fe[sapply(gs_xr(x2_files[fe],"x_2Ddensdisc"), function(x) {
-    if (!file.exists(x)) return(TRUE)
-    if (file.info(x)$size==0) return(TRUE)
-    return(FALSE)
-})]
-fe <- unique(c(
-    fe[sapply(gs_xr(x2_files[fe],"x_2Ddensdisc"), function(x) {
-        if (!file.exists(x)) return(TRUE)
-        if (file.info(x)$size==0) return(TRUE)
-        return(FALSE)
-    })], 
-    fe[sapply(gs_xr(x2_files[fe],"x_2Ddenslog"), function(x) {
-        if (!file.exists(x)) return(TRUE)
-        if (file.info(x)$size==0) return(TRUE)
-        return(FALSE)
-    })],
-    fe[sapply(gs_xr(x2_files[fe],"x_2Dscatter"), function(x) {
-        if (!file.exists(x)) return(TRUE)
-        if (file.info(x)$size==0) return(TRUE)
-        return(FALSE)
-    })]
-))
+fe <- 1:length(x2_files)
+# fe <- 1:13810
+# fe <- 13811:length(x2_files)
+# fe <- fe[sapply(gs_xr(x2_files[fe],"x_2Ddensdisc"), function(x) {
+#     if (!file.exists(x)) return(TRUE)
+#     if (file.info(x)$size==0) return(TRUE)
+#     return(FALSE)
+# })]
+# fe <- unique(c(
+#     fe[sapply(gs_xr(x2_files[fe],"x_2Ddensdisc"), function(x) {
+#         if (!file.exists(x)) return(TRUE)
+#         if (file.info(x)$size==0) return(TRUE)
+#         return(FALSE)
+#     })], 
+#     fe[sapply(gs_xr(x2_files[fe],"x_2Ddenslog"), function(x) {
+#         if (!file.exists(x)) return(TRUE)
+#         if (file.info(x)$size==0) return(TRUE)
+#         return(FALSE)
+#     })],
+#     fe[sapply(gs_xr(x2_files[fe],"x_2Dscatter"), function(x) {
+#         if (!file.exists(x)) return(TRUE)
+#         if (file.info(x)$size==0) return(TRUE)
+#         return(FALSE)
+#     })]
+# ))
 
 
 # fe <- fe[sapply(x2_files, function(x2_file) !file.exists(paste0(gs_xr(x2_file,"temp_score"),".Rdata")))]
@@ -98,8 +98,8 @@ matrx1 <- matrix(1, nrow=dimsize, ncol=dimsize)
 cat("out of",length(fe),"\n")
 # loop_ind <- loop_ind_f(sample(fe), no_cores)
 # plyr::l_ply(loop_ind, function(ii) {
-a <- furrr::future_map(loop_ind, function(ii) {
-# plyr::l_ply(loop_ind, function(ii) {# tryCatch({
+# a <- furrr::future_map(loop_ind, function(ii) {
+plyr::l_ply(loop_ind, function(ii) {# tryCatch({
     for (i in ii) { try({
         # res <- plyr::llply(loop_ind, function(ii) { plyr::l_ply(ii, function(i) { try({
         x2_file <- x2_files[i]
@@ -114,8 +114,8 @@ a <- furrr::future_map(loop_ind, function(ii) {
         cat(i," ")
         
         # load csv
-        x2 <- data.table::fread(x2_file, data.table=FALSE)
-        # y2 <- data.table::fread(gsub("/x/","/y/",x2_file), data.table=FALSE)
+        # x2 <- data.table::fread(x2_file, data.table=FALSE)
+        y2 <- data.table::fread(gsub("/x/","/y/",x2_file), data.table=FALSE)
         # 
         # save a vector version of y: a vector of cpops for each cell 0,1,2,3,...
         # y2i <- apply(y2, 1, function(x) which(x==1)[1])
@@ -124,10 +124,10 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # # write.table(y2i, file=gzfile(gs_xr(x2_file,"y_vector_")),
         # #             col.names=FALSE, row.names=FALSE, sep=",")
 
-        # # y2i <- read.csv(gs_xr(x2_file,"y_vector_"), header=FALSE)[,1]
+        y2i <- read.csv(gs_xr(x2_file,"y_vector_"), header=FALSE)[,1]
         # # discretize x: cell x 2 markers i.e. which pixel each cell is at
-        xr <- range(x2[,1])
-        yr <- range(x2[,2])
+        # xr <- range(x2[,1])
+        # yr <- range(x2[,2])
         # 
         # x2discrete[,1] <- ceiling((dimsize-1)*(x2[,1]-xr[1])/(xr[2]-xr[1]))+1
         # x2discrete[,2] <- ceiling((dimsize-1)*(x2[,2]-yr[1])/(yr[2]-yr[1]))+1
@@ -136,7 +136,7 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # write.table(x2discrete, file=gzfile(gs_xr(x2_file,"x_2Ddiscrete")),
         #             col.names=FALSE, row.names=FALSE, sep=",")
         #
-        # # x2discrete <- read.csv(gs_xr(x2_file,"x_2Ddiscrete"), header=FALSE)
+        x2discrete <- read.csv(gs_xr(x2_file,"x_2Ddiscrete"), header=FALSE)
         # # x2discrete_ <- as.matrix(x2discrete[!duplicated(x2discrete),,drop=FALSE])
         
         # # scatterplot
@@ -195,47 +195,47 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # #
         # descretize
 
-        # density contour
-        f@exprs <- as.matrix(x2)
-        hor <- unique(c(
-            flowDensity::deGate(f, 2, all.cuts=TRUE),
-            flowDensity::deGate(f, 2, use.upper=TRUE, upper=TRUE),
-            flowDensity::deGate(f, 2, use.upper=TRUE, upper=FALSE) ))
-        hor <- ((dimsize-1)*(hor-yr[1])/(yr[2]-yr[1]))+1
-        hor <- hor[!duplicated(round(hor/2)) & hor>=1]
-        hor <- sort(round(hor))
-        hor <- hor[hor>1 & hor<dimsize]
-        ver <- unique(c(
-            flowDensity::deGate(f, 1, all.cuts=TRUE),
-            flowDensity::deGate(f, 1, use.upper=TRUE, upper=TRUE),
-            flowDensity::deGate(f, 1, use.upper=TRUE, upper=FALSE) ))
-        ver <- ((dimsize-1)*(ver-xr[1])/(xr[2]-xr[1]))+1
-        ver <- ver[!duplicated(round(ver/2)) & ver>=1]
-        ver <- sort(round(ver))
-        ver <- ver[ver>1 & ver<dimsize]
-
-        # version 1: colour
-        conth <- contv <- matrx1
-
-        if (length(hor)>0)
-            hil <- length(hor)
-            for (hi in seq_len(length(hor)))
-                conth[hor[hi]:ifelse(hi==hil,dimsize,hor[hi+1]),] = hor[hi]
-        png(paste0(gs_xr(x2_file,"x_2DcontourH_plot"), ".png"), width=400, height=400)
-        gplots::heatmap.2(conth, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
-        dev.off()
-        write.table(conth, file=gzfile(gs_xr(x2_file,"x_2DcontourH")),
-                    col.names=FALSE, row.names=FALSE, sep=",")
-
-        if (length(ver)>0)
-            vil <- length(ver)
-            for (vi in seq_len(vil))
-                contv[ver[vi]:ifelse(vi==vil,dimsize,ver[vi+1]),] = ver[vi]
-        png(paste0(gs_xr(x2_file,"x_2DcontourV_plot"), ".png"), width=400, height=400)
-        gplots::heatmap.2(contv, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
-        dev.off()
-        write.table(contv, file=gzfile(gs_xr(x2_file,"x_2DcontourV")),
-                    col.names=FALSE, row.names=FALSE, sep=",")
+        # # density contour
+        # f@exprs <- as.matrix(x2)
+        # hor <- unique(c(
+        #     flowDensity::deGate(f, 2, all.cuts=TRUE),
+        #     flowDensity::deGate(f, 2, use.upper=TRUE, upper=TRUE),
+        #     flowDensity::deGate(f, 2, use.upper=TRUE, upper=FALSE) ))
+        # hor <- ((dimsize-1)*(hor-yr[1])/(yr[2]-yr[1]))+1
+        # hor <- hor[!duplicated(round(hor/2)) & hor>=1]
+        # hor <- sort(round(hor))
+        # hor <- hor[hor>1 & hor<dimsize]
+        # ver <- unique(c(
+        #     flowDensity::deGate(f, 1, all.cuts=TRUE),
+        #     flowDensity::deGate(f, 1, use.upper=TRUE, upper=TRUE),
+        #     flowDensity::deGate(f, 1, use.upper=TRUE, upper=FALSE) ))
+        # ver <- ((dimsize-1)*(ver-xr[1])/(xr[2]-xr[1]))+1
+        # ver <- ver[!duplicated(round(ver/2)) & ver>=1]
+        # ver <- sort(round(ver))
+        # ver <- ver[ver>1 & ver<dimsize]
+        # 
+        # # version 1: colour
+        # conth <- contv <- matrx1
+        # 
+        # if (length(hor)>0)
+        #     hil <- length(hor)
+        #     for (hi in seq_len(length(hor)))
+        #         conth[hor[hi]:ifelse(hi==hil,dimsize,hor[hi+1]),] = hor[hi]
+        # png(paste0(gs_xr(x2_file,"x_2DcontourH_plot"), ".png"), width=400, height=400)
+        # gplots::heatmap.2(conth, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        # dev.off()
+        # write.table(conth, file=gzfile(gs_xr(x2_file,"x_2DcontourH")),
+        #             col.names=FALSE, row.names=FALSE, sep=",")
+        # 
+        # if (length(ver)>0)
+        #     vil <- length(ver)
+        #     for (vi in seq_len(vil))
+        #         contv[ver[vi]:ifelse(vi==vil,dimsize,ver[vi+1]),] = ver[vi]
+        # png(paste0(gs_xr(x2_file,"x_2DcontourV_plot"), ".png"), width=400, height=400)
+        # gplots::heatmap.2(contv, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        # dev.off()
+        # write.table(contv, file=gzfile(gs_xr(x2_file,"x_2DcontourV")),
+        #             col.names=FALSE, row.names=FALSE, sep=",")
         
         # # version 2: plot then save
         # gp <- ggplot2::ggplot(kd2Dto3D(dens2)) +
@@ -287,28 +287,29 @@ a <- furrr::future_map(loop_ind, function(ii) {
         # write.table(plotgs, file=gzfile(gs_xr(x2_file,"y_2D")),
         #             col.names=FALSE, row.names=FALSE, sep=",")
         # gplots::heatmap.2(plotgs, dendrogram='none', Rowv=FALSE, Colv=FALSE, trace='none')
+        plotgs <- read.csv(gs_xr(x2_file,"y_2D"), header=FALSE)
 
-# 
-#         # answer: label of each cell according to its pixel
-#         # i.e. convert 2D label to vector label
-#         y2dp <- apply(x2discrete, 1, function(xy) plotgs[xy[1], xy[2]])
-# 
-#         # baseline accuracy in this dimension
-#         file_split <- stringr::str_split(x2_file, "/")[[1]]
-#         fl <- length(file_split)
-#         cpops <- colnames(y2)[colnames(y2)!="other"]
-#         a <- cbind(
-#             data.table(method="2Dbaseline", dataset=file_split[fl-2], scatpop=file_split[fl-1], cpop=cpops, train_no=0, fcs=file_split[fl], train=FALSE),
-#             f1_score(y2i, y2dp, silent=TRUE))
-# 
-#         save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
-        # return()
+
+        # answer: label of each cell according to its pixel
+        # i.e. convert 2D label to vector label
+        y2dp <- apply(x2discrete, 1, function(xy) plotgs[xy[1], xy[2]])
+
+        # baseline accuracy in this dimension
+        file_split <- stringr::str_split(x2_file, "/")[[1]]
+        fl <- length(file_split)
+        cpops <- colnames(y2)[colnames(y2)!="other"]
+        a <- cbind(
+            data.table(method="2Dbaseline", dataset=file_split[fl-2], scatpop=file_split[fl-1], cpop=cpops, train_no=0, fcs=file_split[fl], train=FALSE),
+            f1_score(y2i, y2dp, silent=TRUE))
+
+        save(a, file=paste0(gs_xr(x2_file,"temp_score"),".Rdata"))
+        
         
         # }, error = function(e) return(i) ) 
         # })
     }) }
-#}, .parallel=TRUE)
-})
+}, .parallel=TRUE)
+#})
 time_output(start)
 
 blscore <- Reduce(rbind, plyr::llply(x2_files[fe], function(x) {
@@ -318,7 +319,7 @@ blscore <- Reduce(rbind, plyr::llply(x2_files[fe], function(x) {
     
 }))
 
-write.table(blscore, file=gzfile(paste0(scores_dir,"/2D/pixels_baseline.csv.gz")),
+write.table(blscore, file=gzfile(paste0(scores_dir,"/2D/pixels_baseline_256.csv.gz")),
             row.names=FALSE, sep=",")
 
 # f1 scores; top=data, left=method, y=f1, x=scat|cpop; colour=mean_true_prop

@@ -14,18 +14,17 @@ libr(c(
 ), FALSE)
 
 
+## parallelization ####
+no_cores <- ifelse(exists("no_cores"), no_cores, 1)
+doMC::registerDoMC(no_cores) # for plyr::llply
+# future::plan(future::multisession, workers=no_cores) # for furrr::future_map
+
 ## directory ####
 # root <- "/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data"
 setwd(root)
 
 ## packages ####
 source("src/helpers.R")
-
-
-## parallelization ####
-no_cores <- ifelse(exists("no_cores"), no_cores, 1)
-doMC::registerDoMC(no_cores) # for plyr::llply
-# future::plan(future::multisession, workers=no_cores) # for furrr::future_map
 
 ## folder_names ####
 raw_dir <- paste0(root, "/raw")
