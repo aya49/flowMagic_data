@@ -9,7 +9,7 @@ import segmentation_models_pytorch as smp
 
 import gc
 
-import tensorboard_logger as tb_logger
+from torch.utils.tensorboard import tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
 from Diceloss import GDiceLossV2 as dice_loss
@@ -225,7 +225,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         # model = model.cuda()
     
     # initialize tensorboard
-    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    logger = tb_logger(logdir=opt.tb_folder)
     
     # save initial checkpoint and load if not overwrite
     epoch_ = 0
@@ -267,8 +267,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         #     train_loss = train_logs['iou_score']
         time2 = time.time()
         
-        logger.log_value('train_acc', train_acc, epoch)
-        logger.log_value('train_loss', train_loss, epoch)
+        logger.add_scalar('train_acc', train_acc, epoch)
+        logger.add_scalar('train_loss', train_loss, epoch)
         if len(acc_) == 0:
             acc = [train_acc]
             loss = [train_loss]
@@ -286,8 +286,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
                                             model=model, opt=opt, classes=classes,
                                             lossfunc=lossfunc, accmetric=accmetric,
                                             verbose=epoch%opt.print_freq==0)
-            logger.log_value('test_loss', val_loss, epoch)
-            logger.log_value('test_acc', val_acc, epoch)
+            logger.add_scalar('test_loss', val_loss, epoch)
+            logger.add_scalar('test_acc', val_acc, epoch)
             # else:
             #     valid_logs = valid_epoch_.run(val_loader)
             #     val_acc = valid_logs['dice_loss']
@@ -300,34 +300,36 @@ def train(opt, model, train_loader, val_loader, model_t=None,
                 acc_.extend([val_acc])
                 loss_.extend([val_loss])
             
-            print('==> Saving... {}'.format(opt.model_folder))
-            save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
-            save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
+            #print('==> Saving... {}'.format(opt.model_folder))
+            #save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch).zfill(3)))
+            #save_checkpoint(model, optimizer, save_file, epoch, opt.n_gpu)
             
-            loss_file = os.path.join(opt.model_folder, 'loss.csv')
-            np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
-            loss_file = os.path.join(opt.model_folder, 'loss_train.csv')
-            np.savetxt(loss_file, loss, delimiter=', ', fmt="% s")
-            
-            acc_file = os.path.join(opt.model_folder, 'acc.csv')
-            np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
-            acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
-            np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
+        #loss_file = os.path.join(opt.model_folder, 'loss.csv')
+        #np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
+        #loss_file = os.path.join(opt.model_folder, 'loss_train.csv')
+        #np.savetxt(loss_file, loss, delimiter=', ', fmt="% s")
         
+        #acc_file = os.path.join(opt.model_folder, 'acc.csv')
+        #np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
+        #acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
+        #np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
     
     # save the last model
     save_file = os.path.join(opt.model_folder, '{}_last.pth'.format(opt.model))
     save_checkpoint(model, optimizer, save_file, opt.epochs, opt.n_gpu)
     
-    loss_file = os.path.join(opt.model_folder, 'loss.csv')
-    np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
-    loss_file = os.path.join(opt.model_folder, 'loss_train.csv')
-    np.savetxt(loss_file, loss, delimiter=', ', fmt="% s")
+    logger.flush() #make sure that all pending events have been written to disk.
+    logger.close()
     
-    acc_file = os.path.join(opt.model_folder, 'acc.csv')
-    np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
-    acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
-    np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
+    #loss_file = os.path.join(opt.model_folder, 'loss.csv')
+    #np.savetxt(loss_file, loss_, delimiter=', ', fmt="% s")
+    #loss_file = os.path.join(opt.model_folder, 'loss_train.csv')
+    #np.savetxt(loss_file, loss, delimiter=', ', fmt="% s")
+    
+    #acc_file = os.path.join(opt.model_folder, 'acc.csv')
+    #np.savetxt(acc_file, acc_, delimiter=', ', fmt="% s")
+    #acc_file = os.path.join(opt.model_folder, 'acc_train.csv')
+    #np.savetxt(acc_file, acc, delimiter=', ', fmt="% s")
     
     dur = time.time() - start
     with open(os.path.join(opt.model_folder, 'time.txt'), mode='a') as file:

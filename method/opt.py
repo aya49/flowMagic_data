@@ -77,6 +77,7 @@ def update_opt(opt):
         opt.model_name = '{}_useAdam'.format(opt.model_name)
     
     opt.data_folder = os.path.join(opt.root_dir, opt.data_dir)
+    #opt.data_folder = opt.data_dir
     opt.model_folder = os.path.join(opt.root_dir, opt.model_dir, opt.model_name)
     opt.tb_folder = os.path.join(opt.root_dir, opt.tb_dir, opt.model_name)
     opt.shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))

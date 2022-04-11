@@ -16,6 +16,13 @@ nvcc --version # default CUDA 9.1 # CUDA version
 cd flowMagic_data/src/method
 '''
 
+'''
+SHARE TENSORBOARD
+tensorboard dev upload --logdir FOLDERNAME \
+--name "My latest experiment" \ # optional
+--description "Simple comparison of several hyperparameters" # optional
+'''
+
 # set directory
 import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
@@ -76,6 +83,7 @@ print(torch.cuda.is_available())
 # options
 opt = parse_options()
 mf = opt.model_folder
+opt.data_folder = '/project/compbio-lab/flowMagic_data/data/2D'
 
 ## DATA: datasets x 4 ########################################
 
@@ -155,7 +163,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                             '-{}'.format('-'.join(ds_tr) if pretrainmode else ''))),
                         '{}_{}'.format(str(ii).zfill(2), dscat.replace('/','_')) if baseline else '')
     print('{}: {}'.format(str(ii).zfill(2), opt.model_folder))
+    opt.tb_folder = '{}/tb'.format(opt.model_folder)
     os.makedirs(opt.model_folder, exist_ok=True)
+    os.makedirs(opt.tb_folder, exist_ok=True)
     
     ## initialize model ####
     if 'model' not in locals():
@@ -218,7 +228,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
         
         ## pre-train model ####
         opt.epochs = epochs_pretrain
-        opt.save_freq = opt.epochs #max(1, opt.epochs//10)
+        opt.save_freq = max(1, opt.epochs//10)
         opt.print_freq = 10
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
@@ -246,8 +256,10 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
             opt.data_scat = '/'.join(xdmsplit[-2:])
             
             opt.model_folder = '{}_{}_METAshots:{}'.format(mff, '_'.join(xdmsplit[-2:]) if pretrainmode else '', opt.n_shots)
+            opt.tb_folder = '{}/tb'.format(opt.model_folder)
             mfff = opt.model_folder
             os.makedirs(opt.model_folder, exist_ok=True)
+            os.makedirs(opt.tb_folder, exist_ok=True)
             
             ## create training dataset ####
             if baseline and not basemeta:
@@ -282,7 +294,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
             
             # train and validate
             opt.epochs = epochs_sample if baseline else epochs_metatrain
-            opt.save_freq = opt.epochs#max(1, opt.epochs//10)
+            opt.save_freq = max(1, opt.epochs//10)
             opt.print_freq = 10
             
             num_class = int(dataset_mt_t.y[0].max())
@@ -290,10 +302,14 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                 opt.model_folder = mfff
                 if cpop>0:
                     opt.model_folder = '{}_{}'.format(mfff, cpop)
+                    opt.tb_folder = '{}/tb'.format(opt.model_folder)
                     os.makedirs(opt.model_folder, exist_ok=True)
+                    os.makedirs(opt.tb_folder, exist_ok=True)
                     
+                    # values to resize input to focus on cell population area
                     dataset_mt_t.cpop = 0
                     y = dataset_mt_t.__getitem__(0)[1]
+                    _, _, wm, hm = cv2.boundingRect(np.uint8(y[0] >= 0)) #dimsize, i'll fix later
                     xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
                     if len(dataset_mt_t)>1:
                         xind2 = xind+w
@@ -307,6 +323,10 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                             yind2 = max(yind_+h_, yind2)
                         w = xind2-xind
                         h = yind2-yind
+                    w = min(wm, int(w*1.5))# increase size by a bit
+                    h = min(hm, int(h*1.5))
+                    xind = max(0, xind-int(w*.25))
+                    yind = max(0, xind-int(h*.25))
                     cpopdim = [xind, yind, w, h]
                     tr_resize = tr.Resize((w, h))
                     
@@ -394,29 +414,8 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                         res_t_ = tr_resize(res).squeeze()
                         res_t = torch.zeros(opt.dim, opt.dim)
                         res_t[xind:(xind+w),yind:(yind+h)] = res_t_
-                        if cpop==1:
-                            if endclass:
-                                res_ind = res_t.round().int() # i just like seeing assignments
-                            else:
-                                compress_pickle.dump([res_t], '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
-                        else:
-                            res_temp_ = res_t
-                            res_temp = compress_pickle.load('{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False)
-                            res_temp.append(res_temp_)
-                            compress_pickle.dump(res_temp, '{}_temp.gz'.format(res_file), compression="lzma", set_default_extension=False) #gzip
-                            if endclass:
-                                res_ = torch.stack(res_temp)
-                                max_class, mcind = torch.max(res_, 0)
-                                max_class = max_class<.5
-                                max_class = max_class.int()
-                                res_ = torch.stack([max_class]+res_temp)
-                    
-                    if cpop==0 or (cpop>1 and endclass):
-                        res_vals, res_ind = torch.max(res_, 0) # 3D to 2D
-                        res_ind[inp[0][0].squeeze()==0] = 0
-                        
-                        res_ind = pd.DataFrame(res_ind.cpu().detach().numpy())
-                        res_ind.to_csv(res_file, index=False, header=False, compression='gzip')
+                        res_ind = pd.DataFrame(res_t.cpu().detach().numpy())
+                        res_ind.to_csv('{}_{}.gz'.format(res_file, cpop), index=False, header=False, compression='gzip')
                     
                     del(inp)
                     del(res)
