@@ -9,7 +9,7 @@ import segmentation_models_pytorch as smp
 
 import gc
 
-from torch.utils.tensorboard import tb_logger
+from torch.utils.tensorboard import SummaryWriter as tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
 from Diceloss import GDiceLossV2 as dice_loss

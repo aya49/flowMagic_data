@@ -6,14 +6,18 @@
 ## MODULES ################################################
 # this training was done on 1 gpu and 32 workers
 '''
-conda activate pytorch_seg
+cd /project/compbio-lab/flowMagic_data #shared drive, /home where results are written to are not shared
+source pytorch_seg/bin/activate
 
 module load LANG/PYTHON/3.7.6
 module load LIB/OPENCV/3.4.9-PY376-CUDA
 module load TOOLS/PYTORCH/1.7.1-CUDA101-PY376 # automatically loads CUDA 10.1
 nvcc --version # default CUDA 9.1 # CUDA version
 
-cd flowMagic_data/src/method
+mkdir flowMagic_data
+git clone https://github.com/aya49/flowMagic_data.git ~/flowMagic_data/src
+cd ~/flowMagic_data/src/method
+python
 '''
 
 '''
@@ -21,6 +25,22 @@ SHARE TENSORBOARD
 tensorboard dev upload --logdir FOLDERNAME \
 --name "My latest experiment" \ # optional
 --description "Simple comparison of several hyperparameters" # optional
+'''
+
+'''
+pip3 install numpy
+pip3 install pandas
+pip3 install scipy #for DiceLoss
+pip3 install compress_pickle
+pip3 install git+https://github.com/qubvel/segmentation_models.pytorch
+pip3 install GPUtil
+pip3 install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
+
+pip3 install mmcv-full -f https://download.openmmlab.com/mmcv/dist/9.1/1.7.1/index.html
+pip3 install git+https://github.com/open-mmlab/mmsegmentation.git
+
+pip3 install tensorboard
+pip3 install einops #ViT
 '''
 
 # set directory
@@ -44,7 +64,7 @@ import trace
 import inspect # inspect.getfullargspec(function) or signature # get function arguments
 from GPUtil import showUtilization as gpu_usage # gpu_usage()
 
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 # print to file
 # orig_stdout = sys.stdout
 # f = open('model_setr.txt', 'w')

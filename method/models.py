@@ -1,13 +1,13 @@
 from genericpath import samefile
 import torch
-import mmcv
-from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
-from mmseg.models import build_segmentor
-from mmcv import ConfigDict
+# import mmcv
+# from mmseg.apis import init_segmentor#, inference_segmentor, init_cfg
+# from mmseg.models import build_segmentor
+# from mmcv import ConfigDict
 
 import torchvision
 
-from SETR.transformer_seg import SETRModel, Vit
+# from SETR.transformer_seg import SETRModel, Vit
 import segmentation_models_pytorch as smp
 
 def model_deeplab3(opt, singlecpop=False):
