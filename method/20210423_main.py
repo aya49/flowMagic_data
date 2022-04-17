@@ -7,16 +7,17 @@
 # this training was done on 1 gpu and 32 workers
 '''
 cd /project/compbio-lab/flowMagic_data #shared drive, /home where results are written to are not shared
-source pytorch_seg/bin/activate
 
 module load LANG/PYTHON/3.7.6
 module load LIB/OPENCV/3.4.9-PY376-CUDA
 module load TOOLS/PYTORCH/1.7.1-CUDA101-PY376 # automatically loads CUDA 10.1
 nvcc --version # default CUDA 9.1 # CUDA version
 
-mkdir flowMagic_data
-git clone https://github.com/aya49/flowMagic_data.git ~/flowMagic_data/src
-cd ~/flowMagic_data/src/method
+source pytorch_seg_env/bin/activate
+
+# mkdir flowMagic_data
+# git clone https://github.com/aya49/flowMagic_data.git ~/flowMagic_data/src
+# cd ~/flowMagic_data/src/method
 python
 '''
 
@@ -28,7 +29,6 @@ tensorboard dev upload --logdir FOLDERNAME \
 '''
 
 '''
-pip3 install numpy
 pip3 install pandas
 pip3 install scipy #for DiceLoss
 pip3 install compress_pickle
@@ -42,11 +42,6 @@ pip3 install git+https://github.com/open-mmlab/mmsegmentation.git
 pip3 install tensorboard
 pip3 install einops #ViT
 '''
-
-# set directory
-import os
-os.chdir("/home/aya43/flowMagic_data/src/method")
-# os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 # basic modules
 import sys
@@ -81,6 +76,11 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as tr
 # from torchviz import make_dot # creates an image of the model
 from torchsampler import ImbalancedDatasetSampler as ids # pip install https://github.com/ufoym/imbalanced-dataset-sampler/archive/master.zip
+
+# set directory
+import os
+os.chdir("/project/compbio-lab/flowMagic_data/src/method")
+# os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 from opt import parse_options, update_opt
 from util import prep_input, visualize, load_checkpoint, nomac, yegz, flatx
@@ -136,7 +136,7 @@ if opt.preload_data:
         #     print(len(dataset))
 
 ## PARAMETERS #############################################
-baseline = True # no pre-training
+baseline = False # no pre-training
 basemeta = True # if basemeta, train with k samples, else train with all samples
 n_shots_baseline = [10]
 epochs_sample = 500

@@ -4,7 +4,7 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.backends.cudnn as cudnn
+# import torch.backends.cudnn as cudnn
 import segmentation_models_pytorch as smp
 
 import gc
@@ -12,9 +12,9 @@ import gc
 from torch.utils.tensorboard import SummaryWriter as tb_logger
 
 from lovasz_losses import lovasz_softmax, iou
-from Diceloss import GDiceLossV2 as dice_loss
-from Diceloss import BinaryDiceLoss as dice_loss_binary
-from dataset import tensor2D3D_
+# from Diceloss import GDiceLossV2 as dice_loss
+# from Diceloss import BinaryDiceLoss as dice_loss_binary
+# from dataset import tensor2D3D_
 
 from util import save_checkpoint, load_checkpoint, AverageMeter, adjust_learning_rate
 from models import metafreeze_model
