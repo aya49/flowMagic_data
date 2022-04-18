@@ -230,9 +230,9 @@ def train(opt, model, train_loader, val_loader, model_t=None,
     # save initial checkpoint and load if not overwrite
     epoch_ = 0
     save_file = os.path.join(opt.model_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=str(epoch_).zfill(3)))
-    save_checkpoint(model=model, optimizer=optimizer, save_path=save_file, epoch=epoch_)
+    ## save_checkpoint(model=model, optimizer=optimizer, save_path=save_file, epoch=epoch_)
     
-    if not overwrite:
+    if False: ## not overwrite:
         ckpts = [x for x in os.listdir(opt.model_folder) if 'ckpt' in x]
         ckpts.sort()
         if '000' not in ckpts[-1]:

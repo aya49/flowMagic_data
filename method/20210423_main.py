@@ -104,17 +104,22 @@ print(torch.cuda.is_available())
 
 # options
 opt = parse_options()
+
 mf = opt.model_folder
 opt.data_folder = '/project/compbio-lab/flowMagic_data/data/2D'
+opt.model_folder = opt.model_folder.replace('home/aya43','project/compbio-lab')
+mf = opt.model_folder
+ref_fold = 'x_2Ddiscrete'
 
 ## DATA: datasets x 4 ########################################
 
 # dataset names ['HIPCmyeloid', 'sangerP2', 'HIPCbcell', 'pregnancy']
-dss = nomac( os.listdir(os.path.join(opt.data_folder, opt.x_2D[0])) )
+dss = nomac( os.listdir(os.path.join(opt.data_folder, ref_fold)) )
+dss.sort()
 
 # x dataset directories ['~/data/2D/x_2Dscatter/HIPCmyeloid/CD3SSCA_HLADR-CD14-_', ...]
-x_dirs = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
-                sc in os.listdir(os.path.join(opt.data_folder, opt.x_2D[0], ds))] for ds in dss]) )
+x_dirs = nomac( flatx([[os.path.join(opt.data_folder, ref_fold, ds, sc) for 
+                sc in os.listdir(os.path.join(opt.data_folder, ref_fold, ds))] for ds in dss]) )
 x_dirs.sort()
 
 # preload data; alternatively run file load_data.py to load everything
