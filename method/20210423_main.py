@@ -45,7 +45,7 @@ pip3 install einops #ViT
 
 # set directory
 import os
-os.chdir("/home/aya43/flowMagic_data/src/method")
+os.chdir("/project/compbio-lab/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
 from Diceloss import GDiceLossV2 as dice_loss
@@ -168,7 +168,7 @@ overwrite_model = False
 
 ds_tr = ''
 opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
-opt.num_workers = 12
+opt.num_workers = 32
 opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 
 for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
