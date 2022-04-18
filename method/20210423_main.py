@@ -48,15 +48,17 @@ import os
 os.chdir("/home/aya43/flowMagic_data/src/method")
 # os.chdir("/mnt/FCS_local3/backup/Brinkman group/current/Alice/flowMagic_data/src/method")
 
+from Diceloss import GDiceLossV2 as dice_loss
+from Diceloss import BinaryDiceLoss as dice_loss_binary
+
+from train_premeta import train
+
 from opt import parse_options, update_opt
-from util import prep_input, visualize, load_checkpoint, nomac, yegz, flatx
+from util import prep_input, visualize, load_checkpoint, nomac, yegz, flatx, bound_rect
 from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
-from train_premeta import train
 
-from Diceloss import GDiceLossV2 as dice_loss
-from Diceloss import BinaryDiceLoss as dice_loss_binary
 
 # basic modules
 import sys
@@ -83,7 +85,7 @@ from GPUtil import showUtilization as gpu_usage # gpu_usage()
 # sys.stdout = orig_stdout
 # f.close()
 
-import cv2
+# import cv2 # can't import twice, after DiceLoss
 
 # torch
 import torch
@@ -329,14 +331,14 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                     # values to resize input to focus on cell population area
                     dataset_mt_t.cpop = 0
                     y = dataset_mt_t.__getitem__(0)[1]
-                    _, _, wm, hm = cv2.boundingRect(np.uint8(y[0] >= 0)) #dimsize, i'll fix later
-                    xind, yind, w, h = cv2.boundingRect(np.uint8(y[0] == cpop))
+                    _, _, wm, hm = bound_rect((y[0] >= 0).nonzero()) #dimsize, i'll fix later
+                    xind, yind, w, h = bound_rect((y[0] == cpop).nonzero())
                     if len(dataset_mt_t)>1:
                         xind2 = xind+w
                         yind2 = yind+h
                         for di in range(len(dataset_mt_t)):
                             x, y = dataset_mt_t.__getitem__(di)
-                            xind_, yind_, w_, h_ = cv2.boundingRect(np.uint8(y[0] == cpop))
+                            xind_, yind_, w_, h_ = bound_rect((y[0] == cpop).nonzero())
                             xind = min(xind, xind_)
                             yind = min(yind, yind_)
                             xind2 = max(xind_+w_, xind2)

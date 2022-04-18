@@ -2,15 +2,17 @@ import torchvision.transforms as tr
 import torchvision.transforms.functional as tf
 
 import random
-import cv2
+# import cv2
 import numpy as np
+
+from util import bound_rect
 
 tresize = tr.Compose([tr.Resize((256, 256))])
 
 def crop_y(x, y, cpop, dim=None, ratio=1/.85):
     if cpop==-1:
         cpop = random.randrange(1,int(y.max()))
-    xind, yind, w, h = dim if not dim==None else cv2.boundingRect(np.uint8(y[0] == cpop))
+    xind, yind, w, h = dim if not dim==None else bound_rect((y[0] == cpop).nonzero())
     if xind==None:
         return None
     w_ = int(w*ratio) # index > ncol is ok

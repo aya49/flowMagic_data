@@ -89,3 +89,10 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
         self.vals.append(val)
+
+def bound_rect(bt): # 2D boolean tensor; replaces cv2.boundingRect, because can't import cv2 :(
+    h1 = int(min(bt[:,0]))
+    h2 = int(max(bt[:,0]))
+    w1 = int(min(bt[:,1]))
+    w2 = int(max(bt[:,1]))
+    return w1, h1, w2-w1, h2-h1
