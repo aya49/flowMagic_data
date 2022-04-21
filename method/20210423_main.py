@@ -110,6 +110,7 @@ opt.data_folder = '/project/compbio-lab/flowMagic_data/data/2D'
 opt.model_folder = opt.model_folder.replace('home/aya43','project/compbio-lab')
 mf = opt.model_folder
 ref_fold = 'x_2Ddiscrete'
+opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 
 ## DATA: datasets x 4 ########################################
 
@@ -156,8 +157,8 @@ epochs_metatrain = 200
 # meta_all = [[3],[0],[1],[2]] # if not baseline
 # pretrain_all = [[0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
 # meta_all = [[3],[3],[3],[3],[3],[3]] # if not baseline
-pretrain_all = [[0,1,2], [1,2,3],[0,2,3],[0,1,3] , [0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
-meta_all = [[3],[0],[1],[2] , [3],[3],[3],[3],[3],[3]] # if not baseline
+pretrain_all = [[0,1,3],[0,1,2], [1,2,3],[0,2,3] , [0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
+meta_all = [[2],[3],[0],[1] , [3],[3],[3],[3],[3],[3]] # if not baseline
 
 ymask = True
 singlecpop = True
@@ -167,7 +168,6 @@ overwrite_pretrain = False
 overwrite_model = False
 
 ds_tr = ''
-opt.preload_data = True # we pre-load everything so it's faster but takes up more memory
 opt.num_workers = 32
 opt.batch_size = 32 # if not enough gpu memory, reduce batch_size
 
@@ -215,8 +215,6 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                 dataset_tr_t_ = compress_pickle.load(ds_files_tr_[i], compression="lzma", 
                                                      set_default_extension=False)
                 dataset_tr_t = merge_Data2D( dataset_tr_t, dataset_tr_t_ ) #gzip
-            
-            dataset_tr_t.factorize_labels()
         else:
             # train/metatrain data sets denscats folder paths
             x_dirs_tr = nomac( flatx([[os.path.join(opt.data_folder, opt.x_2D[0], ds, sc) for 
@@ -225,8 +223,9 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
             x_files_tr = yegz(nomac( flatx([flatx([[os.path.join(x_den, f) for 
                                      f in os.listdir(x_den)] for 
                                      x_den in x_dirs_tr])]) ))
-            
             dataset_tr_t = Data2D(opt, transform=transform_dict['A'], x_files=x_files_tr)
+        
+        dataset_tr_t.factorize_labels()
         
         # dataset_tr_t.ybig = True
         # dataset_tr_t.ysqueeze = False
@@ -298,7 +297,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                                          f in os.listdir(x_dir_mt)] ))
                 
                 # get n-shot samples
-                shot_folder = os.path.join(opt.root_dir, opt.shot_dir, opt.data_scat, str(opt.n_shots))
+                shot_folder = os.path.join(opt.data_folder, opt.shot_dir, opt.data_scat, str(opt.n_shots))
                 x_files_mt_t_ = os.listdir(shot_folder)
                 x_files_mt_t = flatx([[x for x in x_files_mt if x_ in x] for x_ in x_files_mt_t_])
                 # x_files_mt_t =  random.sample(x_files_mt, opt.n_shots) ## TEMP!!!!
