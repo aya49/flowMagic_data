@@ -54,7 +54,7 @@ from Diceloss import BinaryDiceLoss as dice_loss_binary
 from train_premeta import train
 
 from opt import parse_options, update_opt
-from util import prep_input, visualize, load_checkpoint, nomac, yegz, flatx, bound_rect
+from util import prep_input, visualize, load_checkpoint, nomac, yegz, flatx, bound_rect, iou_acc
 from transform import transform_dict
 from dataset import Data2D, merge_Data2D, subset_Data2D
 from models import create_model
@@ -75,6 +75,8 @@ import compress_pickle # pickle, but compresses
 import trace
 import inspect # inspect.getfullargspec(function) or signature # get function arguments
 from GPUtil import showUtilization as gpu_usage # gpu_usage()
+
+import segmentation_models_pytorch as smp
 
 # from matplotlib import pyplot as plt
 # print to file
@@ -157,7 +159,7 @@ epochs_metatrain = 200
 # meta_all = [[3],[0],[1],[2]] # if not baseline
 # pretrain_all = [[0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
 # meta_all = [[3],[3],[3],[3],[3],[3]] # if not baseline
-pretrain_all = [[0,1,3],[0,1,2], [1,2,3],[0,2,3] , [0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
+pretrain_all = [[0,1,3],[0,1,2],[1,2,3],[0,2,3] , [0,1], [0,2],[1,2],[0],[1],[2]] # if not baseline
 meta_all = [[2],[3],[0],[1] , [3],[3],[3],[3],[3],[3]] # if not baseline
 
 ymask = True
@@ -259,6 +261,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
         acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                  train_loader=dataloader_tr_t, val_loader=dataloader_tr_v,
                                  lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
+                                 accmetric=iou_acc,
                                  weightbg0=weightbg0) # pt.preload_model = True
         # for par in model.parameters():
         #     print(par)
@@ -383,7 +386,7 @@ for ii in range(len(ds_files) if baseline else len(pretrain_all)-1):
                 else:
                     acc, loss, model = train(opt=opt, model=model, classes='present', overwrite=True, 
                                             train_loader=dataloader_mt_t, val_loader=dataloader_mt_v,
-                                            lossfunc=dice_loss_binary() if singlecpop else dice_loss(),
+                                            lossfunc=dice_loss_binary() if singlecpop else dice_loss(), accmetric=iou_acc,
                                     weightbg0=weightbg0) # pt.preload_model = True
                 # for par in model.parameters():
                 #     print(par)

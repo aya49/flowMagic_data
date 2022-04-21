@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 # import torch.backends.cudnn as cudnn
 import segmentation_models_pytorch as smp
+from util import iou_acc
 
 import gc
 
@@ -216,7 +217,8 @@ def train(opt, model, train_loader, val_loader, model_t=None,
     
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.learning_rate, weight_decay=0.0005) if optimizer==None else optimizer
     lossfunc = lovasz_softmax if lossfunc==None else lossfunc
-    accmetric = smp.utils.metrics.IoU(threshold=0.5) if accmetric==None else accmetric
+    # accmetric = smp.metrics.IoU(threshold=0.5) if accmetric==None else accmetric
+    accmetric = iou_acc if accmetric==None else accmetric
     
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
@@ -225,7 +227,7 @@ def train(opt, model, train_loader, val_loader, model_t=None,
         # model = model.cuda()
     
     # initialize tensorboard
-    logger = tb_logger(logdir=opt.tb_folder)
+    logger = tb_logger(log_dir =opt.tb_folder)
     
     # save initial checkpoint and load if not overwrite
     epoch_ = 0

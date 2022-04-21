@@ -96,3 +96,10 @@ def bound_rect(bt): # 2D boolean tensor; replaces cv2.boundingRect, because can'
     w1 = int(min(bt[:,1]))
     w2 = int(max(bt[:,1]))
     return w1, h1, w2-w1, h2-h1
+
+def iou_acc(preds, label): # used to be in smp... but removed...
+    valid = (label >= 0)
+    acc_sum = (valid * (preds == label)).sum()
+    valid_sum = valid.sum()
+    acc = float(acc_sum) / (valid_sum + 1e-10)
+    return acc
