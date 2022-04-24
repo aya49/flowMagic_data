@@ -6,6 +6,9 @@
 ## MODULES ################################################
 # this training was done on 1 gpu and 32 workers
 '''
+# srun -J "bash" --gres=gpu:1 --cpus-per-task=32 --partition=long --qos=overcap -w cs-venus-02 --mem 200000 --pty bash
+# cp /project/compbio-lab/flowMagic_data/pytorch_seg_venv.tar.gz ./ # # created by: tar -czf archive-name.tar.gz file-name
+# tar -xf pytorch_seg_venv.tar.gz
 cd /project/compbio-lab/flowMagic_data #shared drive, /home where results are written to are not shared
 
 module load LANG/PYTHON/3.7.6
