@@ -1,4 +1,4 @@
-﻿# flowMagic_data
+# flowMagic_data
 
 document: https://www.overleaf.com/4958349237rghgfgvdmrxq
 
@@ -18,6 +18,10 @@ we used the original package versions used in the deepCyTOF paper to run deepCyT
 scripts to run deepCyTOF on current versions of packages are available in the [Util](Util) folder; these scripts end in `_.py`.
 
 ## folder structure
+
+2D data sets: 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7108752.svg)](https://doi.org/10.5281/zenodo.7108752)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7108766.svg)](https://doi.org/10.5281/zenodo.7108766)
 
 ```{bash}
 <dsfkm> = <data_set>/<scatterplot>/<FCS name>/<number of training samples used>/<marker>
