@@ -21,7 +21,7 @@ scripts to run deepCyTOF on current versions of packages are available in the [U
 
 2D data sets: 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7108752.svg)](https://doi.org/10.5281/zenodo.7108752)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7116166.svg)](https://doi.org/10.5281/zenodo.7116166)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7133191.svg)](https://doi.org/10.5281/zenodo.7133191)
 
 ```{bash}
 <dsfkm> = <data_set>/<scatterplot>/<FCS name>/<number of training samples used>/<marker>
